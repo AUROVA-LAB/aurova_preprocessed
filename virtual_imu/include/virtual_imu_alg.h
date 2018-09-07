@@ -22,30 +22,25 @@
 // refer to the IRI wiki page for more information:
 // http://wikiri.upc.es/index.php/Robotics_Lab
 
-#ifndef _ackermann_to_odom_alg_h_
-#define _ackermann_to_odom_alg_h_
+#ifndef _virtual_imu_alg_h_
+#define _virtual_imu_alg_h_
 
-#include <ackermann_to_odom/AckermannToOdomConfig.h>
-#include "ackermann_to_odom_alg.h"
-#include "ackermann_msgs/AckermannDriveStamped.h"
-#include "nav_msgs/Odometry.h"
-#include "sensor_msgs/Imu.h"
-#include <tf/transform_broadcaster.h>
+#include <virtual_imu/VirtualImuConfig.h>
 
-//include ackermann_to_odom_alg main library
+//include virtual_imu_alg main library
 
 /**
  * \brief IRI ROS Specific Driver Class
  *
  *
  */
-class AckermannToOdomAlgorithm
+class VirtualImuAlgorithm
 {
   protected:
    /**
     * \brief define config type
     *
-    * Define a Config type with the AckermannToOdomConfig. All driver implementations
+    * Define a Config type with the VirtualImuConfig. All driver implementations
     * will then use the same variable type Config.
     */
     pthread_mutex_t access_;    
@@ -56,10 +51,10 @@ class AckermannToOdomAlgorithm
    /**
     * \brief define config type
     *
-    * Define a Config type with the AckermannToOdomConfig. All driver implementations
+    * Define a Config type with the VirtualImuConfig. All driver implementations
     * will then use the same variable type Config.
     */
-    typedef ackermann_to_odom::AckermannToOdomConfig Config;
+    typedef virtual_imu::VirtualImuConfig Config;
 
    /**
     * \brief config variable
@@ -77,7 +72,7 @@ class AckermannToOdomAlgorithm
     * Attributes from the main node driver class IriBaseDriver such as loop_rate,
     * may be also overload here.
     */
-    AckermannToOdomAlgorithm(void);
+    VirtualImuAlgorithm(void);
 
    /**
     * \brief Lock Algorithm
@@ -121,7 +116,7 @@ class AckermannToOdomAlgorithm
     */
     void config_update(Config& config, uint32_t level=0);
 
-    // here define all ackermann_to_odom_alg interface methods to retrieve and set
+    // here define all virtual_imu_alg interface methods to retrieve and set
     // the driver parameters
 
    /**
@@ -130,12 +125,7 @@ class AckermannToOdomAlgorithm
     * This destructor is called when the object is about to be destroyed.
     *
     */
-    ~AckermannToOdomAlgorithm(void);
-
-    void generateNewOdometryMsg (ackermann_msgs::AckermannDriveStamped estimated_ackermann_state,
-                                 double covariance, sensor_msgs::Imu virtual_imu_ms,
-                                 nav_msgs::Odometry& odometry, geometry_msgs::TransformStamped& odom_trans,
-                                 geometry_msgs::TransformStamped& base_trans);
+    ~VirtualImuAlgorithm(void);
 };
 
 #endif

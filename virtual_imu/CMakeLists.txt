@@ -1,15 +1,12 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ackermann_to_odom)
+project(virtual_imu)
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED)
 # ******************************************************************** 
 #                 Add catkin additional components here
 # ******************************************************************** 
-find_package(catkin REQUIRED COMPONENTS 
-iri_base_algorithm 
-tf
-)
+find_package(catkin REQUIRED COMPONENTS iri_base_algorithm)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -52,7 +49,7 @@ tf
 # ******************************************************************** 
 #                 Add the dynamic reconfigure file 
 # ******************************************************************** 
-generate_dynamic_reconfigure_options(cfg/AckermannToOdom.cfg)
+generate_dynamic_reconfigure_options(cfg/VirtualImu.cfg)
 
 # ******************************************************************** 
 #                 Add run time dependencies here
@@ -85,7 +82,7 @@ include_directories(${catkin_INCLUDE_DIRS})
 # add_library(${PROJECT_NAME} <list of source files>)
 
 ## Declare a cpp executable
-add_executable(${PROJECT_NAME} src/ackermann_to_odom_alg.cpp src/ackermann_to_odom_alg_node.cpp)
+add_executable(${PROJECT_NAME} src/virtual_imu_alg.cpp src/virtual_imu_alg_node.cpp)
 
 # ******************************************************************** 
 #                   Add the libraries

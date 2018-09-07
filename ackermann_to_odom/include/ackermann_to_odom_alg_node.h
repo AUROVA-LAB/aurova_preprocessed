@@ -27,6 +27,10 @@
 
 #include <iri_base_algorithm/iri_base_algorithm.h>
 #include "ackermann_to_odom_alg.h"
+#include "ackermann_msgs/AckermannDriveStamped.h"
+#include "nav_msgs/Odometry.h"
+#include "sensor_msgs/Imu.h"
+#include <tf/transform_broadcaster.h>
 
 // [publisher subscriber headers]
 
@@ -40,83 +44,99 @@
  */
 class AckermannToOdomAlgNode : public algorithm_base::IriBaseAlgorithm<AckermannToOdomAlgorithm>
 {
-  private:
-    // [publisher attributes]
+private:
 
-    // [subscriber attributes]
+  double covariance_;
+  ackermann_msgs::AckermannDriveStamped estimated_ackermann_state_;
+  sensor_msgs::Imu virtual_imu_msg_;
+  geometry_msgs::TransformStamped odom_trans_;
+  geometry_msgs::TransformStamped base_trans_;
 
-    // [service attributes]
+  // [publisher attributes]
+  tf::TransformBroadcaster broadcaster_;
+  ros::Publisher odometry_publisher_;
+  nav_msgs::Odometry odometry_;
 
-    // [client attributes]
+  // [subscriber attributes/methods]
+  ros::Subscriber estimated_ackermann_subscriber_;
+  ros::Subscriber covariance_ackermann_subscriber_;
+  ros::Subscriber virtual_imu_subscriber_;
+  void cb_imuData(const sensor_msgs::Imu::ConstPtr& Imu_msg);
+  void cb_ackermannState(const ackermann_msgs::AckermannDriveStamped::ConstPtr& estimated_ackermann_state_msg);
+  void cd_ackermannCovariance(const ackermann_msgs::AckermannDriveStamped::ConstPtr& covariance_ackermann_state_msg);
 
-    // [action server attributes]
+  // [service attributes]
 
-    // [action client attributes]
+  // [client attributes]
 
-   /**
-    * \brief config variable
-    *
-    * This variable has all the driver parameters defined in the cfg config file.
-    * Is updated everytime function config_update() is called.
-    */
-    Config config_;
-  public:
-   /**
-    * \brief Constructor
-    * 
-    * This constructor initializes specific class attributes and all ROS
-    * communications variables to enable message exchange.
-    */
-    AckermannToOdomAlgNode(void);
+  // [action server attributes]
 
-   /**
-    * \brief Destructor
-    * 
-    * This destructor frees all necessary dynamic memory allocated within this
-    * this class.
-    */
-    ~AckermannToOdomAlgNode(void);
+  // [action client attributes]
 
-  protected:
-   /**
-    * \brief main node thread
-    *
-    * This is the main thread node function. Code written here will be executed
-    * in every node loop while the algorithm is on running state. Loop frequency 
-    * can be tuned by modifying loop_rate attribute.
-    *
-    * Here data related to the process loop or to ROS topics (mainly data structs
-    * related to the MSG and SRV files) must be updated. ROS publisher objects 
-    * must publish their data in this process. ROS client servers may also
-    * request data to the corresponding server topics.
-    */
-    void mainNodeThread(void);
+  /**
+   * \brief config variable
+   *
+   * This variable has all the driver parameters defined in the cfg config file.
+   * Is updated everytime function config_update() is called.
+   */
+  Config config_;
+public:
+  /**
+   * \brief Constructor
+   *
+   * This constructor initializes specific class attributes and all ROS
+   * communications variables to enable message exchange.
+   */
+  AckermannToOdomAlgNode(void);
 
-   /**
-    * \brief dynamic reconfigure server callback
-    * 
-    * This method is called whenever a new configuration is received through
-    * the dynamic reconfigure. The derivated generic algorithm class must 
-    * implement it.
-    *
-    * \param config an object with new configuration from all algorithm 
-    *               parameters defined in the config file.
-    * \param level  integer referring the level in which the configuration
-    *               has been changed.
-    */
-    void node_config_update(Config &config, uint32_t level);
+  /**
+   * \brief Destructor
+   *
+   * This destructor frees all necessary dynamic memory allocated within this
+   * this class.
+   */
+  ~AckermannToOdomAlgNode(void);
 
-   /**
-    * \brief node add diagnostics
-    *
-    * In this abstract function additional ROS diagnostics applied to the 
-    * specific algorithms may be added.
-    */
-    void addNodeDiagnostics(void);
+protected:
+  /**
+   * \brief main node thread
+   *
+   * This is the main thread node function. Code written here will be executed
+   * in every node loop while the algorithm is on running state. Loop frequency
+   * can be tuned by modifying loop_rate attribute.
+   *
+   * Here data related to the process loop or to ROS topics (mainly data structs
+   * related to the MSG and SRV files) must be updated. ROS publisher objects
+   * must publish their data in this process. ROS client servers may also
+   * request data to the corresponding server topics.
+   */
+  void mainNodeThread(void);
 
-    // [diagnostic functions]
-    
-    // [test functions]
+  /**
+   * \brief dynamic reconfigure server callback
+   *
+   * This method is called whenever a new configuration is received through
+   * the dynamic reconfigure. The derivated generic algorithm class must
+   * implement it.
+   *
+   * \param config an object with new configuration from all algorithm
+   *               parameters defined in the config file.
+   * \param level  integer referring the level in which the configuration
+   *               has been changed.
+   */
+  void node_config_update(Config &config, uint32_t level);
+
+  /**
+   * \brief node add diagnostics
+   *
+   * In this abstract function additional ROS diagnostics applied to the
+   * specific algorithms may be added.
+   */
+  void addNodeDiagnostics(void);
+
+  // [diagnostic functions]
+
+  // [test functions]
 };
 
 #endif
