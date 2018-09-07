@@ -26,6 +26,10 @@
 #define _virtual_imu_alg_h_
 
 #include <virtual_imu/VirtualImuConfig.h>
+#include "sensor_msgs/Imu.h"
+#include "kalman_filter.h"
+#include <tf/tf.h>
+#include <math.h>
 
 //include virtual_imu_alg main library
 
@@ -36,96 +40,119 @@
  */
 class VirtualImuAlgorithm
 {
-  protected:
-   /**
-    * \brief define config type
-    *
-    * Define a Config type with the VirtualImuConfig. All driver implementations
-    * will then use the same variable type Config.
-    */
-    pthread_mutex_t access_;    
+protected:
+  /**
+   * \brief define config type
+   *
+   * Define a Config type with the VirtualImuConfig. All driver implementations
+   * will then use the same variable type Config.
+   */
+  pthread_mutex_t access_;
 
-    // private attributes and methods
+  // private attributes and methods
 
-  public:
-   /**
-    * \brief define config type
-    *
-    * Define a Config type with the VirtualImuConfig. All driver implementations
-    * will then use the same variable type Config.
-    */
-    typedef virtual_imu::VirtualImuConfig Config;
+public:
 
-   /**
-    * \brief config variable
-    *
-    * This variable has all the driver parameters defined in the cfg config file.
-    * Is updated everytime function config_update() is called.
-    */
-    Config config_;
+  KalmanFilterPtr estimation_rpy_;
 
-   /**
-    * \brief constructor
-    *
-    * In this constructor parameters related to the specific driver can be
-    * initalized. Those parameters can be also set in the openDriver() function.
-    * Attributes from the main node driver class IriBaseDriver such as loop_rate,
-    * may be also overload here.
-    */
-    VirtualImuAlgorithm(void);
+  int first_vel_;
+  int first_run_;
+  float roll_offset_;
+  float pitch_offset_;
+  float yaw_offset_;
 
-   /**
-    * \brief Lock Algorithm
-    *
-    * Locks access to the Algorithm class
-    */
-    void lock(void) { pthread_mutex_lock(&this->access_); };
+  /**
+   * \brief define config type
+   *
+   * Define a Config type with the VirtualImuConfig. All driver implementations
+   * will then use the same variable type Config.
+   */
+  typedef virtual_imu::VirtualImuConfig Config;
 
-   /**
-    * \brief Unlock Algorithm
-    *
-    * Unlocks access to the Algorithm class
-    */
-    void unlock(void) { pthread_mutex_unlock(&this->access_); };
+  /**
+   * \brief config variable
+   *
+   * This variable has all the driver parameters defined in the cfg config file.
+   * Is updated everytime function config_update() is called.
+   */
+  Config config_;
 
-   /**
-    * \brief Tries Access to Algorithm
-    *
-    * Tries access to Algorithm
-    * 
-    * \return true if the lock was adquired, false otherwise
-    */
-    bool try_enter(void) 
-    { 
-      if(pthread_mutex_trylock(&this->access_)==0)
-        return true;
-      else
-        return false;
-    };
+  /**
+   * \brief constructor
+   *
+   * In this constructor parameters related to the specific driver can be
+   * initalized. Those parameters can be also set in the openDriver() function.
+   * Attributes from the main node driver class IriBaseDriver such as loop_rate,
+   * may be also overload here.
+   */
+  VirtualImuAlgorithm(void);
 
-   /**
-    * \brief config update
-    *
-    * In this function the driver parameters must be updated with the input
-    * config variable. Then the new configuration state will be stored in the 
-    * Config attribute.
-    *
-    * \param new_cfg the new driver configuration state
-    *
-    * \param level level in which the update is taken place
-    */
-    void config_update(Config& config, uint32_t level=0);
+  /**
+   * \brief Lock Algorithm
+   *
+   * Locks access to the Algorithm class
+   */
+  void lock(void)
+  {
+    pthread_mutex_lock(&this->access_);
+  }
+  ;
 
-    // here define all virtual_imu_alg interface methods to retrieve and set
-    // the driver parameters
+  /**
+   * \brief Unlock Algorithm
+   *
+   * Unlocks access to the Algorithm class
+   */
+  void unlock(void)
+  {
+    pthread_mutex_unlock(&this->access_);
+  }
+  ;
 
-   /**
-    * \brief Destructor
-    *
-    * This destructor is called when the object is about to be destroyed.
-    *
-    */
-    ~VirtualImuAlgorithm(void);
+  /**
+   * \brief Tries Access to Algorithm
+   *
+   * Tries access to Algorithm
+   *
+   * \return true if the lock was adquired, false otherwise
+   */
+  bool try_enter(void)
+  {
+    if (pthread_mutex_trylock(&this->access_) == 0)
+      return true;
+    else
+      return false;
+  }
+  ;
+
+  /**
+   * \brief config update
+   *
+   * In this function the driver parameters must be updated with the input
+   * config variable. Then the new configuration state will be stored in the
+   * Config attribute.
+   *
+   * \param new_cfg the new driver configuration state
+   *
+   * \param level level in which the update is taken place
+   */
+  void config_update(Config& config, uint32_t level = 0);
+
+  // here define all virtual_imu_alg interface methods to retrieve and set
+  // the driver parameters
+
+  /**
+   * \brief Destructor
+   *
+   * This destructor is called when the object is about to be destroyed.
+   *
+   */
+  ~VirtualImuAlgorithm(void);
+
+  void createVirtualImu(sensor_msgs::Imu originl_imu_msg, sensor_msgs::Imu& virtual_imu_msg);
+
+  void rpyFromGpsVelocity(float& roll, float& pitch, float& yaw, float x, float y, float z);
+
 };
 
 #endif

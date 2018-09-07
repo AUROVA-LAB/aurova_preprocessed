@@ -33,9 +33,10 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg(ackermann_msgs::AckermannD
   const int COLUMNS = 6;
 
   int i, j;
-  float orientation_z = 0, orientation_z_prev = 0;
-  float pose_x_prev = 0;
-  float pose_y_prev = 0;
+  float orientation_z = 0;
+  static float orientation_z_prev = 0;
+  static float pose_x_prev = 0;
+  static float pose_y_prev = 0;
   static double t_1;
   static double t_2;
   static double first_exec = 1;

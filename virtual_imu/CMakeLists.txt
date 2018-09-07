@@ -82,7 +82,7 @@ include_directories(${catkin_INCLUDE_DIRS})
 # add_library(${PROJECT_NAME} <list of source files>)
 
 ## Declare a cpp executable
-add_executable(${PROJECT_NAME} src/virtual_imu_alg.cpp src/virtual_imu_alg_node.cpp)
+add_executable(${PROJECT_NAME} src/virtual_imu_alg.cpp src/virtual_imu_alg_node.cpp src/kalman_filter.cpp)
 
 # ******************************************************************** 
 #                   Add the libraries
