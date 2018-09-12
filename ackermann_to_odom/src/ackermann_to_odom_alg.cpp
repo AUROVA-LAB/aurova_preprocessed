@@ -24,7 +24,8 @@ void AckermannToOdomAlgorithm::config_update(Config& config, uint32_t level)
 // AckermannToOdomAlgorithm Public API
 void AckermannToOdomAlgorithm::generateNewOdometryMsg(ackermann_msgs::AckermannDriveStamped estimated_ackermann_state,
                                                       double covariance, sensor_msgs::Imu virtual_imu_msg,
-                                                      nav_msgs::Odometry& odometry, geometry_msgs::TransformStamped& odom_trans,
+                                                      nav_msgs::Odometry& odometry,
+                                                      geometry_msgs::TransformStamped& odom_trans,
                                                       geometry_msgs::TransformStamped& base_trans)
 {
 

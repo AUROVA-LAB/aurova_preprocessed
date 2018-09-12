@@ -21,6 +21,12 @@
 // of the scripts. ROS topics can be easly add by using those scripts. Please
 // refer to the IRI wiki page for more information:
 // http://wikiri.upc.es/index.php/Robotics_Lab
+/**
+ * \file virtual_imu_alg_node.h
+ *
+ *  Created on: 04 Sep 2018
+ *      Author: m.a.munoz
+ */
 
 #ifndef _virtual_imu_alg_node_h_
 #define _virtual_imu_alg_node_h_
@@ -39,6 +45,7 @@
 /**
  * \brief IRI ROS Specific Algorithm Class
  *
+ * Interface with ROS. In this class we specify publishers, subscribers, and callbacks.
  */
 class VirtualImuAlgNode : public algorithm_base::IriBaseAlgorithm<VirtualImuAlgorithm>
 {
@@ -53,7 +60,15 @@ private:
   // [subscriber attributes]
   ros::Subscriber original_imu_;
   ros::Subscriber gps_velocity_;
+
+  /**
+   * \brief Callback for read imu messages.
+   */
   void cb_imuData(const sensor_msgs::Imu& Imu_msg);
+
+  /**
+   * \brief Callback for read gps messages, and extract speed for calculate orientation.
+   */
   void cb_gpsVelocity(const geometry_msgs::TwistWithCovarianceStamped& gps_msg);
 
   // [service attributes]

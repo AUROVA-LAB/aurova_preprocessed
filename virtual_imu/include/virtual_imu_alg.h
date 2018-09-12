@@ -21,6 +21,12 @@
 // of the scripts. ROS topics can be easly add by using those scripts. Please
 // refer to the IRI wiki page for more information:
 // http://wikiri.upc.es/index.php/Robotics_Lab
+/**
+ * \file virtual_imu_alg.h
+ *
+ *  Created on: 04 Sep 2018
+ *      Author: m.a.munoz
+ */
 
 #ifndef _virtual_imu_alg_h_
 #define _virtual_imu_alg_h_
@@ -36,7 +42,7 @@
 /**
  * \brief IRI ROS Specific Driver Class
  *
- *
+ * This class implements the main algorithm that performs the package.
  */
 class VirtualImuAlgorithm
 {
@@ -149,8 +155,28 @@ public:
    */
   ~VirtualImuAlgorithm(void);
 
+  /**
+   * \brief create virtual imu
+   *
+   * This method gets rpy from real imu, and integrate this for calculate absolute orientation.
+   *
+   * @param originl_imu_msg is the data from real imu.
+   * @param virtual_imu_msg is the new imu message generated.
+   */
   void createVirtualImu(sensor_msgs::Imu originl_imu_msg, sensor_msgs::Imu& virtual_imu_msg);
 
+  /**
+   * \brief rpy from velocity.
+   *
+   * This method gets gps velocity vector and calculate the orientation.
+   *
+   * @param x is the speed in the x component.
+   * @param y is the speed in the y component.
+   * @param z is the speed in the z component.
+   * @param roll is the orientation in the x axe.
+   * @param pitch is the orientation in the y axe.
+   * @param yaw is the orientation in the z axe.
+   */
   void rpyFromGpsVelocity(float& roll, float& pitch, float& yaw, float x, float y, float z);
 
 };

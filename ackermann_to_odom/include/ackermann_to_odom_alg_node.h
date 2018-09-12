@@ -21,6 +21,12 @@
 // of the scripts. ROS topics can be easly add by using those scripts. Please
 // refer to the IRI wiki page for more information:
 // http://wikiri.upc.es/index.php/Robotics_Lab
+/**
+ * \file ackermann_to_odom_alg_node.h
+ *
+ *  Created on: 04 Sep 2018
+ *      Author: m.a.munoz
+ */
 
 #ifndef _ackermann_to_odom_alg_node_h_
 #define _ackermann_to_odom_alg_node_h_
@@ -41,12 +47,13 @@
 /**
  * \brief IRI ROS Specific Algorithm Class
  *
+ * Interface with ROS. In this class we specify publishers, subscribers, and callbacks.
  */
 class AckermannToOdomAlgNode : public algorithm_base::IriBaseAlgorithm<AckermannToOdomAlgorithm>
 {
 private:
 
-  double covariance_;
+  double covariance_; //Covariance to estimated_ackermann_state_
   ackermann_msgs::AckermannDriveStamped estimated_ackermann_state_;
   sensor_msgs::Imu virtual_imu_msg_;
   geometry_msgs::TransformStamped odom_trans_;
@@ -57,12 +64,24 @@ private:
   ros::Publisher odometry_publisher_;
   nav_msgs::Odometry odometry_;
 
-  // [subscriber attributes/methods]
+  // [subscriber attributes]
   ros::Subscriber estimated_ackermann_subscriber_;
   ros::Subscriber covariance_ackermann_subscriber_;
   ros::Subscriber virtual_imu_subscriber_;
+
+  /**
+   * \brief Callback for read imu messages.
+   */
   void cb_imuData(const sensor_msgs::Imu::ConstPtr& Imu_msg);
+
+  /**
+   * \brief Callback for read ackermann messages.
+   */
   void cb_ackermannState(const ackermann_msgs::AckermannDriveStamped::ConstPtr& estimated_ackermann_state_msg);
+
+  /**
+   * \brief Callback for read ackermann messages.
+   */
   void cd_ackermannCovariance(const ackermann_msgs::AckermannDriveStamped::ConstPtr& covariance_ackermann_state_msg);
 
   // [service attributes]

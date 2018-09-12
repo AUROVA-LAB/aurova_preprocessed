@@ -1,12 +1,12 @@
-/*
- * kalman_filter.h
+/**
+ * \file kalman_filter.h
  *
  *  Created on: 12 Jul 2018
  *      Author: m.a.munoz
  */
 
-#ifndef HEADERS_KALMAN_FILTER_H_
-#define HEADERS_KALMAN_FILTER_H_
+#ifndef _kalman_filter_h_
+#define _kalman_filter_h_
 
 #include "math.h"
 #include "ros/ros.h"
@@ -14,29 +14,47 @@
 
 #define MIN_SPEED 0.5
 #define MIN_CODE -77
-
+#define GUARD 0.8
 
 class KalmanFilter;
-typedef  KalmanFilter* KalmanFilterPtr;
+typedef KalmanFilter* KalmanFilterPtr;
 
+/**
+ * \brief Specific Kalman Filter
+ *
+ * Kalman Filter methods for estimate angle position
+ */
 class KalmanFilter
 {
 private:
 
 public:
-	float X_[3][1];
-	float P_[3][3];
 
-	KalmanFilter(void);
+  //state vector of kalman filter process
+  float X_[3][1];
+  //covariance vector of kalman filter process
+  float P_[3][3];
 
-	void predict(float delta_t, float roll_rate, float pitch_rate, float yaw_rate);
+  /**
+   * \brief Constructor of KalmanFilter class
+   *
+   * Inicialization of the process, state n = 0.
+   */
+  KalmanFilter(void);
 
-	void correct(float roll_obs, float pitch_obs, float yaw_obs);
+  /**
+   * Prediction step for kalman filter with model of rpy rate integration
+   */
+  void predict(float delta_t, float roll_rate, float pitch_rate, float yaw_rate);
 
-	void getState(void);
+  /**
+   * Correction step for kalman filter with the angular position calculate with gps
+   */
+  void correct(float roll_obs, float pitch_obs, float yaw_obs);
 
-	void getVariances(void);
+  void getState(void);
+
+  void getVariances(void);
 };
 
-
-#endif /* HEADERS_KALMAN_FILTER_H_ */
+#endif /* _kalman_filter_h_ */

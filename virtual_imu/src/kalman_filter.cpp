@@ -1,11 +1,4 @@
-/*
- * kalman_filter.cpp
- *
- *  Created on: 12 Jul 2018
- *      Author: m.a.munoz
- */
-
-#include "../include/kalman_filter.h"
+#include "kalman_filter.h"
 
 KalmanFilter::KalmanFilter(void)
 {
@@ -37,7 +30,7 @@ void KalmanFilter::predict(float delta_t, float roll_rate, float pitch_rate, flo
 void KalmanFilter::correct(float roll_obs, float pitch_obs, float yaw_obs)
 {
   //Correction step
-  if (yaw_obs > MIN_CODE*0.8)
+  if (yaw_obs > MIN_CODE * GUARD)
   {
     X_[0][0] = roll_obs;
     X_[1][0] = pitch_obs;
