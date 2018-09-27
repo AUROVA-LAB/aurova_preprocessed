@@ -23,10 +23,8 @@ void AckermannToOdomAlgorithm::config_update(Config& config, uint32_t level)
 
 // AckermannToOdomAlgorithm Public API
 void AckermannToOdomAlgorithm::generateNewOdometryMsg(ackermann_msgs::AckermannDriveStamped estimated_ackermann_state,
-                                                      double covariance, sensor_msgs::Imu virtual_imu_msg,
-                                                      nav_msgs::Odometry& odometry,
-                                                      geometry_msgs::TransformStamped& odom_trans,
-                                                      geometry_msgs::TransformStamped& base_trans)
+                                                      sensor_msgs::Imu virtual_imu_msg, nav_msgs::Odometry& odometry,
+                                                      geometry_msgs::TransformStamped& odom_trans)
 {
 
   const float WHEELBASE_METERS = 1.05;
@@ -41,9 +39,6 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg(ackermann_msgs::AckermannD
   static double t_1;
   static double t_2;
   static double first_exec = 1;
-
-  if (covariance == 0.0)
-    covariance = 0.01;
 
   /////////////////////////////////////////////////
   //// POSE AND VELOCITY
@@ -109,10 +104,6 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg(ackermann_msgs::AckermannD
   odometry.twist.twist.angular.x = 0;
   odometry.twist.twist.angular.y = 0;
   odometry.twist.twist.angular.z = 0;
-  for (i = 0; i < COLUMNS; i++)
-  {
-    odometry.twist.covariance[i * ROWS + i] = covariance;
-  }
 
   // Pose
   odometry.pose.pose.position.x = pose_x;
@@ -122,10 +113,6 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg(ackermann_msgs::AckermannD
   odometry.pose.pose.orientation.y = quaternion[1];
   odometry.pose.pose.orientation.z = quaternion[2];
   odometry.pose.pose.orientation.w = quaternion[3];
-  for (i = 0; i < COLUMNS; i++)
-  {
-    odometry.pose.covariance[i * ROWS + i] = covariance;
-  }
   /////////////////////////////////////////////////
 
   ////////////////////////////////////////////////////////////////
@@ -137,13 +124,5 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg(ackermann_msgs::AckermannD
   odom_trans.transform.translation.y = pose_y;
   odom_trans.transform.translation.z = 0.0;
   odom_trans.transform.rotation = tf::createQuaternionMsgFromYaw(orientation_z);
-
-  base_trans.header.frame_id = "base_link";
-  base_trans.child_frame_id = "velodyne";
-  base_trans.header.stamp = ros::Time::now();
-  base_trans.transform.translation.x = 0.55;
-  base_trans.transform.translation.y = 0.0;
-  base_trans.transform.translation.z = 0.0;
-  base_trans.transform.rotation = tf::createQuaternionMsgFromYaw(-0.005);
   ////////////////////////////////////////////////////////////////
 }

@@ -12,8 +12,6 @@ AckermannToOdomAlgNode::AckermannToOdomAlgNode(void) :
   // [init subscribers]
   this->estimated_ackermann_subscriber_ = this->public_node_handle_.subscribe(
       "/estimated_ackermann_state", 1, &AckermannToOdomAlgNode::cb_ackermannState, this);
-  this->covariance_ackermann_subscriber_ = this->public_node_handle_.subscribe(
-      "/covariance_ackermann_state", 1, &AckermannToOdomAlgNode::cd_ackermannCovariance, this);
   this->virtual_imu_subscriber_ = this->public_node_handle_.subscribe("/virtual_imu_data", 1,
                                                                       &AckermannToOdomAlgNode::cb_imuData, this);
 
@@ -33,18 +31,42 @@ AckermannToOdomAlgNode::~AckermannToOdomAlgNode(void)
 
 void AckermannToOdomAlgNode::mainNodeThread(void)
 {
+  bool odom_in_tf;
+  float x_tf;
+  float yaw_tf;
+  std::string frame_id;
+  std::string child_id;
+
+  // [read parameters]
+  this->public_node_handle_.getParam("/odom_in_tf", odom_in_tf);
+  this->public_node_handle_.getParam("/x_tf", x_tf);
+  this->public_node_handle_.getParam("/yaw_tf", yaw_tf);
+  this->public_node_handle_.getParam("/frame_id", frame_id);
+  this->public_node_handle_.getParam("/child_id", child_id);
+
   // [fill msg structures]
-  this->alg_.generateNewOdometryMsg(this->estimated_ackermann_state_, this->covariance_, this->virtual_imu_msg_,
-                                    this->odometry_, this->odom_trans_, this->base_trans_);
+  this->alg_.generateNewOdometryMsg(this->estimated_ackermann_state_, this->virtual_imu_msg_, this->odometry_,
+                                    this->odom_trans_);
+  this->base_trans_.header.frame_id = frame_id;
+  this->base_trans_.child_frame_id = child_id;
+  this->base_trans_.header.stamp = ros::Time::now();
+  this->base_trans_.transform.translation.x = x_tf;
+  this->base_trans_.transform.rotation = tf::createQuaternionMsgFromYaw(yaw_tf);
 
   // [fill srv structure and make request to the server]
 
   // [fill action structure and make request to the action server]
 
   // [publish messages]
-  this->odometry_publisher_.publish(this->odometry_);
-  //this->broadcaster_.sendTransform(this->odom_trans_);
-  //this->broadcaster_.sendTransform(this->base_trans_);
+  if (odom_in_tf)
+  {
+    this->broadcaster_.sendTransform(this->odom_trans_);
+    this->broadcaster_.sendTransform(this->base_trans_);
+  }
+  else
+  {
+    this->odometry_publisher_.publish(this->odometry_);
+  }
 }
 
 /*  [subscriber callbacks] */
@@ -58,15 +80,7 @@ void AckermannToOdomAlgNode::cb_ackermannState(
 
   this->alg_.unlock();
 }
-void AckermannToOdomAlgNode::cd_ackermannCovariance(
-    const ackermann_msgs::AckermannDriveStamped::ConstPtr& covariance_ackermann_state_msg)
-{
-  this->alg_.lock();
 
-  this->covariance_ = covariance_ackermann_state_msg->drive.speed;
-
-  this->alg_.unlock();
-}
 void AckermannToOdomAlgNode::cb_imuData(const sensor_msgs::Imu::ConstPtr& Imu_msg)
 {
   this->alg_.lock();

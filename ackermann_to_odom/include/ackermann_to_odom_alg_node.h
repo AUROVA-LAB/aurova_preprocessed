@@ -37,6 +37,8 @@
 #include "nav_msgs/Odometry.h"
 #include "sensor_msgs/Imu.h"
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
+#include <tf/tf.h>
 
 // [publisher subscriber headers]
 
@@ -53,14 +55,14 @@ class AckermannToOdomAlgNode : public algorithm_base::IriBaseAlgorithm<Ackermann
 {
 private:
 
-  double covariance_; //Covariance to estimated_ackermann_state_
   ackermann_msgs::AckermannDriveStamped estimated_ackermann_state_;
   sensor_msgs::Imu virtual_imu_msg_;
   geometry_msgs::TransformStamped odom_trans_;
   geometry_msgs::TransformStamped base_trans_;
+  tf::TransformBroadcaster broadcaster_;
+  tf::TransformListener listener_;
 
   // [publisher attributes]
-  tf::TransformBroadcaster broadcaster_;
   ros::Publisher odometry_publisher_;
   nav_msgs::Odometry odometry_;
 
@@ -78,11 +80,6 @@ private:
    * \brief Callback for read ackermann messages.
    */
   void cb_ackermannState(const ackermann_msgs::AckermannDriveStamped::ConstPtr& estimated_ackermann_state_msg);
-
-  /**
-   * \brief Callback for read ackermann messages.
-   */
-  void cd_ackermannCovariance(const ackermann_msgs::AckermannDriveStamped::ConstPtr& covariance_ackermann_state_msg);
 
   // [service attributes]
 
@@ -128,6 +125,15 @@ protected:
    * related to the MSG and SRV files) must be updated. ROS publisher objects
    * must publish their data in this process. ROS client servers may also
    * request data to the corresponding server topics.
+   *
+   * In this point we need to read some parameters from rosparam:
+   *
+   * @param odom_in_tf (bool) if this parameter is true, the odometry will publish in the /tf messages
+   * @param x_tf (float) is the transform of the laser in x axis.
+   * @param yaw_tf (float) is the transform of the laser in yaw angle.
+   * @param frame_id (string) is the name of origin frame.
+   * @param child_id (string) is the name of laser frame.
+   *
    */
   void mainNodeThread(void);
 
