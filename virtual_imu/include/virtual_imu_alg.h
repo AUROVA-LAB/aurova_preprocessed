@@ -61,12 +61,6 @@ public:
 
   KalmanFilterPtr estimation_rpy_;
 
-  int first_vel_;
-  int first_run_;
-  float roll_offset_;
-  float pitch_offset_;
-  float yaw_offset_;
-
   /**
    * \brief define config type
    *

@@ -29,17 +29,7 @@ void KalmanFilter::predict(float delta_t, float roll_rate, float pitch_rate, flo
 
 void KalmanFilter::correct(float roll_obs, float pitch_obs, float yaw_obs)
 {
-  //Correction step
-  if (yaw_obs > MIN_CODE * GUARD)
-  {
-    X_[0][0] = roll_obs;
-    X_[1][0] = pitch_obs;
-    X_[2][0] = yaw_obs;
-
-    //debug
-    //ROS_INFO("yaw: [%f]", yaw_obs);
-  }
-
+  // [...]
 }
 
 void KalmanFilter::getState(void)

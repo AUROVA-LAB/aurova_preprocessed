@@ -12,10 +12,6 @@
 #include "ros/ros.h"
 //#include "../libraries/MatrixMath-master/MatrixMath.h" // utilizar eigen
 
-#define MIN_SPEED 0.5
-#define MIN_CODE -77
-#define GUARD 0.8
-
 class KalmanFilter;
 typedef KalmanFilter* KalmanFilterPtr;
 

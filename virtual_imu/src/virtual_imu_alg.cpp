@@ -4,12 +4,6 @@ VirtualImuAlgorithm::VirtualImuAlgorithm(void)
 {
   this->estimation_rpy_ = new KalmanFilter();
 
-  this->first_vel_ = 0;
-  this->first_run_ = 1;
-  this->roll_offset_ = 0.0;
-  this->pitch_offset_ = 0.0;
-  this->yaw_offset_ = 0.0;
-
   pthread_mutex_init(&this->access_, NULL);
 }
 
@@ -62,27 +56,9 @@ void VirtualImuAlgorithm::createVirtualImu(sensor_msgs::Imu originl_imu_msg, sen
   virtual_imu_msg.orientation.y = quaternion[1];
   virtual_imu_msg.orientation.z = quaternion[2];
   virtual_imu_msg.orientation.w = quaternion[3];
-  virtual_imu_msg.orientation_covariance[0] = originl_imu_msg.orientation_covariance[0];
-  virtual_imu_msg.orientation_covariance[4] = originl_imu_msg.orientation_covariance[4];
-  virtual_imu_msg.orientation_covariance[8] = originl_imu_msg.orientation_covariance[8];
 }
 
 void VirtualImuAlgorithm::rpyFromGpsVelocity(float& roll, float& pitch, float& yaw, float x, float y, float z)
 {
-  //extract yaw from velocity
-  float vel_xy = sqrt(pow(x, 2) + pow(y, 2));
-  if (vel_xy >= MIN_SPEED)
-  {
-    yaw = acos(x / vel_xy);
-    if (y < 0.0)
-    {
-      yaw = -1 * yaw;
-    }
-    this->first_vel_ = 1;
-  }
-  else
-  {
-    yaw = MIN_CODE;
-  }
 
 }

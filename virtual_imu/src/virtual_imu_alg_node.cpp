@@ -52,25 +52,8 @@ void VirtualImuAlgNode::cb_imuData(const sensor_msgs::Imu& Imu_msg)
 }
 void VirtualImuAlgNode::cb_gpsVelocity(const geometry_msgs::TwistWithCovarianceStamped& gps_msg)
 {
-  /*
    this->alg_.lock();
-   float roll, pitch, yaw;
-   this->alg_.rpyFromGpsVelocity(roll, pitch, yaw, gps_msg.twist.twist.linear.x, gps_msg.twist.twist.linear.y,
-   gps_msg.twist.twist.linear.z);
-
-   if (this->alg_.first_run_ && this->alg_.first_vel_)
-   {
-   ROS_INFO("first yaw: [%f]", yaw);
-   this->alg_.yaw_offset_ = yaw - this->alg_.estimation_rpy_->X_[2][0];
-   this->alg_.first_run_ = 0;
-   }
-
-   yaw = yaw - this->alg_.yaw_offset_;
-   //this->alg_.estimation_rpy_->correct(0.0, 0.0, yaw);
-   //debug
-   //ROS_INFO("Info Gps: %f", gps_msg.twist.twist.linear.x);
    this->alg_.unlock();
-   */
 }
 
 /*  [service callbacks] */
