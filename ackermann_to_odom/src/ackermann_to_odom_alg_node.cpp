@@ -5,6 +5,12 @@ AckermannToOdomAlgNode::AckermannToOdomAlgNode(void) :
 {
   //init class attributes if necessary
   this->loop_rate_ = 10; //in [Hz]
+  this->virtual_imu_msg_.orientation.x = 0.0;
+  this->virtual_imu_msg_.orientation.y = 0.0;
+  this->virtual_imu_msg_.orientation.z = 0.0;
+  this->virtual_imu_msg_.orientation.w = 1.0;
+  this->estimated_ackermann_state_.drive.speed = 0.0;
+  this->estimated_ackermann_state_.drive.steering_angle = 0.0;
 
   // [init publishers]
   this->odometry_publisher_ = this->public_node_handle_.advertise < nav_msgs::Odometry > ("/odometry", 1);

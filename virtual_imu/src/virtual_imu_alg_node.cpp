@@ -5,14 +5,18 @@ VirtualImuAlgNode::VirtualImuAlgNode(void) :
 {
   //init class attributes if necessary
   this->loop_rate_ = 20; //in [Hz]
+  this->originl_imu_msg_.angular_velocity.x = 0.0;
+  this->originl_imu_msg_.angular_velocity.y = 0.0;
+  this->originl_imu_msg_.angular_velocity.z = 0.0;
+  this->virtual_imu_msg_.angular_velocity.x = 0.0;
+  this->virtual_imu_msg_.angular_velocity.y = 0.0;
+  this->virtual_imu_msg_.angular_velocity.z = 0.0;
 
   // [init publishers]
   this->imu_publisher_ = this->public_node_handle_.advertise < sensor_msgs::Imu > ("/virtual_imu_data", 1);
 
   // [init subscribers]
   this->original_imu_ = this->public_node_handle_.subscribe("/imu/data", 1, &VirtualImuAlgNode::cb_imuData, this);
-  this->gps_velocity_ = this->public_node_handle_.subscribe("/rover/fix_velocity", 1,
-                                                            &VirtualImuAlgNode::cb_gpsVelocity, this);
 
   // [init services]
 
@@ -49,11 +53,6 @@ void VirtualImuAlgNode::cb_imuData(const sensor_msgs::Imu& Imu_msg)
   this->originl_imu_msg_.angular_velocity.y = Imu_msg.angular_velocity.y;
   this->originl_imu_msg_.angular_velocity.z = Imu_msg.angular_velocity.z;
   this->alg_.unlock();
-}
-void VirtualImuAlgNode::cb_gpsVelocity(const geometry_msgs::TwistWithCovarianceStamped& gps_msg)
-{
-   this->alg_.lock();
-   this->alg_.unlock();
 }
 
 /*  [service callbacks] */

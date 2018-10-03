@@ -66,11 +66,6 @@ private:
    */
   void cb_imuData(const sensor_msgs::Imu& Imu_msg);
 
-  /**
-   * \brief Callback for read gps messages, and extract speed for calculate orientation.
-   */
-  void cb_gpsVelocity(const geometry_msgs::TwistWithCovarianceStamped& gps_msg);
-
   // [service attributes]
 
   // [client attributes]
