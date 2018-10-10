@@ -1,0 +1,9 @@
+<launch>
+
+  <param name="/odom_in_tf"  value="false" />
+
+  <node pkg="virtual_imu" type="virtual_imu" name="virtual_imu" />
+
+  <node pkg="ackermann_to_odom" type="ackermann_to_odom" name="ackermann_to_odom" />
+
+</launch>
