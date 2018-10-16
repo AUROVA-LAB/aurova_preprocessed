@@ -12,6 +12,8 @@
 #include "ros/ros.h"
 //#include "../libraries/MatrixMath-master/MatrixMath.h" // utilizar eigen
 
+#define MAX_DIFF 0.56
+
 class KalmanFilter;
 typedef KalmanFilter* KalmanFilterPtr;
 

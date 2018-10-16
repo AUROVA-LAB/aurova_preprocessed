@@ -38,6 +38,8 @@
 #include "sensor_msgs/Imu.h"
 #include <tf/transform_broadcaster.h>
 
+#define MAX_DIFF 1.5
+
 //include ackermann_to_odom_alg main library
 
 /**

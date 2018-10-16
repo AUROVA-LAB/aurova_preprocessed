@@ -86,8 +86,17 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg(ackermann_msgs::AckermannD
 
   // For next step
   //orientation_z_prev = orientation_z;
-  pose_x_prev = pose_x;
-  pose_y_prev = pose_y;
+  if (abs(pose_x_prev - pose_x) < MAX_DIFF && abs(pose_y_prev - pose_y) < MAX_DIFF)
+  {
+    pose_x_prev = pose_x;
+    pose_y_prev = pose_y;
+  }
+  else
+  {
+    pose_x = pose_x_prev;
+    pose_y = pose_y_prev;
+
+  }
   /////////////////////////////////////////////////
 
   /////////////////////////////////////////////////
