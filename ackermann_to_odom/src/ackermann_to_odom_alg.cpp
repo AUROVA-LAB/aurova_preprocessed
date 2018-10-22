@@ -51,7 +51,10 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg(ackermann_msgs::AckermannD
   t_1 = (double)ros::Time::now().toSec();
   float delta_t = (float)(t_1 - t_2);
   t_2 = (double)ros::Time::now().toSec();
+
+  //read information of low-level sensor
   float lineal_speed = estimated_ackermann_state.drive.speed;
+  float steering_radians = estimated_ackermann_state.drive.steering_angle * M_PI / 180.0;
 
   //angle
   tf::Quaternion q(virtual_imu_msg.orientation.x, virtual_imu_msg.orientation.y, virtual_imu_msg.orientation.z,
@@ -61,18 +64,10 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg(ackermann_msgs::AckermannD
   m.getRPY(roll, pitch, yaw);
   orientation_z = yaw;
   tf::Quaternion quaternion = tf::createQuaternionFromRPY(0, 0, orientation_z);
-  /*
-   double steering_radians = estimated_ackermann_state.drive.steering_angle * M_PI / 180.0;
-   float angular_speed_z   = (lineal_speed / WHEELBASE_METERS) * tan(steering_radians);
-   orientation_z           = orientation_z_prev + angular_speed_z*delta_t;
-   if (abs(orientation_z) >= (2.0 * M_PI))
-   orientation_z = orientation_z - (2.0 * M_PI);
-   tf::Quaternion quaternion = tf::createQuaternionFromRPY(0, 0, orientation_z);
-   */
 
   //pose
-  float lineal_speed_x = lineal_speed * cos(orientation_z);
-  float lineal_speed_y = lineal_speed * sin(orientation_z);
+  float lineal_speed_x = lineal_speed * cos(orientation_z) * cos(steering_radians);
+  float lineal_speed_y = lineal_speed * sin(orientation_z) * cos(steering_radians);
   float pose_x = pose_x_prev + lineal_speed_x * delta_t;
   float pose_y = pose_y_prev + lineal_speed_y * delta_t;
   if (isnan(orientation_z))

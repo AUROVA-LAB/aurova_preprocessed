@@ -68,6 +68,7 @@ void AckermannToOdomAlgNode::mainNodeThread(void)
   {
     this->broadcaster_.sendTransform(this->odom_trans_);
     this->broadcaster_.sendTransform(this->base_trans_);
+    this->odometry_publisher_.publish(this->odometry_);
   }
   else
   {
