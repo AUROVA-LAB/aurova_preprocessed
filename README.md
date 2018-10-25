@@ -3,7 +3,10 @@ This is a metapackage that contains different packages that perform processes re
 
 **ackermann_to_odom**
 This package contains a node that, as input, reads the topics /estimated_ackermann_state and /covariance_ackermann_state, of type ackermann_msgs::AckermannDriveStamped, and /virtual_imu_data of type sensor_msgs::Imu. This node parse this information as a new message type nav_msgs::Odometry using the 2D tricicle model. This message is published in an output topic called /odometry.
-* ~odom_in_tf (default: false): 
+* ~odom_in_tf (default: false): If this parameter is set to true, the odometry is also published in /tf topic.
+* ~scan_in_tf (default: false): If this parameter is set to true, the laser transform read from the static robot transformation is published in /tf topic.
+* ~frame_id (default: ""): This parameter is the name of frame to transform if scan_in_tf is true.
+* ~child_id (default: ""): This parameter is the name of child frame to transform if scan_in_tf is true.
 
 **virtual_imu**
-This package contains a node that, as input, read the topic /rover/fix_velocity, of type geometry_msgs::TwistWithCovarianceStamped, and /imu/data of type sensor_msgs::Imu. This node generate a new sensor_msgs::Imu that contains the estimation of orientation integrating rpy a fix_velocity with a kalman filter. The node output is published in the topic /virtual_imu_data. 
+This package contains a node that, as input, read the topic /imu/data of type sensor_msgs::Imu. This node generate a new sensor_msgs::Imu that contains the estimation of orientation integrating rpy. The node output is published in the topic /virtual_imu_data. 
