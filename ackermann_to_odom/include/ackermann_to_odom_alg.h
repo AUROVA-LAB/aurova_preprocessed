@@ -162,7 +162,7 @@ public:
    * @param odom_trans is the odometry transform in /tf message.
    * @param base_trans is the laser transform in /tf message.
    */
-  void generateNewOdometryMsg(ackermann_msgs::AckermannDriveStamped estimated_ackermann_state,
+  void generateNewOdometryMsg2D(ackermann_msgs::AckermannDriveStamped estimated_ackermann_state,
                               sensor_msgs::Imu virtual_imu_ms, nav_msgs::Odometry& odometry,
                               geometry_msgs::TransformStamped& odom_trans);
 };

@@ -58,7 +58,7 @@ private:
   ackermann_msgs::AckermannDriveStamped estimated_ackermann_state_;
   sensor_msgs::Imu virtual_imu_msg_;
   geometry_msgs::TransformStamped odom_trans_;
-  geometry_msgs::TransformStamped base_trans_;
+  tf::StampedTransform scan_trans_;
   tf::TransformBroadcaster broadcaster_;
   tf::TransformListener listener_;
 

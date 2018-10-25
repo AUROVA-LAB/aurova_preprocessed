@@ -22,23 +22,19 @@ void AckermannToOdomAlgorithm::config_update(Config& config, uint32_t level)
 }
 
 // AckermannToOdomAlgorithm Public API
-void AckermannToOdomAlgorithm::generateNewOdometryMsg(ackermann_msgs::AckermannDriveStamped estimated_ackermann_state,
+void AckermannToOdomAlgorithm::generateNewOdometryMsg2D(ackermann_msgs::AckermannDriveStamped estimated_ackermann_state,
                                                       sensor_msgs::Imu virtual_imu_msg, nav_msgs::Odometry& odometry,
                                                       geometry_msgs::TransformStamped& odom_trans)
 {
 
-  const float WHEELBASE_METERS = 1.05;
-  const int ROWS = 6;
-  const int COLUMNS = 6;
-
   int i, j;
-  float orientation_z = 0;
-  static float orientation_z_prev = 0;
+  float pose_yaw = 0;
+  static float pose_yaw_prev = 0;
   static float pose_x_prev = 0;
   static float pose_y_prev = 0;
   static double t_1;
   static double t_2;
-  static double first_exec = 1;
+  static bool first_exec = true;
 
   /////////////////////////////////////////////////
   //// POSE AND VELOCITY
@@ -46,7 +42,7 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg(ackermann_msgs::AckermannD
   if (first_exec)
   {
     t_2 = (double)ros::Time::now().toSec();
-    first_exec = 0;
+    first_exec = false;
   }
   t_1 = (double)ros::Time::now().toSec();
   float delta_t = (float)(t_1 - t_2);
@@ -62,15 +58,15 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg(ackermann_msgs::AckermannD
   tf::Matrix3x3 m(q);
   double roll, pitch, yaw;
   m.getRPY(roll, pitch, yaw);
-  orientation_z = yaw;
-  tf::Quaternion quaternion = tf::createQuaternionFromRPY(0, 0, orientation_z);
+  pose_yaw = yaw;
+  tf::Quaternion quaternion = tf::createQuaternionFromRPY(0, 0, pose_yaw);
 
   //pose
-  float lineal_speed_x = lineal_speed * cos(orientation_z) * cos(steering_radians);
-  float lineal_speed_y = lineal_speed * sin(orientation_z) * cos(steering_radians);
+  float lineal_speed_x = lineal_speed * cos(pose_yaw) * cos(steering_radians);
+  float lineal_speed_y = lineal_speed * sin(pose_yaw) * cos(steering_radians);
   float pose_x = pose_x_prev + lineal_speed_x * delta_t;
   float pose_y = pose_y_prev + lineal_speed_y * delta_t;
-  if (isnan(orientation_z))
+  if (isnan(pose_yaw))
   {
     lineal_speed_x = 0.0;
     lineal_speed_y = 0.0;
@@ -80,7 +76,6 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg(ackermann_msgs::AckermannD
   }
 
   // For next step
-  //orientation_z_prev = orientation_z;
   if (abs(pose_x_prev - pose_x) < MAX_DIFF && abs(pose_y_prev - pose_y) < MAX_DIFF)
   {
     pose_x_prev = pose_x;
@@ -127,6 +122,6 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg(ackermann_msgs::AckermannD
   odom_trans.transform.translation.x = pose_x;
   odom_trans.transform.translation.y = pose_y;
   odom_trans.transform.translation.z = 0.0;
-  odom_trans.transform.rotation = tf::createQuaternionMsgFromYaw(orientation_z);
+  odom_trans.transform.rotation = tf::createQuaternionMsgFromYaw(pose_yaw);
   ////////////////////////////////////////////////////////////////
 }

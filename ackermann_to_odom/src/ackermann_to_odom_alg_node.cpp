@@ -37,27 +37,36 @@ AckermannToOdomAlgNode::~AckermannToOdomAlgNode(void)
 
 void AckermannToOdomAlgNode::mainNodeThread(void)
 {
-  bool odom_in_tf;
-  float x_tf;
-  float yaw_tf;
-  std::string frame_id;
-  std::string child_id;
+  static bool first_exec = true;
+  static bool odom_in_tf;
+  static bool scan_in_tf;
+  static std::string frame_id;
+  static std::string child_id;
 
   // [read parameters]
-  this->public_node_handle_.getParam("/odom_in_tf", odom_in_tf);
-  this->public_node_handle_.getParam("/x_tf", x_tf);
-  this->public_node_handle_.getParam("/yaw_tf", yaw_tf);
-  this->public_node_handle_.getParam("/frame_id", frame_id);
-  this->public_node_handle_.getParam("/child_id", child_id);
+  if (first_exec)
+  {
+    this->public_node_handle_.getParam("/odom_in_tf", odom_in_tf);
+    this->public_node_handle_.getParam("/scan_in_tf", scan_in_tf);
+    this->public_node_handle_.getParam("/frame_id", frame_id);
+    this->public_node_handle_.getParam("/child_id", child_id);
+    first_exec = false;
+  }
+
+  // [listen transform]
+  try
+  {
+    this->listener_.lookupTransform(frame_id, child_id, ros::Time(0), this->scan_trans_);
+  }
+  catch (tf::TransformException ex)
+  {
+    ROS_ERROR("%s", ex.what());
+    ros::Duration(1.0).sleep();
+  }
 
   // [fill msg structures]
-  this->alg_.generateNewOdometryMsg(this->estimated_ackermann_state_, this->virtual_imu_msg_, this->odometry_,
+  this->alg_.generateNewOdometryMsg2D(this->estimated_ackermann_state_, this->virtual_imu_msg_, this->odometry_,
                                     this->odom_trans_);
-  this->base_trans_.header.frame_id = frame_id;
-  this->base_trans_.child_frame_id = child_id;
-  this->base_trans_.header.stamp = ros::Time::now();
-  this->base_trans_.transform.translation.x = x_tf;
-  this->base_trans_.transform.rotation = tf::createQuaternionMsgFromYaw(yaw_tf);
 
   // [fill srv structure and make request to the server]
 
@@ -67,13 +76,13 @@ void AckermannToOdomAlgNode::mainNodeThread(void)
   if (odom_in_tf)
   {
     this->broadcaster_.sendTransform(this->odom_trans_);
-    this->broadcaster_.sendTransform(this->base_trans_);
-    this->odometry_publisher_.publish(this->odometry_);
   }
-  else
+  if (scan_in_tf)
   {
-    this->odometry_publisher_.publish(this->odometry_);
+    this->broadcaster_.sendTransform(this->scan_trans_);
   }
+
+  this->odometry_publisher_.publish(this->odometry_);
 }
 
 /*  [subscriber callbacks] */
