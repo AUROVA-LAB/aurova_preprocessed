@@ -23,8 +23,8 @@ void AckermannToOdomAlgorithm::config_update(Config& config, uint32_t level)
 
 // AckermannToOdomAlgorithm Public API
 void AckermannToOdomAlgorithm::generateNewOdometryMsg2D(ackermann_msgs::AckermannDriveStamped estimated_ackermann_state,
-                                                      sensor_msgs::Imu virtual_imu_msg, nav_msgs::Odometry& odometry,
-                                                      geometry_msgs::TransformStamped& odom_trans)
+                                                      sensor_msgs::Imu virtual_imu_msg, geometry_msgs::PoseWithCovarianceStamped& odometry_pose,
+                                                      nav_msgs::Odometry& odometry, geometry_msgs::TransformStamped& odom_trans)
 {
 
   int i, j;
@@ -95,6 +95,8 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg2D(ackermann_msgs::Ackerman
   odometry.header.stamp = ros::Time::now();
   odometry.header.frame_id = "odom";
   odometry.child_frame_id = "base_link";
+  odometry_pose.header.stamp = ros::Time::now();
+  odometry_pose.header.frame_id = "odom";
 
   // Twist
   odometry.twist.twist.linear.x = lineal_speed_x;
@@ -112,6 +114,13 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg2D(ackermann_msgs::Ackerman
   odometry.pose.pose.orientation.y = quaternion[1];
   odometry.pose.pose.orientation.z = quaternion[2];
   odometry.pose.pose.orientation.w = quaternion[3];
+  odometry_pose.pose.pose.position.x = pose_x;
+  odometry_pose.pose.pose.position.y = pose_y;
+  odometry_pose.pose.pose.position.z = 0;
+  odometry_pose.pose.pose.orientation.x = quaternion[0];
+  odometry_pose.pose.pose.orientation.y = quaternion[1];
+  odometry_pose.pose.pose.orientation.z = quaternion[2];
+  odometry_pose.pose.pose.orientation.w = quaternion[3];
   /////////////////////////////////////////////////
 
   ////////////////////////////////////////////////////////////////

@@ -14,6 +14,7 @@ AckermannToOdomAlgNode::AckermannToOdomAlgNode(void) :
 
   // [init publishers]
   this->odometry_publisher_ = this->public_node_handle_.advertise < nav_msgs::Odometry > ("/odometry", 1);
+  this->pose_publisher_ = this->public_node_handle_.advertise < geometry_msgs::PoseWithCovarianceStamped > ("/odometry_pose", 1);
 
   // [init subscribers]
   this->estimated_ackermann_subscriber_ = this->public_node_handle_.subscribe(
@@ -65,8 +66,8 @@ void AckermannToOdomAlgNode::mainNodeThread(void)
   }
 
   // [fill msg structures]
-  this->alg_.generateNewOdometryMsg2D(this->estimated_ackermann_state_, this->virtual_imu_msg_, this->odometry_,
-                                    this->odom_trans_);
+  this->alg_.generateNewOdometryMsg2D(this->estimated_ackermann_state_, this->virtual_imu_msg_, this->odometry_pose_,
+                                      this->odometry_, this->odom_trans_);
 
   // [fill srv structure and make request to the server]
 
@@ -83,6 +84,7 @@ void AckermannToOdomAlgNode::mainNodeThread(void)
   }
 
   this->odometry_publisher_.publish(this->odometry_);
+  this->pose_publisher_.publish(this->odometry_pose_);
 }
 
 /*  [subscriber callbacks] */

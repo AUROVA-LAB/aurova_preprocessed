@@ -34,6 +34,7 @@
 #include <iri_base_algorithm/iri_base_algorithm.h>
 #include "ackermann_to_odom_alg.h"
 #include "ackermann_msgs/AckermannDriveStamped.h"
+#include "geometry_msgs/PoseWithCovarianceStamped.h"
 #include "nav_msgs/Odometry.h"
 #include "sensor_msgs/Imu.h"
 #include <tf/transform_broadcaster.h>
@@ -61,10 +62,12 @@ private:
   tf::StampedTransform scan_trans_;
   tf::TransformBroadcaster broadcaster_;
   tf::TransformListener listener_;
+  nav_msgs::Odometry odometry_;
+  geometry_msgs::PoseWithCovarianceStamped odometry_pose_;
 
   // [publisher attributes]
   ros::Publisher odometry_publisher_;
-  nav_msgs::Odometry odometry_;
+  ros::Publisher pose_publisher_;
 
   // [subscriber attributes]
   ros::Subscriber estimated_ackermann_subscriber_;

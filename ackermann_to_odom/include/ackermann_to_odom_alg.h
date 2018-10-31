@@ -34,6 +34,7 @@
 #include <ackermann_to_odom/AckermannToOdomConfig.h>
 #include "ackermann_to_odom_alg.h"
 #include "ackermann_msgs/AckermannDriveStamped.h"
+#include "geometry_msgs/PoseWithCovarianceStamped.h"
 #include "nav_msgs/Odometry.h"
 #include "sensor_msgs/Imu.h"
 #include <tf/transform_broadcaster.h>
@@ -163,8 +164,9 @@ public:
    * @param base_trans is the laser transform in /tf message.
    */
   void generateNewOdometryMsg2D(ackermann_msgs::AckermannDriveStamped estimated_ackermann_state,
-                              sensor_msgs::Imu virtual_imu_ms, nav_msgs::Odometry& odometry,
-                              geometry_msgs::TransformStamped& odom_trans);
+                                sensor_msgs::Imu virtual_imu_ms,
+                                geometry_msgs::PoseWithCovarianceStamped& odometry_pose, nav_msgs::Odometry& odometry,
+                                geometry_msgs::TransformStamped& odom_trans);
 };
 
 #endif
