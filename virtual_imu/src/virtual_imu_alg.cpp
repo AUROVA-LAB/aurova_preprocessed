@@ -56,6 +56,9 @@ void VirtualImuAlgorithm::createVirtualImu(sensor_msgs::Imu originl_imu_msg, sen
   virtual_imu_msg.orientation.y = quaternion[1];
   virtual_imu_msg.orientation.z = quaternion[2];
   virtual_imu_msg.orientation.w = quaternion[3];
+  virtual_imu_msg.orientation_covariance[0] = 0.5;
+  virtual_imu_msg.orientation_covariance[4] = 0.5;
+  virtual_imu_msg.orientation_covariance[8] = 0.5;
 }
 
 void VirtualImuAlgorithm::rpyFromGpsVelocity(float& roll, float& pitch, float& yaw, float x, float y, float z)

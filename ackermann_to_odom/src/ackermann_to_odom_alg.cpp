@@ -121,6 +121,9 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg2D(ackermann_msgs::Ackerman
   odometry_pose.pose.pose.orientation.y = quaternion[1];
   odometry_pose.pose.pose.orientation.z = quaternion[2];
   odometry_pose.pose.pose.orientation.w = quaternion[3];
+  odometry_pose.pose.covariance[0] = 0.5;
+  odometry_pose.pose.covariance[7] = 0.5;
+  odometry_pose.pose.covariance[35] = 0.5;
   /////////////////////////////////////////////////
 
   ////////////////////////////////////////////////////////////////
