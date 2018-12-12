@@ -56,7 +56,7 @@ void GpsToOdomAlgNode::cb_getGpsOdomMsg(const nav_msgs::Odometry::ConstPtr& odom
   this->odom_gps_.child_frame_id = odom_msg->child_frame_id;
   this->odom_gps_.pose.pose.position = odom_msg->pose.pose.position;
   this->odom_gps_.pose.covariance = odom_msg->pose.covariance;
-  this->odom_gps_.pose.covariance[35] = 0.1;
+  this->odom_gps_.pose.covariance[35] = 0.05;
   this->flag_publish_odom_ = true;
 
   this->alg_.unlock();
