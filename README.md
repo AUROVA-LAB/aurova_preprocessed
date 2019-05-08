@@ -8,5 +8,8 @@ This package contains a node that, as input, reads the topics /estimated_ackerma
 * ~frame_id (default: ""): This parameter is the name of frame to transform if scan_in_tf is true.
 * ~child_id (default: ""): This parameter is the name of child frame to transform if scan_in_tf is true.
 
+**gps_to_odom**
+This package contains a node that, as input, reads the topics /odometry_gps_fix, of type nav_msgs::Odometry, and /rover/fix_velocity of type geometry_msgs::TwistWithCovariance. This node calculate the orientation using the velocities from gps, and generate new odometry (message type  type nav_msgs::Odometry) with the information provided by /odometry_gps_fix. This message is published in output topic called /odometry_gps.
+
 **virtual_imu**
 This package contains a node that, as input, read the topic /imu/data of type sensor_msgs::Imu. This node generate a new sensor_msgs::Imu that contains the estimation of orientation integrating rpy. The node output is published in the topic /virtual_imu_data. 
