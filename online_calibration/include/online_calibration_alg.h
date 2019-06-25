@@ -186,9 +186,14 @@ public:
    * @param color_map: is the image information in the locations that each laser point has projected.
    * @param plot_image: is the input image with the laser points plotted.
    */
-  void sensorFusion(cv::Mat last_image, sensor_msgs::PointCloud2 msg,
-                    image_geometry::PinholeCameraModel cam_model, std::string frame_id, ros::Time acquisition_time,
-                    tf::TransformListener& tf_listener, cv::Mat& deph_map, cv::Mat& color_map, cv::Mat& plot_image);
+  void sensorFusion(cv::Mat last_image, sensor_msgs::PointCloud2 msg, image_geometry::PinholeCameraModel cam_model,
+                    std::string frame_id, ros::Time acquisition_time, tf::TransformListener& tf_listener,
+                    cv::Mat& deph_map, cv::Mat& color_map, cv::Mat& plot_image);
+
+  /**
+   * TODO: doxygen comments
+   */
+  void featureMatching(cv::Mat& deph_map, cv::Mat& color_map);
 };
 
 #endif

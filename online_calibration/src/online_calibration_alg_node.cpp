@@ -15,7 +15,6 @@ OnlineCalibrationAlgNode::OnlineCalibrationAlgNode(void) :
   this->color_publisher_ = it_.advertise("/color_out", 1);
 
   // [init subscribers]
-  // TODO: get "/image" from parameter
   this->camera_subscriber_ = it_.subscribeCamera("/image", 1, &OnlineCalibrationAlgNode::cb_imageInfo, this);
   this->lidar_subscriber_ = this->public_node_handle_.subscribe("/velodyne_points", 1,
                                                                 &OnlineCalibrationAlgNode::cb_lidarInfo, this);
@@ -52,7 +51,8 @@ void OnlineCalibrationAlgNode::cb_imageInfo(const sensor_msgs::ImageConstPtr& im
 {
   this->alg_.lock();
 
-  // transform image from ROS to OpenCV an save in class variables
+  //////////////////////////////////////////////////////
+  //// transform image from ROS to OpenCV and save in class variables
   try
   {
     this->input_bridge_ = cv_bridge::toCvCopy(image_msg, sensor_msgs::image_encodings::BGR8);
@@ -66,7 +66,8 @@ void OnlineCalibrationAlgNode::cb_imageInfo(const sensor_msgs::ImageConstPtr& im
     return;
   }
 
-  // save camera model and timestamp in class variables.
+  //////////////////////////////////////////////////////
+  //// save camera model and timestamp in class variables.
   this->cam_model_.fromCameraInfo(info_msg);
   this->acquisition_time_ = info_msg->header.stamp;
 
@@ -79,23 +80,25 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
 
   std_msgs::Header header; // empty header
   header.stamp = ros::Time::now(); // time
-
   cv::Mat deph_map_plot;
   cv::Mat color_map_plot;
   cv::Mat deph_map;
   cv::Mat color_map;
 
-  this->alg_.sensorFusion(this->last_image_, *msg,
-                          this->cam_model_, this->frame_id_, this->acquisition_time_,
+  //////////////////////////////////////////////////////
+  //// fusion camera and lidar information
+  this->alg_.sensorFusion(this->last_image_, *msg, this->cam_model_, this->frame_id_, this->acquisition_time_,
                           this->tf_listener_, deph_map, color_map, this->plot_image_);
 
+  //////////////////////////////////////////////////////
+  //// get match features between laser and lidar info
+  this->alg_.featureMatching(deph_map, color_map);
 
+  //////////////////////////////////////////////////////
+  //// publish in image topic
+  cv_bridge::CvImage output_bridge;
   cv::resize(deph_map, deph_map_plot, cv::Size(), 1.0, 8.0);
   cv::resize(color_map, color_map_plot, cv::Size(), 1.0, 8.0);
-
-  /////////////////////////////////////////////
-  // publish in image topic
-  cv_bridge::CvImage output_bridge;
   this->plot_publisher_.publish(this->input_bridge_plt_->toImageMsg());
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, deph_map_plot);
   this->depth_publisher_.publish(output_bridge.toImageMsg());

@@ -65,7 +65,7 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
   pcl_conversions::toPCL(msg, aux_input);
   pcl::fromPCLPointCloud2(aux_input, *cloud_pcl_orig);
 
-  /****** get fiel of view and save index correspondence between cloud and image ******/
+  /****** get field of view and save index correspondence between cloud and image ******/
   float max_elevation = -10000.0;
   float min_elevation = 10000.0;
   float max_azimut = -10000.0;
@@ -162,6 +162,12 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
   }
   fillGraps(deph_map);
   fillGraps(color_map);
+
+  return;
+}
+
+void OnlineCalibrationAlgorithm::featureMatching(cv::Mat& deph_map, cv::Mat& color_map)
+{
 
   return;
 }
