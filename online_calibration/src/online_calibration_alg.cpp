@@ -3,6 +3,7 @@
 void point2SphericalGrid(pcl::PointXYZI point, struct SensorConfiguration lidar_configuration, int& row, int& col);
 void cartesian2SphericalInDegrees(float x, float y, float z, float& range, float& azimuth, float& elevation);
 void fillGraps(cv::Mat& image);
+float colorMap(float dist, float factor, int base);
 
 OnlineCalibrationAlgorithm::OnlineCalibrationAlgorithm(void)
 {
@@ -28,11 +29,12 @@ void OnlineCalibrationAlgorithm::config_update(Config& config, uint32_t level)
 void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::PointCloud2 msg,
                                               image_geometry::PinholeCameraModel cam_model, std::string frame_id,
                                               ros::Time acquisition_time, tf::TransformListener& tf_listener,
-                                              cv::Mat& deph_map, cv::Mat& color_map, cv::Mat& plot_image)
+                                              cv::Mat& depth_map, cv::Mat& color_map, cv::Mat& plot_image)
 {
 
   /****** variable declarations ******/
   int i, j, k;
+  float factor_color = 80.0; //TODO: get from param
   int rows = last_image.rows;
   int cols = last_image.cols;
   int index[rows][cols];
@@ -109,9 +111,8 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
 
         // representation in image
         static const int RADIUS = 3;
-        float factor_color = 4.5; //TODO: get from param
         float r = 0.0;
-        float g = (cloud_pcl->points[i].z / factor_color - 1) * -1 * 255;
+        float g = colorMap(cloud_pcl->points[i].z, factor_color, 255);
         float b = 0.0;
         cv::circle(plot_image, uv, RADIUS, CV_RGB(r, g, b), -1);
       }
@@ -133,12 +134,11 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
                        0.0);
   cv::Mat color_map_aux(this->sens_config_.num_of_elevation_cells, this->sens_config_.num_of_azimuth_cells, CV_8UC3,
                         0.0);
-  deph_map_aux.copyTo(deph_map);
+  deph_map_aux.copyTo(depth_map);
   color_map_aux.copyTo(color_map);
 
   /****** generate deph laser map using spherical representation, and its corresponds image information ******/
   int u = 0, v = 0;
-  float factor_color = 4.5; //TODO: get from param
   for (i = 0; i < cols; i++)
   {
     for (j = 0; j < rows; j++)
@@ -149,9 +149,9 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
         point2SphericalGrid(cloud_pcl_orig->points[k], this->sens_config_, v, u);
         if (u != -1) //// TODO: generate tag
         {
-          deph_map.at < cv::Vec3b > (v, u)[0] = (cloud_pcl->points[k].z / factor_color - 1) * -1 * 255;
-          deph_map.at < cv::Vec3b > (v, u)[1] = (cloud_pcl->points[k].z / factor_color - 1) * -1 * 255;
-          deph_map.at < cv::Vec3b > (v, u)[2] = (cloud_pcl->points[k].z / factor_color - 1) * -1 * 255;
+          depth_map.at < cv::Vec3b > (v, u)[0] = colorMap(cloud_pcl->points[k].z, factor_color, 255);
+          depth_map.at < cv::Vec3b > (v, u)[1] = colorMap(cloud_pcl->points[k].z, factor_color, 255);
+          depth_map.at < cv::Vec3b > (v, u)[2] = colorMap(cloud_pcl->points[k].z, factor_color, 255);
           color_map.at < cv::Vec3b > (v, u)[0] = 0.21 * last_image.at < cv::Vec3b > (j, i)[2] + 0.72 * last_image.at
               < cv::Vec3b > (j, i)[1] + 0.07 * last_image.at < cv::Vec3b > (j, i)[0];
           color_map.at < cv::Vec3b > (v, u)[1] = color_map.at < cv::Vec3b > (v, u)[0];
@@ -160,14 +160,41 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
       }
     }
   }
-  fillGraps(deph_map);
+  fillGraps(depth_map);
   fillGraps(color_map);
 
   return;
 }
 
-void OnlineCalibrationAlgorithm::featureMatching(cv::Mat& deph_map, cv::Mat& color_map)
+void OnlineCalibrationAlgorithm::featureMatching(cv::Mat& depth_map, cv::Mat& color_map, cv::Mat& image_matches)
 {
+
+  // Variables to store keypoints and descriptors.
+  std::vector<cv::KeyPoint> kp_depth, kp_color;
+  cv::Mat des_depth, des_color;
+
+  // Detect ORB features and compute descriptors.
+  cv::Ptr < cv::Feature2D > orb = cv::ORB::create(MAX_FEATURES);
+  orb->detectAndCompute(depth_map, cv::Mat(), kp_depth, des_depth);
+  orb->detectAndCompute(color_map, cv::Mat(), kp_color, des_color);
+
+  // Match features.
+  std::vector < cv::DMatch > matches;
+  cv::Ptr < cv::DescriptorMatcher > matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
+  matcher->match(des_depth, des_color, matches, cv::Mat());
+
+  // Remove not so good matches
+  const int num_good_matches = GOOD_MATCH_NUM;
+  if (matches.size() > num_good_matches)
+    matches.erase(matches.begin() + num_good_matches, matches.end());
+
+  // Draw top matches
+  cv::drawMatches(depth_map, kp_depth, color_map, kp_color, matches, image_matches);
+
+  //debug
+  //ROS_INFO("matches size: %d", matches.size());
+  //ROS_INFO("keypoints depth size: %d", kp_depth.size());
+  //ROS_INFO("keypoints color size: %d", kp_color.size());
 
   return;
 }
@@ -258,4 +285,18 @@ void fillGraps(cv::Mat& image)
     }
   }
   return;
+}
+
+float colorMap(float dist, float factor, int base)
+{
+  float color_map;
+
+  color_map = (dist / factor - 1) * -1 * base;
+
+  if (color_map < 0.0)
+  {
+    color_map = 0.0;
+  }
+
+  return color_map;
 }

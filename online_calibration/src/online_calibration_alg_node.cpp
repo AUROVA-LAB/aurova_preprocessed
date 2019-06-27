@@ -13,6 +13,7 @@ OnlineCalibrationAlgNode::OnlineCalibrationAlgNode(void) :
   this->plot_publisher_ = it_.advertise("/plot_out", 1);
   this->depth_publisher_ = it_.advertise("/depth_out", 1);
   this->color_publisher_ = it_.advertise("/color_out", 1);
+  this->matches_publisher_ = it_.advertise("/matches_out", 1);
 
   // [init subscribers]
   this->camera_subscriber_ = it_.subscribeCamera("/image", 1, &OnlineCalibrationAlgNode::cb_imageInfo, this);
@@ -80,30 +81,36 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
 
   std_msgs::Header header; // empty header
   header.stamp = ros::Time::now(); // time
-  cv::Mat deph_map_plot;
+  cv::Mat depth_map_plot;
   cv::Mat color_map_plot;
-  cv::Mat deph_map;
+  cv::Mat image_matches_plot;
+  cv::Mat depth_map;
   cv::Mat color_map;
+  cv::Mat image_matches;
 
   //////////////////////////////////////////////////////
   //// fusion camera and lidar information
   this->alg_.sensorFusion(this->last_image_, *msg, this->cam_model_, this->frame_id_, this->acquisition_time_,
-                          this->tf_listener_, deph_map, color_map, this->plot_image_);
+                          this->tf_listener_, depth_map, color_map, this->plot_image_);
 
   //////////////////////////////////////////////////////
   //// get match features between laser and lidar info
-  this->alg_.featureMatching(deph_map, color_map);
+  float resize_factor = 6.0; // TODO: get from parameter
+  cv::resize(depth_map, depth_map_plot, cv::Size(), 1.0, resize_factor);
+  cv::resize(color_map, color_map_plot, cv::Size(), 1.0, resize_factor);
+  this->alg_.featureMatching(depth_map_plot, color_map_plot, image_matches);
 
   //////////////////////////////////////////////////////
-  //// publish in image topic
+  //// publish in image topics
   cv_bridge::CvImage output_bridge;
-  cv::resize(deph_map, deph_map_plot, cv::Size(), 1.0, 8.0);
-  cv::resize(color_map, color_map_plot, cv::Size(), 1.0, 8.0);
+  cv::resize(image_matches, image_matches_plot, cv::Size(), 1.0, 1.0);
   this->plot_publisher_.publish(this->input_bridge_plt_->toImageMsg());
-  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, deph_map_plot);
+  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, depth_map_plot);
   this->depth_publisher_.publish(output_bridge.toImageMsg());
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, color_map_plot);
   this->color_publisher_.publish(output_bridge.toImageMsg());
+  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_matches_plot);
+  this->matches_publisher_.publish(output_bridge.toImageMsg());
 
   this->alg_.unlock();
 }

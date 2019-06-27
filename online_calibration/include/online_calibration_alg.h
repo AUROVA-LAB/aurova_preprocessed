@@ -47,6 +47,10 @@
 
 //include online_calibration_alg main library
 
+#define MAX_FEATURES 500
+#define GOOD_MATCH_PERCENT 0.15
+#define GOOD_MATCH_NUM 4
+
 struct SensorConfiguration
 {
   float max_elevation_angle;
@@ -188,12 +192,12 @@ public:
    */
   void sensorFusion(cv::Mat last_image, sensor_msgs::PointCloud2 msg, image_geometry::PinholeCameraModel cam_model,
                     std::string frame_id, ros::Time acquisition_time, tf::TransformListener& tf_listener,
-                    cv::Mat& deph_map, cv::Mat& color_map, cv::Mat& plot_image);
+                    cv::Mat& depth_map, cv::Mat& color_map, cv::Mat& plot_image);
 
   /**
    * TODO: doxygen comments
    */
-  void featureMatching(cv::Mat& deph_map, cv::Mat& color_map);
+  void featureMatching(cv::Mat& depth_map, cv::Mat& color_map, cv::Mat& image_matches);
 };
 
 #endif
