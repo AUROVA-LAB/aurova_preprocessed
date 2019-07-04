@@ -64,6 +64,7 @@ void OnlineCalibrationAlgNode::cb_imageInfo(const sensor_msgs::ImageConstPtr& im
   catch (cv_bridge::Exception& ex)
   {
     ROS_ERROR("[draw_frames] Failed to convert image");
+    ROS_ERROR("Could not convert from '%s' to 'bgr8'.", image_msg->encoding.c_str());
     return;
   }
 
@@ -95,20 +96,22 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
 
   //////////////////////////////////////////////////////
   //// get match features between laser and lidar info
-  float resize_factor = 6.0; // TODO: get from parameter
-  cv::resize(depth_map, depth_map_plot, cv::Size(), 1.0, resize_factor);
-  cv::resize(color_map, color_map_plot, cv::Size(), 1.0, resize_factor);
-  this->alg_.featureMatching(depth_map_plot, color_map_plot, image_matches);
+  this->alg_.featureMatching(depth_map, color_map, image_matches);
 
   //////////////////////////////////////////////////////
   //// publish in image topics
   cv_bridge::CvImage output_bridge;
-  cv::resize(image_matches, image_matches_plot, cv::Size(), 1.0, 1.0);
+  float resize_factor = 8.0; // TODO: get from parameter
+  cv::resize(depth_map, depth_map_plot, cv::Size(), 1.0, resize_factor);
+  cv::resize(color_map, color_map_plot, cv::Size(), 1.0, resize_factor);
+  cv::resize(image_matches, image_matches_plot, cv::Size(), 1.0, resize_factor);
   this->plot_publisher_.publish(this->input_bridge_plt_->toImageMsg());
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, depth_map_plot);
   this->depth_publisher_.publish(output_bridge.toImageMsg());
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, color_map_plot);
   this->color_publisher_.publish(output_bridge.toImageMsg());
+  //output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::TYPE_32FC1, image_matches_plot);
+  //this->matches_publisher_.publish(output_bridge.toImageMsg());
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_matches_plot);
   this->matches_publisher_.publish(output_bridge.toImageMsg());
 

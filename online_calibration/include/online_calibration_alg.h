@@ -50,6 +50,9 @@
 #define MAX_FEATURES 500
 #define GOOD_MATCH_PERCENT 0.15
 #define GOOD_MATCH_NUM 4
+#define INVALID_VALUE -1
+#define NO_INDEX -2
+#define EMPTY_PIXEL 0.0
 
 struct SensorConfiguration
 {

@@ -34,23 +34,21 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
 
   /****** variable declarations ******/
   int i, j, k;
-  float factor_color = 80.0; //TODO: get from param
+  float factor_color = 60.0; //TODO: get from param
   int rows = last_image.rows;
   int cols = last_image.cols;
   int index[rows][cols];
   for (i = 0; i < cols; i++)
     for (j = 0; j < rows; j++)
-      index[j][i] = 0;
+      index[j][i] = NO_INDEX;
 
   /****** get transformation, and transform point cloud ******/
-  //tf::StampedTransform transform;
   sensor_msgs::PointCloud2 transform_pc;
   try
   {
     ros::Duration timeout(1.0 / 30);
     tf_listener.waitForTransform(cam_model.tfFrame(), frame_id, acquisition_time, timeout);
     pcl_ros::transformPointCloud(cam_model.tfFrame(), msg, transform_pc, tf_listener);
-    //tf_listener.lookupTransform(this->cam_model_.tfFrame(), this->frame_id_, this->acquisition_time_, transform);
   }
   catch (tf::TransformException& ex)
   {
@@ -77,7 +75,6 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
     if (cloud_pcl->points[i].z > 0.0)
     {
       // project into image plane
-      //tf::Point pt = transform.getOrigin();
       cv::Point3d pt_cv(cloud_pcl->points[i].x, cloud_pcl->points[i].y, cloud_pcl->points[i].z);
       cv::Point2d uv;
       uv = cam_model.project3dToPixel(pt_cv);
@@ -109,11 +106,13 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
         //// Save (x, y, z) and (u, v) information
         index[(int)uv.y][(int)uv.x] = i;
 
-        // representation in image
+        // plot points in image
         static const int RADIUS = 3;
-        float r = 0.0;
-        float g = colorMap(cloud_pcl->points[i].z, factor_color, 255);
-        float b = 0.0;
+        cv::Mat aux_map(1, 1, CV_8UC3, colorMap(cloud_pcl->points[i].z, factor_color, 255));
+        cv::applyColorMap(aux_map, aux_map, cv::COLORMAP_JET);
+        float r = aux_map.at < cv::Vec3b > (0, 0)[0];
+        float g = aux_map.at < cv::Vec3b > (0, 0)[1];
+        float b = aux_map.at < cv::Vec3b > (0, 0)[2];
         cv::circle(plot_image, uv, RADIUS, CV_RGB(r, g, b), -1);
       }
     }
@@ -131,9 +130,9 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
   this->sens_config_.num_of_elevation_cells = 1
       + (max_elevation - min_elevation) / this->sens_config_.grid_elevation_angular_resolution;
   cv::Mat deph_map_aux(this->sens_config_.num_of_elevation_cells, this->sens_config_.num_of_azimuth_cells, CV_8UC3,
-                       0.0);
+  EMPTY_PIXEL);
   cv::Mat color_map_aux(this->sens_config_.num_of_elevation_cells, this->sens_config_.num_of_azimuth_cells, CV_8UC3,
-                        0.0);
+  EMPTY_PIXEL);
   deph_map_aux.copyTo(depth_map);
   color_map_aux.copyTo(color_map);
 
@@ -143,25 +142,25 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
   {
     for (j = 0; j < rows; j++)
     {
-      if (index[j][i] > 0)
+      if (index[j][i] > NO_INDEX)
       {
         k = index[j][i];
         point2SphericalGrid(cloud_pcl_orig->points[k], this->sens_config_, v, u);
-        if (u != -1) //// TODO: generate tag
+        if (u != INVALID_VALUE)
         {
           depth_map.at < cv::Vec3b > (v, u)[0] = colorMap(cloud_pcl->points[k].z, factor_color, 255);
           depth_map.at < cv::Vec3b > (v, u)[1] = colorMap(cloud_pcl->points[k].z, factor_color, 255);
           depth_map.at < cv::Vec3b > (v, u)[2] = colorMap(cloud_pcl->points[k].z, factor_color, 255);
-          color_map.at < cv::Vec3b > (v, u)[0] = 0.21 * last_image.at < cv::Vec3b > (j, i)[2] + 0.72 * last_image.at
-              < cv::Vec3b > (j, i)[1] + 0.07 * last_image.at < cv::Vec3b > (j, i)[0];
-          color_map.at < cv::Vec3b > (v, u)[1] = color_map.at < cv::Vec3b > (v, u)[0];
-          color_map.at < cv::Vec3b > (v, u)[2] = color_map.at < cv::Vec3b > (v, u)[0];
+          color_map.at < cv::Vec3b > (v, u)[0] = last_image.at < cv::Vec3b > (j, i)[2];
+          color_map.at < cv::Vec3b > (v, u)[1] = last_image.at < cv::Vec3b > (j, i)[1];
+          color_map.at < cv::Vec3b > (v, u)[2] = last_image.at < cv::Vec3b > (j, i)[0];
         }
       }
     }
   }
   fillGraps(depth_map);
   fillGraps(color_map);
+  cv::applyColorMap(depth_map, depth_map, cv::COLORMAP_JET);
 
   return;
 }
@@ -169,7 +168,55 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
 void OnlineCalibrationAlgorithm::featureMatching(cv::Mat& depth_map, cv::Mat& color_map, cv::Mat& image_matches)
 {
 
-  // Variables to store keypoints and descriptors.
+  /********** sobel filter **********/
+  /*cv::Mat depth_map_gray;
+  cv::Mat color_map_gray;
+  cv::Mat grad;
+  cv::Mat grad_x, grad_y;
+  cv::Mat abs_grad_x, abs_grad_y;
+  int scale = 1;
+  int delta = 0;
+  int ddepth = CV_16S;
+
+  cv::GaussianBlur(depth_map, depth_map, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
+  cv::cvtColor(depth_map, depth_map_gray, CV_BGR2GRAY);
+  cv::Sobel(depth_map_gray, grad_x, ddepth, 1, 0, 3, scale, delta, cv::BORDER_DEFAULT);
+  cv::Sobel(depth_map_gray, grad_y, ddepth, 0, 1, 3, scale, delta, cv::BORDER_DEFAULT);
+  convertScaleAbs(grad_x, abs_grad_x);
+  convertScaleAbs(grad_y, abs_grad_y);
+  addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
+  grad.copyTo(depth_map);
+
+  cv::GaussianBlur(color_map, color_map, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
+  cv::cvtColor(color_map, color_map_gray, CV_BGR2GRAY);
+  cv::Sobel(color_map_gray, grad_x, ddepth, 1, 0, 3, scale, delta, cv::BORDER_DEFAULT);
+  cv::Sobel(color_map_gray, grad_y, ddepth, 0, 1, 3, scale, delta, cv::BORDER_DEFAULT);
+  convertScaleAbs(grad_x, abs_grad_x);
+  convertScaleAbs(grad_y, abs_grad_y);
+  addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
+  grad.copyTo(color_map);*/
+  /**********************************/
+
+  /********** match templates to get errors between images **********/
+  /*cv::Mat result;
+  int rows_templates = depth_map.rows / 2;
+  int cols_templates = depth_map.cols / 5;
+  int result_rows = depth_map.rows - rows_templates + 1;
+  int result_cols = depth_map.cols - cols_templates + 1;
+  result.create(result_rows, result_cols, CV_32FC1);
+
+  // template 1
+  int row_t = rows_templates / 2, col_t = cols_templates / 2;
+  cv::Rect roi(col_t, row_t, col_t + cols_templates, row_t + rows_templates);
+  cv::Mat template_1 = depth_map(roi);
+
+  cv::matchTemplate(color_map, template_1, result, CV_TM_CCORR);
+  cv::normalize(result, result, 0, 1, cv::NORM_MINMAX, -1, cv::Mat());
+  result.copyTo(image_matches);*/
+  /******************************************************************/
+
+
+  /********** extract orb features **********/
   std::vector<cv::KeyPoint> kp_depth, kp_color;
   cv::Mat des_depth, des_color;
 
@@ -190,6 +237,7 @@ void OnlineCalibrationAlgorithm::featureMatching(cv::Mat& depth_map, cv::Mat& co
 
   // Draw top matches
   cv::drawMatches(depth_map, kp_depth, color_map, kp_color, matches, image_matches);
+  /******************************************/
 
   //debug
   //ROS_INFO("matches size: %d", matches.size());
@@ -244,7 +292,7 @@ void point2SphericalGrid(pcl::PointXYZI point, struct SensorConfiguration lidar_
     if (col < 0 || col >= lidar_configuration.num_of_azimuth_cells || row < 0
         || row >= lidar_configuration.num_of_elevation_cells)
     {
-      row = col = -1; //// TODO: generate tag
+      row = col = INVALID_VALUE;
     }
   }
 }
@@ -254,33 +302,37 @@ void fillGraps(cv::Mat& image)
   int rows = image.rows;
   int cols = image.cols;
   int i, j, n, m, num_mask;
-  float sum, pixel_value;
+  float sum_r, sum_g, sum_b, pixel_value;
 
   for (j = 0; j < rows; j++)
   {
     for (i = 0; i < cols; i++)
     {
-      if (image.at < cv::Vec3b > (j, i)[0] == 0.0)
+      if (image.at < cv::Vec3b > (j, i)[0] == EMPTY_PIXEL)
       {
         num_mask = 0;
-        sum = 0.0;
+        sum_r = 0.0;
+        sum_g = 0.0;
+        sum_b = 0.0;
         for (m = j - 1; m <= j + 1; m++)
         {
           for (n = i - 1; n <= i + 1; n++)
           {
             if (m >= 0 && m < rows && n >= 0 && n < cols)
             {
-              sum = sum + image.at < cv::Vec3b > (m, n)[0];
-              if (image.at < cv::Vec3b > (m, n)[0] > 0.0)
+              if (image.at < cv::Vec3b > (m, n)[0] > EMPTY_PIXEL)
               {
                 num_mask++;
+                sum_r = sum_r + image.at < cv::Vec3b > (m, n)[0];
+                sum_g = sum_g + image.at < cv::Vec3b > (m, n)[1];
+                sum_b = sum_b + image.at < cv::Vec3b > (m, n)[2];
               }
             }
           }
         }
-        image.at < cv::Vec3b > (j, i)[0] = sum / num_mask;
-        image.at < cv::Vec3b > (j, i)[1] = sum / num_mask;
-        image.at < cv::Vec3b > (j, i)[2] = sum / num_mask;
+        image.at < cv::Vec3b > (j, i)[0] = sum_r / num_mask;
+        image.at < cv::Vec3b > (j, i)[1] = sum_g / num_mask;
+        image.at < cv::Vec3b > (j, i)[2] = sum_b / num_mask;
       }
     }
   }
@@ -291,11 +343,11 @@ float colorMap(float dist, float factor, int base)
 {
   float color_map;
 
-  color_map = (dist / factor - 1) * -1 * base;
+  color_map = (dist / factor) * base;
 
-  if (color_map < 0.0)
+  if (color_map > base)
   {
-    color_map = 0.0;
+    color_map = base;
   }
 
   return color_map;
