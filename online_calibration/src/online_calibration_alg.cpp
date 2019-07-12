@@ -34,7 +34,8 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
 
   /****** variable declarations ******/
   int i, j, k;
-  float factor_color = 60.0; //TODO: get from param
+  float factor_color = 4.0; //TODO: get from param
+  float factor_depth = 0.32; //TODO: get from param
   int rows = last_image.rows;
   int cols = last_image.cols;
   int index[rows][cols];
@@ -151,16 +152,27 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
           depth_map.at < cv::Vec3b > (v, u)[0] = colorMap(cloud_pcl->points[k].z, factor_color, 255);
           depth_map.at < cv::Vec3b > (v, u)[1] = colorMap(cloud_pcl->points[k].z, factor_color, 255);
           depth_map.at < cv::Vec3b > (v, u)[2] = colorMap(cloud_pcl->points[k].z, factor_color, 255);
-          color_map.at < cv::Vec3b > (v, u)[0] = last_image.at < cv::Vec3b > (j, i)[2];
-          color_map.at < cv::Vec3b > (v, u)[1] = last_image.at < cv::Vec3b > (j, i)[1];
-          color_map.at < cv::Vec3b > (v, u)[2] = last_image.at < cv::Vec3b > (j, i)[0];
+          if (this->flag_depth_img_)
+          {
+            color_map.at < cv::Vec3b > (v, u)[0] = colorMap(last_image.at < cv::Vec3b > (j, i)[0] * factor_depth, factor_color, 255);
+            color_map.at < cv::Vec3b > (v, u)[1] = colorMap(last_image.at < cv::Vec3b > (j, i)[0] * factor_depth, factor_color, 255);
+            color_map.at < cv::Vec3b > (v, u)[2] = colorMap(last_image.at < cv::Vec3b > (j, i)[0] * factor_depth, factor_color, 255);
+          }
+          else
+          {
+
+            color_map.at < cv::Vec3b > (v, u)[0] = last_image.at < cv::Vec3b > (j, i)[2];
+            color_map.at < cv::Vec3b > (v, u)[1] = last_image.at < cv::Vec3b > (j, i)[1];
+            color_map.at < cv::Vec3b > (v, u)[2] = last_image.at < cv::Vec3b > (j, i)[0];
+          }
         }
       }
     }
   }
   fillGraps(depth_map);
   fillGraps(color_map);
-  cv::applyColorMap(depth_map, depth_map, cv::COLORMAP_JET);
+  //cv::applyColorMap(depth_map, depth_map, cv::COLORMAP_JET);
+  //cv::applyColorMap(color_map, color_map, cv::COLORMAP_JET);
 
   return;
 }
@@ -170,80 +182,78 @@ void OnlineCalibrationAlgorithm::featureMatching(cv::Mat& depth_map, cv::Mat& co
 
   /********** sobel filter **********/
   /*cv::Mat depth_map_gray;
-  cv::Mat color_map_gray;
-  cv::Mat grad;
-  cv::Mat grad_x, grad_y;
-  cv::Mat abs_grad_x, abs_grad_y;
-  int scale = 1;
-  int delta = 0;
-  int ddepth = CV_16S;
+   cv::Mat color_map_gray;
+   cv::Mat grad;
+   cv::Mat grad_x, grad_y;
+   cv::Mat abs_grad_x, abs_grad_y;
+   int scale = 1;
+   int delta = 0;
+   int ddepth = CV_16S;
 
-  cv::GaussianBlur(depth_map, depth_map, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
-  cv::cvtColor(depth_map, depth_map_gray, CV_BGR2GRAY);
-  cv::Sobel(depth_map_gray, grad_x, ddepth, 1, 0, 3, scale, delta, cv::BORDER_DEFAULT);
-  cv::Sobel(depth_map_gray, grad_y, ddepth, 0, 1, 3, scale, delta, cv::BORDER_DEFAULT);
-  convertScaleAbs(grad_x, abs_grad_x);
-  convertScaleAbs(grad_y, abs_grad_y);
-  addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
-  grad.copyTo(depth_map);
+   cv::GaussianBlur(depth_map, depth_map, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
+   cv::cvtColor(depth_map, depth_map_gray, CV_BGR2GRAY);
+   cv::Sobel(depth_map_gray, grad_x, ddepth, 1, 0, 3, scale, delta, cv::BORDER_DEFAULT);
+   cv::Sobel(depth_map_gray, grad_y, ddepth, 0, 1, 3, scale, delta, cv::BORDER_DEFAULT);
+   convertScaleAbs(grad_x, abs_grad_x);
+   convertScaleAbs(grad_y, abs_grad_y);
+   addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
+   grad.copyTo(depth_map);
 
-  cv::GaussianBlur(color_map, color_map, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
-  cv::cvtColor(color_map, color_map_gray, CV_BGR2GRAY);
-  cv::Sobel(color_map_gray, grad_x, ddepth, 1, 0, 3, scale, delta, cv::BORDER_DEFAULT);
-  cv::Sobel(color_map_gray, grad_y, ddepth, 0, 1, 3, scale, delta, cv::BORDER_DEFAULT);
-  convertScaleAbs(grad_x, abs_grad_x);
-  convertScaleAbs(grad_y, abs_grad_y);
-  addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
-  grad.copyTo(color_map);*/
+   cv::GaussianBlur(color_map, color_map, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
+   cv::cvtColor(color_map, color_map_gray, CV_BGR2GRAY);
+   cv::Sobel(color_map_gray, grad_x, ddepth, 1, 0, 3, scale, delta, cv::BORDER_DEFAULT);
+   cv::Sobel(color_map_gray, grad_y, ddepth, 0, 1, 3, scale, delta, cv::BORDER_DEFAULT);
+   convertScaleAbs(grad_x, abs_grad_x);
+   convertScaleAbs(grad_y, abs_grad_y);
+   addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
+   grad.copyTo(color_map);*/
   /**********************************/
 
   /********** match templates to get errors between images **********/
   /*cv::Mat result;
-  int rows_templates = depth_map.rows / 2;
-  int cols_templates = depth_map.cols / 5;
-  int result_rows = depth_map.rows - rows_templates + 1;
-  int result_cols = depth_map.cols - cols_templates + 1;
-  result.create(result_rows, result_cols, CV_32FC1);
+   int rows_templates = depth_map.rows / 2;
+   int cols_templates = depth_map.cols / 5;
+   int result_rows = depth_map.rows - rows_templates + 1;
+   int result_cols = depth_map.cols - cols_templates + 1;
+   result.create(result_rows, result_cols, CV_32FC1);
 
-  // template 1
-  int row_t = rows_templates / 2, col_t = cols_templates / 2;
-  cv::Rect roi(col_t, row_t, col_t + cols_templates, row_t + rows_templates);
-  cv::Mat template_1 = depth_map(roi);
+   // template 1
+   int row_t = rows_templates / 2, col_t = cols_templates / 2;
+   cv::Rect roi(col_t, row_t, col_t + cols_templates, row_t + rows_templates);
+   cv::Mat template_1 = depth_map(roi);
 
-  cv::matchTemplate(color_map, template_1, result, CV_TM_CCORR);
-  cv::normalize(result, result, 0, 1, cv::NORM_MINMAX, -1, cv::Mat());
-  result.copyTo(image_matches);*/
+   cv::matchTemplate(color_map, template_1, result, CV_TM_CCORR);
+   cv::normalize(result, result, 0, 1, cv::NORM_MINMAX, -1, cv::Mat());
+   result.copyTo(image_matches);*/
   /******************************************************************/
 
-
   /********** extract orb features **********/
-  std::vector<cv::KeyPoint> kp_depth, kp_color;
-  cv::Mat des_depth, des_color;
+  /*std::vector<cv::KeyPoint> kp_depth, kp_color;
+   cv::Mat des_depth, des_color;
 
-  // Detect ORB features and compute descriptors.
-  cv::Ptr < cv::Feature2D > orb = cv::ORB::create(MAX_FEATURES);
-  orb->detectAndCompute(depth_map, cv::Mat(), kp_depth, des_depth);
-  orb->detectAndCompute(color_map, cv::Mat(), kp_color, des_color);
+   // Detect ORB features and compute descriptors.
+   cv::Ptr < cv::Feature2D > orb = cv::ORB::create(MAX_FEATURES);
+   orb->detectAndCompute(depth_map, cv::Mat(), kp_depth, des_depth);
+   orb->detectAndCompute(color_map, cv::Mat(), kp_color, des_color);
 
-  // Match features.
-  std::vector < cv::DMatch > matches;
-  cv::Ptr < cv::DescriptorMatcher > matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
-  matcher->match(des_depth, des_color, matches, cv::Mat());
+   // Match features.
+   std::vector < cv::DMatch > matches;
+   cv::Ptr < cv::DescriptorMatcher > matcher = cv::DescriptorMatcher::create("BruteForce-Hamming");
+   matcher->match(des_depth, des_color, matches, cv::Mat());
 
-  // Remove not so good matches
-  const int num_good_matches = GOOD_MATCH_NUM;
-  if (matches.size() > num_good_matches)
-    matches.erase(matches.begin() + num_good_matches, matches.end());
+   // Remove not so good matches
+   const int num_good_matches = GOOD_MATCH_NUM;
+   if (matches.size() > num_good_matches)
+   matches.erase(matches.begin() + num_good_matches, matches.end());
 
-  // Draw top matches
-  cv::drawMatches(depth_map, kp_depth, color_map, kp_color, matches, image_matches);
+   // Draw top matches
+   cv::drawMatches(depth_map, kp_depth, color_map, kp_color, matches, image_matches);*/
   /******************************************/
 
   //debug
   //ROS_INFO("matches size: %d", matches.size());
   //ROS_INFO("keypoints depth size: %d", kp_depth.size());
   //ROS_INFO("keypoints color size: %d", kp_color.size());
-
   return;
 }
 

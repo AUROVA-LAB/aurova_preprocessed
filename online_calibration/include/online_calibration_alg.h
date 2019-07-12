@@ -91,6 +91,7 @@ protected:
 
 public:
 
+  bool flag_depth_img_;
   struct SensorConfiguration sens_config_;
 
   /**
