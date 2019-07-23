@@ -56,28 +56,9 @@ void OnlineCalibrationAlgNode::cb_imageInfo(const sensor_msgs::ImageConstPtr& im
   //// transform image from ROS to OpenCV and save in class variables
   try
   {
-    sensor_msgs::Image image_msg_aux;
-    image_msg_aux.header = image_msg->header;
-    image_msg_aux.height = image_msg->height;
-    image_msg_aux.width = image_msg->width;
-    image_msg_aux.is_bigendian = image_msg->is_bigendian;
-    image_msg_aux.step = image_msg->step;
-    image_msg_aux.data = image_msg->data;
-    if (image_msg->encoding == "16UC1")
-    {
-      image_msg_aux.encoding = "mono16";
-      this->input_bridge_ = cv_bridge::toCvCopy(image_msg_aux, sensor_msgs::image_encodings::MONO8);
-      this->input_bridge_plt_ = cv_bridge::toCvCopy(image_msg_aux, sensor_msgs::image_encodings::MONO8);
-      this->alg_.flag_depth_img_ = true;
-    }
-    else
-    {
-      image_msg_aux.encoding = image_msg->encoding;
-      this->input_bridge_ = cv_bridge::toCvCopy(image_msg_aux, sensor_msgs::image_encodings::BGR8);
-      this->input_bridge_plt_ = cv_bridge::toCvCopy(image_msg_aux, sensor_msgs::image_encodings::BGR8);
-      this->alg_.flag_depth_img_ = false;
-    }
 
+    this->input_bridge_ = cv_bridge::toCvCopy(image_msg, sensor_msgs::image_encodings::BGR8);
+    this->input_bridge_plt_ = cv_bridge::toCvCopy(image_msg, sensor_msgs::image_encodings::BGR8);
     this->last_image_ = this->input_bridge_->image;
     this->plot_image_ = this->input_bridge_plt_->image;
   }
@@ -100,43 +81,17 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
 {
   this->alg_.lock();
 
-  std_msgs::Header header; // empty header
-  header.stamp = ros::Time::now(); // time
-  cv::Mat depth_map_plot;
-  cv::Mat color_map_plot;
-  cv::Mat image_matches_plot;
-  cv::Mat depth_map;
-  cv::Mat color_map;
-  cv::Mat image_matches;
-
   //////////////////////////////////////////////////////
   //// fusion camera and lidar information
   this->alg_.sensorFusion(this->last_image_, *msg, this->cam_model_, this->frame_id_, this->acquisition_time_,
-                          this->tf_listener_, depth_map, color_map, this->plot_image_);
+                          this->tf_listener_, this->plot_image_);
 
   //////////////////////////////////////////////////////
   //// get match features between laser and lidar info
-  this->alg_.featureMatching(depth_map, color_map, image_matches);
 
   //////////////////////////////////////////////////////
   //// publish in image topics
-  cv_bridge::CvImage output_bridge;
-  float resize_factor = 8.0; // TODO: get from parameter
-  cv::resize(depth_map, depth_map_plot, cv::Size(), 1.0, resize_factor);
-  cv::resize(color_map, color_map_plot, cv::Size(), 1.0, resize_factor);
-  //cv::resize(image_matches, image_matches_plot, cv::Size(), 1.0, resize_factor);
   this->plot_publisher_.publish(this->input_bridge_plt_->toImageMsg());
-  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, depth_map_plot);
-  this->depth_publisher_.publish(output_bridge.toImageMsg());
-  if (this->alg_.flag_depth_img_)
-    output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::MONO8, color_map_plot);
-  else
-    output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, color_map_plot);
-  this->color_publisher_.publish(output_bridge.toImageMsg());
-  //output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::TYPE_32FC1, image_matches_plot);
-  //this->matches_publisher_.publish(output_bridge.toImageMsg());
-  //output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_matches_plot);
-  //this->matches_publisher_.publish(output_bridge.toImageMsg());
 
   this->alg_.unlock();
 }

@@ -47,29 +47,7 @@
 
 //include online_calibration_alg main library
 
-#define MAX_FEATURES 500
-#define GOOD_MATCH_PERCENT 0.15
-#define GOOD_MATCH_NUM 4
-#define INVALID_VALUE -1
 #define NO_INDEX -2
-#define EMPTY_PIXEL 0.0
-
-struct SensorConfiguration
-{
-  float max_elevation_angle;
-  float min_elevation_angle;
-
-  float max_azimuth_angle;
-  float min_azimuth_angle;
-
-  float grid_azimuth_angular_resolution;
-  float grid_elevation_angular_resolution;
-
-  int num_of_azimuth_cells; // To calculate these values: 1 + (max_azimuth_angle - min_azimuth_angle) / grid_azimuth_angular_resolution;
-  int num_of_elevation_cells; // or 1 + (max_elevation_angle - min_elevation_angle) / grid_elevation_angular_resolution;
-
-  float sensor_height;
-};
 
 /**
  * \brief IRI ROS Specific Driver Class
@@ -90,9 +68,6 @@ protected:
   // private attributes and methods
 
 public:
-
-  bool flag_depth_img_;
-  struct SensorConfiguration sens_config_;
 
   /**
    * \brief define config type
@@ -190,13 +165,11 @@ public:
    * @param msg: is a point cloud message in ROS format.
    *
    * And return as outputs:
-   * @param deph_map: is the representation of lidar information in image format.
-   * @param color_map: is the image information in the locations that each laser point has projected.
    * @param plot_image: is the input image with the laser points plotted.
    */
   void sensorFusion(cv::Mat last_image, sensor_msgs::PointCloud2 msg, image_geometry::PinholeCameraModel cam_model,
                     std::string frame_id, ros::Time acquisition_time, tf::TransformListener& tf_listener,
-                    cv::Mat& depth_map, cv::Mat& color_map, cv::Mat& plot_image);
+                    cv::Mat& plot_image);
 
   /**
    * TODO: doxygen comments
