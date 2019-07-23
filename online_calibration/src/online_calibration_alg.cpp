@@ -34,8 +34,8 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
 
   /****** variable declarations ******/
   int i, j, k;
-  float factor_color = 4.0; //TODO: get from param
-  float factor_depth = 0.32; //TODO: get from param
+  float factor_color = 4.0; //TODO: get from parameter
+  float factor_depth = 0.32; //TODO: get from parameter
   int rows = last_image.rows;
   int cols = last_image.cols;
   int index[rows][cols];
