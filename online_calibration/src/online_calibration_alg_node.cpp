@@ -5,15 +5,16 @@ OnlineCalibrationAlgNode::OnlineCalibrationAlgNode(void) :
 {
   //init class attributes if necessary
   this->loop_rate_ = 10; //in [Hz]
-  this->frame_id_ = "/velodyne"; //TODO: get from param
+  this->frame_lidar_ = "/velodyne"; //TODO: get from param
+  this->frame_odom_ = "/odom"; //TODO: get from param
   cvInitFont(&this->font_, CV_FONT_HERSHEY_SIMPLEX, 1.0, 1.0);
   image_transport::ImageTransport it_(this->public_node_handle_);
 
   // [init publishers]
   this->plot_publisher_ = it_.advertise("/plot_out", 1);
-  this->depth_publisher_ = it_.advertise("/depth_out", 1);
-  this->color_publisher_ = it_.advertise("/color_out", 1);
-  this->matches_publisher_ = it_.advertise("/matches_out", 1);
+  //this->depth_publisher_ = it_.advertise("/depth_out", 1);
+  //this->color_publisher_ = it_.advertise("/color_out", 1);
+  //this->matches_publisher_ = it_.advertise("/matches_out", 1);
 
   // [init subscribers]
   this->camera_subscriber_ = it_.subscribeCamera("/image", 1, &OnlineCalibrationAlgNode::cb_imageInfo, this);
@@ -83,8 +84,8 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
 
   //////////////////////////////////////////////////////
   //// fusion camera and lidar information
-  this->alg_.sensorFusion(this->last_image_, *msg, this->cam_model_, this->frame_id_, this->acquisition_time_,
-                          this->tf_listener_, this->plot_image_);
+  this->alg_.sensorFusion(this->last_image_, *msg, this->cam_model_, this->frame_lidar_, this->frame_odom_,
+                          this->acquisition_time_, this->tf_listener_, this->plot_image_);
 
   //////////////////////////////////////////////////////
   //// get match features between laser and lidar info

@@ -23,10 +23,10 @@ void OnlineCalibrationAlgorithm::config_update(Config& config, uint32_t level)
 }
 
 // OnlineCalibrationAlgorithm Public API
-void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::PointCloud2 msg,
-                                              image_geometry::PinholeCameraModel cam_model, std::string frame_id,
-                                              ros::Time acquisition_time, tf::TransformListener& tf_listener,
-                                              cv::Mat& plot_image)
+void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
+                                              image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
+                                              std::string frame_odom, ros::Time acquisition_time,
+                                              tf::TransformListener& tf_listener, cv::Mat& plot_image)
 {
 
   /****** variable declarations ******/
@@ -35,17 +35,50 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
   int rows = last_image.rows;
   int cols = last_image.cols;
   /*int index[rows][cols];
-  for (i = 0; i < cols; i++)
-    for (j = 0; j < rows; j++)
-      index[j][i] = NO_INDEX;*/
+   for (i = 0; i < cols; i++)
+   for (j = 0; j < rows; j++)
+   index[j][i] = NO_INDEX;*/
 
-  /****** get transformation, and transform point cloud ******/
-  sensor_msgs::PointCloud2 transform_pc;
+  /****** get transformation, and transform point cloud (including pcl conversions) ******/
+  sensor_msgs::PointCloud2 scan_transformed;
+  sensor_msgs::PointCloud2 cloud;
+  sensor_msgs::PointCloud2 cloud_transformed;
+  pcl::PCLPointCloud2 scan_pcl2;
+  pcl::PCLPointCloud2 cloud_pcl2;
+  static std::vector<pcl::PointCloud<pcl::PointXYZ> > clouds_acum;
+  static pcl::PointCloud<pcl::PointXYZ> scan_pcl;
+  static pcl::PointCloud<pcl::PointXYZ> cloud_pcl;
+  static pcl::PointCloud<pcl::PointXYZ> cloud_pcl_odom;
+  static int count = 0;
+  count++;
   try
   {
-    ros::Duration timeout(1.0 / 30);
-    tf_listener.waitForTransform(cam_model.tfFrame(), frame_id, acquisition_time, timeout);
-    pcl_ros::transformPointCloud(cam_model.tfFrame(), msg, transform_pc, tf_listener);
+    ros::Duration duration(1.0);
+    tf_listener.waitForTransform(frame_odom, frame_lidar, ros::Time::now(), duration);
+    pcl_ros::transformPointCloud(frame_odom, scan, scan_transformed, tf_listener);
+
+    pcl_conversions::toPCL(scan_transformed, scan_pcl2);
+    pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl);
+
+    if (count > 1) // TODO: get from parameter
+    {
+      clouds_acum.erase(clouds_acum.begin());
+    }
+
+    cloud_pcl_odom.clear();
+    clouds_acum.push_back(scan_pcl);
+    for (i = 0; i < clouds_acum.size(); i++)
+    {
+      cloud_pcl_odom += clouds_acum[i];
+    }
+
+    pcl::toPCLPointCloud2(cloud_pcl_odom, cloud_pcl2);
+    pcl_conversions::fromPCL(cloud_pcl2, cloud);
+    cloud.header.frame_id = "odom"; // TODO: get from parameter
+
+    tf_listener.waitForTransform(cam_model.tfFrame(), frame_odom, acquisition_time, duration);
+    pcl_ros::transformPointCloud(cam_model.tfFrame(), cloud, cloud_transformed, tf_listener);
+
   }
   catch (tf::TransformException& ex)
   {
@@ -53,22 +86,16 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
     return;
   }
 
-  /****** generate new point clouds with PCL format ******/
-  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_pcl(new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_pcl_orig(new pcl::PointCloud<pcl::PointXYZI>);
-  pcl::PCLPointCloud2 aux_input;
-  pcl_conversions::toPCL(transform_pc, aux_input);
-  pcl::fromPCLPointCloud2(aux_input, *cloud_pcl);
-  pcl_conversions::toPCL(msg, aux_input);
-  pcl::fromPCLPointCloud2(aux_input, *cloud_pcl_orig);
+  pcl_conversions::toPCL(cloud_transformed, cloud_pcl2);
+  pcl::fromPCLPointCloud2(cloud_pcl2, cloud_pcl);
 
   /****** get field of view and save index correspondence between cloud and image ******/
-  for (size_t i = 0; i < cloud_pcl->points.size(); ++i)
+  for (size_t i = 0; i < cloud_pcl.points.size(); ++i)
   {
-    if (cloud_pcl->points[i].z > 0.0)
+    if (cloud_pcl.points[i].z > 0.0)
     {
       // project into image plane
-      cv::Point3d pt_cv(cloud_pcl->points[i].x, cloud_pcl->points[i].y, cloud_pcl->points[i].z);
+      cv::Point3d pt_cv(cloud_pcl.points[i].x, cloud_pcl.points[i].y, cloud_pcl.points[i].z);
       cv::Point2d uv;
       uv = cam_model.project3dToPixel(pt_cv);
 
@@ -78,9 +105,9 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
         //index[(int)uv.y][(int)uv.x] = i;
 
         // plot points in image
-        static const int RADIUS = 3;
+        static const int RADIUS = 1;
         float r = 0.0;
-        float g = colorMap(cloud_pcl->points[i].z, factor_color, 255);
+        float g = colorMap(cloud_pcl.points[i].z, factor_color, 255);
         float b = 0.0;
         cv::circle(plot_image, uv, RADIUS, CV_RGB(r, g, b), -1);
       }

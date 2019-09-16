@@ -48,7 +48,8 @@ class OnlineCalibrationAlgNode : public algorithm_base::IriBaseAlgorithm<OnlineC
 {
 private:
 
-  std::string frame_id_;
+  std::string frame_lidar_;
+  std::string frame_odom_;
   CvFont font_;
   cv_bridge::CvImagePtr input_bridge_;
   cv_bridge::CvImagePtr input_bridge_plt_;
@@ -56,12 +57,13 @@ private:
   cv::Mat last_image_;
   cv::Mat plot_image_;
   ros::Time acquisition_time_;
+  ros::Time acquisition_time_lidar_;
 
   // [publisher attributes]
   image_transport::Publisher plot_publisher_;
-  image_transport::Publisher depth_publisher_;
-  image_transport::Publisher color_publisher_;
-  image_transport::Publisher matches_publisher_;
+  //image_transport::Publisher depth_publisher_;
+  //image_transport::Publisher color_publisher_;
+  //image_transport::Publisher matches_publisher_;
 
   // [subscriber attributes]
   ros::Subscriber lidar_subscriber_;
