@@ -82,15 +82,27 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
 {
   this->alg_.lock();
 
-  //////////////////////////////////////////////////////
-  //// fusion camera and lidar information
+  //////////////////////////////////////////////////////////////////
+  //// preprocessed all the data
+
+  /**** discontinuities in laser scan (out: discontinuities image) ****/
+
+  /**** get edgen in the last image captured (out: edge image)  ****/
+
+
+  //////////////////////////////////////////////////////////////////
+  //// representation of camera and lidar information
   this->alg_.sensorFusion(this->last_image_, *msg, this->cam_model_, this->frame_lidar_, this->frame_odom_,
                           this->acquisition_time_, this->tf_listener_, this->plot_image_);
 
-  //////////////////////////////////////////////////////
-  //// get match features between laser and lidar info
+  //////////////////////////////////////////////////////////////////
+  //// get match features (and errors) between laser and lidar info
 
-  //////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////
+  //// apply control law of VS for modify [t|R]
+
+
+  //////////////////////////////////////////////////////////////////
   //// publish in image topics
   this->plot_publisher_.publish(this->input_bridge_plt_->toImageMsg());
 

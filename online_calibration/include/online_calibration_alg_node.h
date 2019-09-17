@@ -53,9 +53,9 @@ private:
   CvFont font_;
   cv_bridge::CvImagePtr input_bridge_;
   cv_bridge::CvImagePtr input_bridge_plt_;
-  image_geometry::PinholeCameraModel cam_model_;
   cv::Mat last_image_;
   cv::Mat plot_image_;
+  image_geometry::PinholeCameraModel cam_model_;
   ros::Time acquisition_time_;
   ros::Time acquisition_time_lidar_;
 
