@@ -61,6 +61,7 @@ private:
 
   // [publisher attributes]
   image_transport::Publisher plot_publisher_;
+  image_transport::Publisher edges_publisher_;
   //image_transport::Publisher depth_publisher_;
   //image_transport::Publisher color_publisher_;
   //image_transport::Publisher matches_publisher_;

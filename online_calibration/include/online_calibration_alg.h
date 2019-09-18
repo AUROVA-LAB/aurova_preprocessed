@@ -47,7 +47,26 @@
 
 //include online_calibration_alg main library
 
+#define INVALID_VALUE -1
 #define NO_INDEX -2
+#define EMPTY_PIXEL 0.0
+
+struct SensorConfiguration
+{
+  float max_elevation_angle;
+  float min_elevation_angle;
+
+  float max_azimuth_angle;
+  float min_azimuth_angle;
+
+  float grid_azimuth_angular_resolution;
+  float grid_elevation_angular_resolution;
+
+  int num_of_azimuth_cells; // To calculate these values: 1 + (max_azimuth_angle - min_azimuth_angle) / grid_azimuth_angular_resolution;
+  int num_of_elevation_cells; // or 1 + (max_elevation_angle - min_elevation_angle) / grid_elevation_angular_resolution;
+
+  float sensor_height;
+};
 
 /**
  * \brief IRI ROS Specific Driver Class
@@ -76,6 +95,7 @@ public:
    * will then use the same variable type Config.
    */
   typedef online_calibration::OnlineCalibrationConfig Config;
+  struct SensorConfiguration sens_config_;
 
   /**
    * \brief config variable
@@ -161,6 +181,8 @@ public:
    * TODO: doxygen comments
    */
   void cloudDiscontinuities(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
+                            image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
+                            ros::Time acquisition_time, tf::TransformListener& tf_listener, cv::Mat& depth_map,
                             sensor_msgs::PointCloud2& scan_discontinuities);
 
   /**
