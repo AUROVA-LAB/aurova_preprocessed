@@ -33,6 +33,7 @@
 
 #include <iri_base_algorithm/iri_base_algorithm.h>
 #include "gps_to_odom_alg.h"
+#include <Eigen/Dense>
 
 // [publisher subscriber headers]
 
@@ -49,6 +50,8 @@ class GpsToOdomAlgNode : public algorithm_base::IriBaseAlgorithm<GpsToOdomAlgori
 private:
 
   bool flag_publish_odom_;
+  bool flag_gnss_position_received_;
+  bool flag_gnss_velocity_received_;
   nav_msgs::Odometry odom_gps_;
   tf::StampedTransform utm_trans_;
   tf::TransformListener listener_;

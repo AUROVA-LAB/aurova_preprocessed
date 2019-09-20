@@ -64,7 +64,7 @@ catkin_package(
 # ******************************************************************** 
 #      Add system and labrobotica run time dependencies here
 # ******************************************************************** 
-#  DEPENDS 
+DEPENDS Eigen
 )
 
 ###########
@@ -75,7 +75,8 @@ catkin_package(
 #                   Add the include directories 
 # ******************************************************************** 
 include_directories(include)
-include_directories(${catkin_INCLUDE_DIRS})
+include_directories(${catkin_INCLUDE_DIRS}
+                    ${EIGEN_INCLUDE_DIRS})
 # include_directories(${<dependency>_INCLUDE_DIR})
 
 ## Declare a cpp library
