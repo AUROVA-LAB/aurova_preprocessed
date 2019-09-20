@@ -50,6 +50,7 @@
 #define INVALID_VALUE -1
 #define NO_INDEX -2
 #define EMPTY_PIXEL 0.0
+#define MAX_PIXEL 255.0
 
 struct SensorConfiguration
 {
@@ -188,9 +189,9 @@ public:
   /**
    * TODO: doxygen comments
    */
-  void preprocessCloudImage(cv::Mat last_image, sensor_msgs::PointCloud2 scan, cv::Mat depth_map,
-                            cv::Mat index_to_cloud, cv::Mat& image_sobel, cv::Mat& image_discontinuities,
-                            sensor_msgs::PointCloud2& scan_discontinuities);
+  void preprocessCloudAndImage(cv::Mat last_image, sensor_msgs::PointCloud2 scan, cv::Mat depth_map,
+                               cv::Mat index_to_cloud, cv::Mat& image_sobel, cv::Mat& image_discontinuities,
+                               sensor_msgs::PointCloud2& scan_discontinuities);
 
   /**
    * \brief Method that combine information from camera and lidar point cloud

@@ -123,10 +123,13 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
   cv::Mat deph_map_aux(this->sens_config_.num_of_elevation_cells, this->sens_config_.num_of_azimuth_cells, CV_8UC3,
   EMPTY_PIXEL);
   deph_map_aux.copyTo(depth_map);
+  cv::Mat index_to_cloud_aux = cv::Mat_
+      < cv::Point3d>(this->sens_config_.num_of_elevation_cells, this->sens_config_.num_of_azimuth_cells) << EMPTY_PIXEL;
+  index_to_cloud_aux.copyTo(index_to_cloud);
 
   /****** generate deph laser map using spherical representation, and its corresponds image information ******/
   int u = 0, v = 0;
-  int base = 255;
+  int base = MAX_PIXEL;
   for (i = 0; i < cols; i++)
   {
     for (j = 0; j < rows; j++)
@@ -140,7 +143,9 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
           depth_map.at < cv::Vec3b > (v, u)[0] = colorMap(scan_pcl.points[k].z, factor_color, base);
           depth_map.at < cv::Vec3b > (v, u)[1] = colorMap(scan_pcl.points[k].z, factor_color, base);
           depth_map.at < cv::Vec3b > (v, u)[2] = colorMap(scan_pcl.points[k].z, factor_color, base);
-          index_to_cloud; // fill this variable.
+          index_to_cloud.at < cv::Point3d > (v, u).x = k;
+          index_to_cloud.at < cv::Point3d > (v, u).y = j;
+          index_to_cloud.at < cv::Point3d > (v, u).z = i;
         }
       }
     }
@@ -151,10 +156,10 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
   return;
 }
 
-void OnlineCalibrationAlgorithm::preprocessCloudImage(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
-                                                      cv::Mat depth_map, cv::Mat index_to_cloud, cv::Mat& image_sobel,
-                                                      cv::Mat& image_discontinuities,
-                                                      sensor_msgs::PointCloud2& scan_discontinuities)
+void OnlineCalibrationAlgorithm::preprocessCloudAndImage(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
+                                                         cv::Mat depth_map, cv::Mat index_to_cloud,
+                                                         cv::Mat& image_sobel, cv::Mat& image_discontinuities,
+                                                         sensor_msgs::PointCloud2& scan_discontinuities)
 {
   /********** sobel filter **********/
   cv::Mat depth_map_gray;
@@ -165,6 +170,7 @@ void OnlineCalibrationAlgorithm::preprocessCloudImage(cv::Mat last_image, sensor
   int scale = 1;
   int delta = 0;
   int ddepth = CV_16S;
+  int u, v, i, j;
 
   cv::GaussianBlur(last_image, last_image, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
   cv::cvtColor(last_image, last_image_gray, CV_BGR2GRAY);
@@ -184,12 +190,33 @@ void OnlineCalibrationAlgorithm::preprocessCloudImage(cv::Mat last_image, sensor
   addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
 
   /************ binarization of edges depth imege ********************/
-  int threshold_value = 127; // TODO: get from param
-  int max_value = 255;
+  int threshold_value = 155; // TODO: get from param
   int threshold_type_bin = 0;
-  cv::threshold(grad, image_discontinuities, threshold_value, max_value, threshold_type_bin);
+  cv::Mat image_binary;
+  cv::threshold(grad, image_binary, threshold_value, MAX_PIXEL, threshold_type_bin);
 
   /************* generate discontinuities cloud **********************/
+  int rows = last_image.rows;
+  int cols = last_image.cols;
+  cv::Mat new_image(rows, cols, CV_8UC3, 0.0);
+  new_image.copyTo(image_discontinuities);
+  for (u = 0; u < index_to_cloud.cols; u++)
+  {
+    for (v = 0; v < index_to_cloud.rows; v++)
+    {
+      if (index_to_cloud.at < cv::Point3d > (v, u).x != EMPTY_PIXEL && image_binary.at < uchar > (v, u) > threshold_value)
+      {
+        j = (int)index_to_cloud.at < cv::Point3d > (v, u).y;
+        i = (int)index_to_cloud.at < cv::Point3d > (v, u).z;
+        if (j < rows && i < cols && j >= 0 && i >= 0)
+        {
+          image_discontinuities.at < cv::Vec3b > (j, i)[0] = MAX_PIXEL;
+          image_discontinuities.at < cv::Vec3b > (j, i)[1] = MAX_PIXEL;
+          image_discontinuities.at < cv::Vec3b > (j, i)[2] = MAX_PIXEL;
+        }
+      }
+    }
+  }
 
   return;
 }

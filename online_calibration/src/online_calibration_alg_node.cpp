@@ -90,8 +90,8 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   sensor_msgs::PointCloud2 scan_discontinuities;
   this->alg_.depthImageFromLidar(this->last_image_, *msg, this->cam_model_, this->frame_lidar_, this->acquisition_time_,
                                  this->tf_listener_, index_to_cloud, depth_map);
-  this->alg_.preprocessCloudImage(this->last_image_, *msg, depth_map, index_to_cloud, image_sobel,
-                                  image_discontinuities, scan_discontinuities);
+  this->alg_.preprocessCloudAndImage(this->last_image_, *msg, depth_map, index_to_cloud, image_sobel,
+                                     image_discontinuities, scan_discontinuities);
 
   //////////////////////////////////////////////////////////////////
   //// representation of camera and lidar information (TODO: put into previous function!!)
@@ -108,11 +108,11 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   //// publish in image topics
   std_msgs::Header header; // empty header
   header.stamp = ros::Time::now(); // time
-  float resize_factor = 8.0;
-  cv::Mat image_discontinuities_plt;
-  cv::resize(image_discontinuities, image_discontinuities_plt, cv::Size(), 1.0, resize_factor);
+  //float resize_factor = 8.0;
+  //cv::Mat image_discontinuities_plt;
+  //cv::resize(image_discontinuities, image_discontinuities_plt, cv::Size(), 1.0, resize_factor);
   cv_bridge::CvImage output_bridge;
-  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::MONO8/*RGB8*/, image_discontinuities_plt);
+  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::/*MONO8*/RGB8, image_discontinuities);
   this->edges_publisher_.publish(output_bridge.toImageMsg());
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::MONO8, image_sobel);
   this->sobel_publisher_.publish(output_bridge.toImageMsg());
