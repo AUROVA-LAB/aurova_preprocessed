@@ -50,6 +50,7 @@
 #define INVALID_VALUE -1
 #define NO_INDEX -2
 #define EMPTY_PIXEL 0.0
+#define MAX_PIXEL 255.0
 
 struct SensorConfiguration
 {
@@ -180,10 +181,17 @@ public:
   /**
    * TODO: doxygen comments
    */
-  void cloudDiscontinuities(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
-                            image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
-                            ros::Time acquisition_time, tf::TransformListener& tf_listener, cv::Mat& depth_map,
-                            sensor_msgs::PointCloud2& scan_discontinuities);
+  void depthImageFromLidar(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
+                           image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
+                           ros::Time acquisition_time, tf::TransformListener& tf_listener, cv::Mat& index_to_cloud,
+                           cv::Mat& depth_map);
+
+  /**
+   * TODO: doxygen comments
+   */
+  void preprocessCloudAndImage(cv::Mat last_image, sensor_msgs::PointCloud2 scan, cv::Mat depth_map,
+                               cv::Mat index_to_cloud, cv::Mat& image_sobel, cv::Mat& image_discontinuities,
+                               sensor_msgs::PointCloud2& scan_discontinuities);
 
   /**
    * \brief Method that combine information from camera and lidar point cloud

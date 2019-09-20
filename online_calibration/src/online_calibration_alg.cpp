@@ -27,11 +27,11 @@ void OnlineCalibrationAlgorithm::config_update(Config& config, uint32_t level)
 }
 
 // OnlineCalibrationAlgorithm Public API
-void OnlineCalibrationAlgorithm::cloudDiscontinuities(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
-                                                      image_geometry::PinholeCameraModel cam_model,
-                                                      std::string frame_lidar, ros::Time acquisition_time,
-                                                      tf::TransformListener& tf_listener, cv::Mat& depth_map,
-                                                      sensor_msgs::PointCloud2& scan_discontinuities)
+void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
+                                                     image_geometry::PinholeCameraModel cam_model,
+                                                     std::string frame_lidar, ros::Time acquisition_time,
+                                                     tf::TransformListener& tf_listener, cv::Mat& index_to_cloud,
+                                                     cv::Mat& depth_map)
 {
   int i, j, k;
   int rows = last_image.rows;
@@ -46,10 +46,7 @@ void OnlineCalibrationAlgorithm::cloudDiscontinuities(cv::Mat last_image, sensor
     for (j = 0; j < rows; j++)
       index[j][i] = NO_INDEX;
 
-  // conversion of msg to pcl format
-  pcl_conversions::toPCL(scan, scan_pcl2);
-  pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl_orig);
-
+  /************** transform scan to camera frame ****************/
   try
   {
     ros::Duration duration(1.0);
@@ -63,7 +60,9 @@ void OnlineCalibrationAlgorithm::cloudDiscontinuities(cv::Mat last_image, sensor
     return;
   }
 
-  // conversion of msg to pcl format
+  /**************  conversions from msg to pcl format ****************/
+  pcl_conversions::toPCL(scan, scan_pcl2);
+  pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl_orig);
   pcl_conversions::toPCL(scan_transformed, scan_pcl2);
   pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl);
 
@@ -124,9 +123,13 @@ void OnlineCalibrationAlgorithm::cloudDiscontinuities(cv::Mat last_image, sensor
   cv::Mat deph_map_aux(this->sens_config_.num_of_elevation_cells, this->sens_config_.num_of_azimuth_cells, CV_8UC3,
   EMPTY_PIXEL);
   deph_map_aux.copyTo(depth_map);
+  cv::Mat index_to_cloud_aux = cv::Mat_
+      < cv::Point3d>(this->sens_config_.num_of_elevation_cells, this->sens_config_.num_of_azimuth_cells) << EMPTY_PIXEL;
+  index_to_cloud_aux.copyTo(index_to_cloud);
 
   /****** generate deph laser map using spherical representation, and its corresponds image information ******/
   int u = 0, v = 0;
+  int base = MAX_PIXEL;
   for (i = 0; i < cols; i++)
   {
     for (j = 0; j < rows; j++)
@@ -137,15 +140,83 @@ void OnlineCalibrationAlgorithm::cloudDiscontinuities(cv::Mat last_image, sensor
         point2SphericalGrid(scan_pcl_orig.points[k], this->sens_config_, v, u);
         if (u != INVALID_VALUE)
         {
-          depth_map.at < cv::Vec3b > (v, u)[0] = colorMapInv(scan_pcl.points[k].z, factor_color, 255);
-          depth_map.at < cv::Vec3b > (v, u)[1] = colorMapInv(scan_pcl.points[k].z, factor_color, 255);
-          depth_map.at < cv::Vec3b > (v, u)[2] = colorMapInv(scan_pcl.points[k].z, factor_color, 255);
+          depth_map.at < cv::Vec3b > (v, u)[0] = colorMap(scan_pcl.points[k].z, factor_color, base);
+          depth_map.at < cv::Vec3b > (v, u)[1] = colorMap(scan_pcl.points[k].z, factor_color, base);
+          depth_map.at < cv::Vec3b > (v, u)[2] = colorMap(scan_pcl.points[k].z, factor_color, base);
+          index_to_cloud.at < cv::Point3d > (v, u).x = k;
+          index_to_cloud.at < cv::Point3d > (v, u).y = j;
+          index_to_cloud.at < cv::Point3d > (v, u).z = i;
         }
       }
     }
   }
   fillGraps(depth_map);
-  cv::applyColorMap(depth_map, depth_map, cv::COLORMAP_JET);
+  //cv::applyColorMap(depth_map, depth_map, cv::COLORMAP_JET);
+
+  return;
+}
+
+void OnlineCalibrationAlgorithm::preprocessCloudAndImage(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
+                                                         cv::Mat depth_map, cv::Mat index_to_cloud,
+                                                         cv::Mat& image_sobel, cv::Mat& image_discontinuities,
+                                                         sensor_msgs::PointCloud2& scan_discontinuities)
+{
+  /********** sobel filter **********/
+  cv::Mat depth_map_gray;
+  cv::Mat last_image_gray;
+  cv::Mat grad;
+  cv::Mat grad_x, grad_y;
+  cv::Mat abs_grad_x, abs_grad_y;
+  int scale = 1;
+  int delta = 0;
+  int ddepth = CV_16S;
+  int u, v, i, j;
+
+  cv::GaussianBlur(last_image, last_image, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
+  cv::cvtColor(last_image, last_image_gray, CV_BGR2GRAY);
+  cv::Sobel(last_image_gray, grad_x, ddepth, 1, 0, 3, scale, delta, cv::BORDER_DEFAULT);
+  cv::Sobel(last_image_gray, grad_y, ddepth, 0, 1, 3, scale, delta, cv::BORDER_DEFAULT);
+  convertScaleAbs(grad_x, abs_grad_x);
+  convertScaleAbs(grad_y, abs_grad_y);
+  addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
+  grad.copyTo(image_sobel);
+
+  cv::GaussianBlur(depth_map, depth_map, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
+  cv::cvtColor(depth_map, depth_map_gray, CV_BGR2GRAY);
+  cv::Sobel(depth_map_gray, grad_x, ddepth, 1, 0, 3, scale, delta, cv::BORDER_DEFAULT);
+  cv::Sobel(depth_map_gray, grad_y, ddepth, 0, 1, 3, scale, delta, cv::BORDER_DEFAULT);
+  convertScaleAbs(grad_x, abs_grad_x);
+  convertScaleAbs(grad_y, abs_grad_y);
+  addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
+
+  /************ binarization of edges depth imege ********************/
+  int threshold_value = 155; // TODO: get from param
+  int threshold_type_bin = 0;
+  cv::Mat image_binary;
+  cv::threshold(grad, image_binary, threshold_value, MAX_PIXEL, threshold_type_bin);
+
+  /************* generate discontinuities cloud **********************/
+  int rows = last_image.rows;
+  int cols = last_image.cols;
+  cv::Mat new_image(rows, cols, CV_8UC3, 0.0);
+  new_image.copyTo(image_discontinuities);
+  for (u = 0; u < index_to_cloud.cols; u++)
+  {
+    for (v = 0; v < index_to_cloud.rows; v++)
+    {
+      if (index_to_cloud.at < cv::Point3d > (v, u).x != EMPTY_PIXEL && image_binary.at < uchar > (v, u) > threshold_value)
+      {
+        j = (int)index_to_cloud.at < cv::Point3d > (v, u).y;
+        i = (int)index_to_cloud.at < cv::Point3d > (v, u).z;
+        if (j < rows && i < cols && j >= 0 && i >= 0)
+        {
+          image_discontinuities.at < cv::Vec3b > (j, i)[0] = MAX_PIXEL;
+          image_discontinuities.at < cv::Vec3b > (j, i)[1] = MAX_PIXEL;
+          image_discontinuities.at < cv::Vec3b > (j, i)[2] = MAX_PIXEL;
+        }
+      }
+    }
+  }
 
   return;
 }
