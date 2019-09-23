@@ -33,6 +33,8 @@
 
 #include <iri_base_algorithm/iri_base_algorithm.h>
 #include "gps_to_odom_alg.h"
+#include "tf_conversions/tf_eigen.h"
+#include <eigen_conversions/eigen_msg.h>
 #include <Eigen/Dense>
 
 // [publisher subscriber headers]
