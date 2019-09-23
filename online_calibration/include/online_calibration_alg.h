@@ -184,13 +184,14 @@ public:
   void depthImageFromLidar(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
                            image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
                            ros::Time acquisition_time, tf::TransformListener& tf_listener, cv::Mat& index_to_cloud,
-                           cv::Mat& depth_map);
+                           cv::Mat& depth_map, pcl::PointCloud<pcl::PointXYZ>& scan_pcl_orig);
 
   /**
    * TODO: doxygen comments
    */
-  void preprocessCloudAndImage(cv::Mat last_image, sensor_msgs::PointCloud2 scan, cv::Mat depth_map,
-                               cv::Mat index_to_cloud, cv::Mat& image_sobel, cv::Mat& image_discontinuities,
+  void preprocessCloudAndImage(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
+                               pcl::PointCloud<pcl::PointXYZ>& scan_pcl_orig, cv::Mat depth_map, cv::Mat index_to_cloud,
+                               cv::Mat& image_sobel, cv::Mat& image_discontinuities,
                                sensor_msgs::PointCloud2& scan_discontinuities);
 
   /**

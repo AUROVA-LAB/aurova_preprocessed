@@ -88,13 +88,15 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   cv::Mat image_sobel;
   cv::Mat image_discontinuities;
   sensor_msgs::PointCloud2 scan_discontinuities;
+  static pcl::PointCloud<pcl::PointXYZ> scan_pcl_orig;
   this->alg_.depthImageFromLidar(this->last_image_, *msg, this->cam_model_, this->frame_lidar_, this->acquisition_time_,
-                                 this->tf_listener_, index_to_cloud, depth_map);
-  this->alg_.preprocessCloudAndImage(this->last_image_, *msg, depth_map, index_to_cloud, image_sobel,
+                                 this->tf_listener_, index_to_cloud, depth_map, scan_pcl_orig);
+  this->alg_.preprocessCloudAndImage(this->last_image_, *msg, scan_pcl_orig, depth_map, index_to_cloud, image_sobel,
                                      image_discontinuities, scan_discontinuities);
 
   //////////////////////////////////////////////////////////////////
   //// representation of camera and lidar information (TODO: put into previous function!!)
+  scan_discontinuities.header = msg->header;
   this->alg_.sensorFusion(this->last_image_, *msg, this->cam_model_, this->frame_lidar_, this->frame_odom_,
                           this->acquisition_time_, this->tf_listener_, this->plot_image_);
 
