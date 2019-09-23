@@ -83,31 +83,30 @@ void GpsToOdomAlgNode::cb_getGpsFixVelMsg(const geometry_msgs::TwistWithCovarian
   double vz = UTM_velocities(2);
 
   // And compute the orientation as a function of the velocities
-  Eigen::Vector3d UTM_orientation_YPR = Eigen::Vector3d::Zero();
-  UTM_orientation_YPR(0) = atan2(vy, vx);
-  UTM_orientation_YPR(1) = atan2(vz, vx);
-  UTM_orientation_YPR(2) = atan2(vz, vy);
-
+  Eigen::Vector3d UTM_orientation_RPY = Eigen::Vector3d::Zero();
+  UTM_orientation_RPY(0) = 0.0;//atan2(vz, vy);
+  UTM_orientation_RPY(1) = 0.0;//atan2(vz, vx);
+  UTM_orientation_RPY(2) = atan2(vy, vx);
 
   // Now we need to compute the covariance matrix of those orientations,
   // as we have an explicit non-linear relation, we use the a first order approximation
   // to describe the variance propagation:
 
+/*
   // First, we compute the jacobian of the function that maps velocities to orientation
-  Eigen::Matrix3d UTM_orientation_YPR_jacobian = Eigen::Matrix3d::Zero();
+  Eigen::Matrix3d UTM_orientation_RPY_jacobian = Eigen::Matrix3d::Zero();
 
-  UTM_orientation_YPR_jacobian(0,0) = -1*vy / (vx*vx + vy*vy); // partial derivative of yaw wrt vx
-  UTM_orientation_YPR_jacobian(0,1) =    vx / (vx*vx + vy*vy); // partial derivative of yaw wrt vy
-  UTM_orientation_YPR_jacobian(0,2) = 0.0;                     // partial derivative of yaw wrt vz
+  UTM_orientation_RPY_jacobian(0,0) = 0.0;                     // partial derivative of roll wrt vx
+  UTM_orientation_RPY_jacobian(0,1) = -1*vz / (vy*vy + vz*vz); // partial derivative of roll wrt vy
+  UTM_orientation_RPY_jacobian(0,2) =    vy / (vy*vy + vz*vz); // partial derivative of roll wrt vz
 
-  UTM_orientation_YPR_jacobian(1,0) = -1*vz / (vx*vx + vz*vz); // partial derivative of pitch wrt vx
-  UTM_orientation_YPR_jacobian(1,1) = 0.0;                     // partial derivative of pitch wrt vy
-  UTM_orientation_YPR_jacobian(1,2) =    vx / (vx*vx + vz*vz); // partial derivative of pitch wrt vz
+  UTM_orientation_RPY_jacobian(1,0) = -1*vz / (vx*vx + vz*vz); // partial derivative of pitch wrt vx
+  UTM_orientation_RPY_jacobian(1,1) = 0.0;                     // partial derivative of pitch wrt vy
+  UTM_orientation_RPY_jacobian(1,2) =    vx / (vx*vx + vz*vz); // partial derivative of pitch wrt vz
 
-  UTM_orientation_YPR_jacobian(2,0) = 0.0;                     // partial derivative of roll wrt vx
-  UTM_orientation_YPR_jacobian(2,1) = -1*vz / (vy*vy + vz*vz); // partial derivative of roll wrt vy
-  UTM_orientation_YPR_jacobian(2,2) =    vy / (vy*vy + vz*vz); // partial derivative of roll wrt vz
-
+  UTM_orientation_RPY_jacobian(2,0) = -1*vy / (vx*vx + vy*vy); // partial derivative of yaw wrt vx
+  UTM_orientation_RPY_jacobian(2,1) =    vx / (vx*vx + vy*vy); // partial derivative of yaw wrt vy
+  UTM_orientation_RPY_jacobian(2,2) = 0.0;                     // partial derivative of yaw wrt vz
 
   // Next, we extract the velocity covariance matrix (it will be just diagonal using an UBLOX M8P sensor)
   Eigen::Matrix3d UTM_vel_covariance = Eigen::Matrix3d::Zero();
@@ -124,11 +123,11 @@ void GpsToOdomAlgNode::cb_getGpsFixVelMsg(const geometry_msgs::TwistWithCovarian
   UTM_vel_covariance(2,2) = vel_msg->twist.covariance[14];
 
   // Finally, we compute the first order approximation
-  Eigen::Matrix3d UTM_orientation_YPR_cov = Eigen::Matrix3d::Zero();
+  Eigen::Matrix3d UTM_orientation_RPY_cov = Eigen::Matrix3d::Zero();
 
-  UTM_orientation_YPR_cov = UTM_orientation_YPR_jacobian * UTM_vel_covariance * UTM_orientation_YPR_jacobian.transpose();
+  UTM_orientation_RPY_cov = UTM_orientation_RPY_jacobian * UTM_vel_covariance * UTM_orientation_RPY_jacobian.transpose();
 
-
+*/
   // Now we need to transform all the data from UTM to Map frame
 
   // First, we get transform UTM to MAP
@@ -151,42 +150,48 @@ void GpsToOdomAlgNode::cb_getGpsFixVelMsg(const geometry_msgs::TwistWithCovarian
   map_velocities = UTM_to_map_rotation.linear() * UTM_velocities;
 
   // And the orientations
-  Eigen::Vector3d map_orientations_YPR = Eigen::Vector3d::Zero();
-  map_orientations_YPR = UTM_to_map_rotation.linear() * UTM_orientation_YPR;
+  Eigen::Vector3d map_orientations_RPY = Eigen::Vector3d::Zero();
+  map_orientations_RPY = UTM_to_map_rotation.linear() * UTM_orientation_RPY;
 
   // Converting to quarternion to fill the ROS message
-  tf::Quaternion quaternion = tf::createQuaternionFromRPY(map_orientations_YPR(2), map_orientations_YPR(1), map_orientations_YPR(0));
+//  tf::Quaternion quaternion = tf::createQuaternionFromRPY(map_orientations_RPY(0), map_orientations_RPY(1), map_orientations_RPY(2));
+  tf::Quaternion quaternion = tf::createQuaternionFromRPY(0.0, 0.0, UTM_orientation_RPY(2) + tf::getYaw(this->utm_trans_.getRotation()));
+
   this->odom_gps_.pose.pose.orientation.x = quaternion[0];
   this->odom_gps_.pose.pose.orientation.y = quaternion[1];
   this->odom_gps_.pose.pose.orientation.z = quaternion[2];
   this->odom_gps_.pose.pose.orientation.w = quaternion[3];
-
+/*
   // And finally the covariances
   Eigen::Matrix3d map_vel_cov = Eigen::Matrix3d::Zero();
   map_vel_cov = UTM_to_map_rotation.linear() * UTM_vel_covariance * UTM_to_map_rotation.linear().transpose();
 
-  Eigen::Matrix3d map_orientations_YPR_cov = Eigen::Matrix3d::Zero();
-  map_orientations_YPR_cov = UTM_to_map_rotation.linear() * UTM_orientation_YPR_cov * UTM_to_map_rotation.linear().transpose();
+  Eigen::Matrix3d map_orientations_RPY_cov = Eigen::Matrix3d::Zero();
+  map_orientations_RPY_cov = UTM_to_map_rotation.linear() * UTM_orientation_RPY_cov * UTM_to_map_rotation.linear().transpose();
 
   // Passing to ROS message
-  this->odom_gps_.pose.covariance[21] = map_orientations_YPR_cov(0,0);
-  this->odom_gps_.pose.covariance[22] = map_orientations_YPR_cov(0,1);
-  this->odom_gps_.pose.covariance[23] = map_orientations_YPR_cov(0,2);
+  this->odom_gps_.pose.covariance[21] = map_orientations_RPY_cov(0,0);
+  this->odom_gps_.pose.covariance[22] = map_orientations_RPY_cov(0,1);
+  this->odom_gps_.pose.covariance[23] = map_orientations_RPY_cov(0,2);
 
-  this->odom_gps_.pose.covariance[27] = map_orientations_YPR_cov(1,0);
-  this->odom_gps_.pose.covariance[28] = map_orientations_YPR_cov(1,1);
-  this->odom_gps_.pose.covariance[29] = map_orientations_YPR_cov(1,2);
+  this->odom_gps_.pose.covariance[27] = map_orientations_RPY_cov(1,0);
+  this->odom_gps_.pose.covariance[28] = map_orientations_RPY_cov(1,1);
+  this->odom_gps_.pose.covariance[29] = map_orientations_RPY_cov(1,2);
 
-  this->odom_gps_.pose.covariance[33] = map_orientations_YPR_cov(2,0);
-  this->odom_gps_.pose.covariance[34] = map_orientations_YPR_cov(2,1);
-  this->odom_gps_.pose.covariance[35] = map_orientations_YPR_cov(2,2);
+  this->odom_gps_.pose.covariance[33] = map_orientations_RPY_cov(2,0);
+  this->odom_gps_.pose.covariance[34] = map_orientations_RPY_cov(2,1);
+  this->odom_gps_.pose.covariance[35] = map_orientations_RPY_cov(2,2);
+*/
 
+/*
   // Passing the 3D velocities to the odometry twist in the output message
   // Mean value
   this->odom_gps_.twist.twist.linear.x = map_velocities(0);
   this->odom_gps_.twist.twist.linear.y = map_velocities(1);
   this->odom_gps_.twist.twist.linear.z = map_velocities(2);
+*/
 
+/*
   // Linear velocities covariance matrix
   this->odom_gps_.twist.covariance[0]  = map_vel_cov(0,0);
   this->odom_gps_.twist.covariance[1]  = map_vel_cov(0,1);
@@ -202,6 +207,7 @@ void GpsToOdomAlgNode::cb_getGpsFixVelMsg(const geometry_msgs::TwistWithCovarian
 
   this->odom_gps_.twist.covariance[21] = 0.0; // To correct some weird design that makes the ublox ros driver to
                                               // put a -1.0 value in this position
+*/
   this->flag_gnss_velocity_received_ = true;
   this->alg_.unlock();
 }
