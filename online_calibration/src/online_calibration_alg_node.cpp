@@ -93,19 +93,19 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
                                  this->tf_listener_, index_to_cloud, depth_map, scan_pcl_orig);
   this->alg_.preprocessCloudAndImage(this->last_image_, *msg, scan_pcl_orig, depth_map, index_to_cloud, image_sobel,
                                      image_discontinuities, scan_discontinuities);
+  scan_discontinuities.header = msg->header;
+  this->alg_.lidarDiscontinuities(this->last_image_, *msg, this->cam_model_, this->frame_lidar_,
+                                  this->frame_odom_, this->acquisition_time_, this->tf_listener_, this->plot_image_);
 
   //////////////////////////////////////////////////////////////////
   //// representation of camera and lidar information (TODO: put into previous function!!)
-  scan_discontinuities.header = msg->header;
-  this->alg_.sensorFusion(this->last_image_, *msg, this->cam_model_, this->frame_lidar_, this->frame_odom_,
-                          this->acquisition_time_, this->tf_listener_, this->plot_image_);
+  this->alg_.sensorFusion(this->last_image_, scan_discontinuities, this->cam_model_, this->frame_lidar_,
+                          this->frame_odom_, this->acquisition_time_, this->tf_listener_, image_discontinuities);
 
   //////////////////////////////////////////////////////////////////
   //// get match features (and errors) between laser and lidar info
-
   //////////////////////////////////////////////////////////////////
   //// apply control law of VS for modify [t|R]
-
   //////////////////////////////////////////////////////////////////
   //// publish in image topics
   std_msgs::Header header; // empty header
