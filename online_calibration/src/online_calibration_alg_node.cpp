@@ -77,30 +77,34 @@ void OnlineCalibrationAlgNode::cb_imageInfo(const sensor_msgs::ImageConstPtr& im
   this->alg_.unlock();
 }
 
-void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::ConstPtr& msg)
+void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::ConstPtr& scan)
 {
   this->alg_.lock();
 
   //////////////////////////////////////////////////////////////////
-  //// preprocessed all the data
+  //// preprocess all the data
   cv::Mat depth_map;
   cv::Mat index_to_cloud;
   cv::Mat image_sobel;
   cv::Mat image_discontinuities;
   sensor_msgs::PointCloud2 scan_discontinuities;
-  static pcl::PointCloud<pcl::PointXYZ> scan_pcl_orig;
-  this->alg_.depthImageFromLidar(this->last_image_, *msg, this->cam_model_, this->frame_lidar_, this->acquisition_time_,
-                                 this->tf_listener_, index_to_cloud, depth_map, scan_pcl_orig);
-  this->alg_.preprocessCloudAndImage(this->last_image_, *msg, scan_pcl_orig, depth_map, index_to_cloud, image_sobel,
-                                     image_discontinuities, scan_discontinuities);
-  scan_discontinuities.header = msg->header;
-  this->alg_.lidarDiscontinuities(this->last_image_, *msg, this->cam_model_, this->frame_lidar_,
-                                  this->frame_odom_, this->acquisition_time_, this->tf_listener_, this->plot_image_);
+  static pcl::PointCloud<pcl::PointXYZ> scan_pcl;
+
+  this->alg_.depthImageFromLidar(this->last_image_, *scan, this->cam_model_, this->frame_lidar_,
+                                 this->acquisition_time_, this->tf_listener_, index_to_cloud, depth_map, scan_pcl);
+
+  this->alg_.preprocessScanAndImage(this->last_image_, scan_pcl, depth_map, index_to_cloud, image_sobel,
+                                    scan_discontinuities);
 
   //////////////////////////////////////////////////////////////////
-  //// representation of camera and lidar information (TODO: put into previous function!!)
-  this->alg_.sensorFusion(this->last_image_, scan_discontinuities, this->cam_model_, this->frame_lidar_,
-                          this->frame_odom_, this->acquisition_time_, this->tf_listener_, image_discontinuities);
+  //// representation of camera and lidar information
+  scan_discontinuities.header = scan->header;
+  this->alg_.plotAcumulatedPoints(this->last_image_, scan_discontinuities, this->cam_model_, this->frame_lidar_,
+                                  this->frame_odom_, this->acquisition_time_, this->tf_listener_,
+                                  image_discontinuities);
+
+  this->alg_.plotScanInImage(this->last_image_, *scan, this->cam_model_, this->frame_lidar_, this->frame_odom_,
+                             this->acquisition_time_, this->tf_listener_, this->plot_image_);
 
   //////////////////////////////////////////////////////////////////
   //// get match features (and errors) between laser and lidar info
@@ -114,7 +118,7 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   //cv::Mat image_discontinuities_plt;
   //cv::resize(image_discontinuities, image_discontinuities_plt, cv::Size(), 1.0, resize_factor);
   cv_bridge::CvImage output_bridge;
-  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::/*MONO8*/RGB8, image_discontinuities);
+  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_discontinuities);
   this->edges_publisher_.publish(output_bridge.toImageMsg());
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::MONO8, image_sobel);
   this->sobel_publisher_.publish(output_bridge.toImageMsg());

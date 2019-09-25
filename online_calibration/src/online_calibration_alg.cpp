@@ -32,7 +32,7 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
                                                      image_geometry::PinholeCameraModel cam_model,
                                                      std::string frame_lidar, ros::Time acquisition_time,
                                                      tf::TransformListener& tf_listener, cv::Mat& index_to_cloud,
-                                                     cv::Mat& depth_map, pcl::PointCloud<pcl::PointXYZ>& scan_pcl_orig)
+                                                     cv::Mat& depth_map, pcl::PointCloud<pcl::PointXYZ>& scan_pcl)
 {
   int i, j, k;
   int rows = last_image.rows;
@@ -40,7 +40,7 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
   float factor_color = 15.0; //TODO: get from parameter
   sensor_msgs::PointCloud2 scan_transformed;
   pcl::PCLPointCloud2 scan_pcl2;
-  static pcl::PointCloud<pcl::PointXYZ> scan_pcl;
+  static pcl::PointCloud<pcl::PointXYZ> scan_transformed_pcl;
   int index[rows][cols];
   for (i = 0; i < cols; i++)
     for (j = 0; j < rows; j++)
@@ -62,21 +62,22 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
 
   /**************  conversions from msg to pcl format ****************/
   pcl_conversions::toPCL(scan, scan_pcl2);
-  pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl_orig);
-  pcl_conversions::toPCL(scan_transformed, scan_pcl2);
   pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl);
+  pcl_conversions::toPCL(scan_transformed, scan_pcl2);
+  pcl::fromPCLPointCloud2(scan_pcl2, scan_transformed_pcl);
 
   /****** get field of view and save index correspondence between cloud and image ******/
   float max_elevation = -10000.0;
   float min_elevation = 10000.0;
   float max_azimut = -10000.0;
   float min_azimut = 10000.0;
-  for (i = 0; i < scan_pcl.points.size(); ++i)
+  for (i = 0; i < scan_transformed_pcl.points.size(); ++i)
   {
-    if (scan_pcl.points[i].z > 0.0)
+    if (scan_transformed_pcl.points[i].z > 0.0)
     {
       // project into image plane
-      cv::Point3d pt_cv(scan_pcl.points[i].x, scan_pcl.points[i].y, scan_pcl.points[i].z);
+      cv::Point3d pt_cv(scan_transformed_pcl.points[i].x, scan_transformed_pcl.points[i].y,
+                        scan_transformed_pcl.points[i].z);
       cv::Point2d uv;
       uv = cam_model.project3dToPixel(pt_cv);
       if (uv.x >= 0 && uv.y >= 0 && uv.x < cols && uv.y < rows)
@@ -86,9 +87,9 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
         float range = 0.0;
         float elevation = 0.0;
         float azimuth = 0.0;
-        float x = scan_pcl_orig.points[i].x;
-        float y = scan_pcl_orig.points[i].y;
-        float z = scan_pcl_orig.points[i].z;
+        float x = scan_pcl.points[i].x;
+        float y = scan_pcl.points[i].y;
+        float z = scan_pcl.points[i].z;
         cartesian2SphericalInDegrees(x, y, z, range, azimuth, elevation);
         if (azimuth > 180.0)
         {
@@ -125,7 +126,6 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
   deph_map_aux.copyTo(depth_map);
   cv::Mat index_to_cloud_aux = cv::Mat_ < cv::Point3d
       > (this->sens_config_.num_of_elevation_cells, this->sens_config_.num_of_azimuth_cells);
-
   for (i = 0; i < this->sens_config_.num_of_azimuth_cells; i++)
   {
     for (j = 0; j < this->sens_config_.num_of_elevation_cells; j++)
@@ -135,7 +135,6 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
       index_to_cloud_aux.at < cv::Point3d > (j, i).z = EMPTY_PIXEL;
     }
   }
-
   index_to_cloud_aux.copyTo(index_to_cloud);
 
   /****** generate deph laser map using spherical representation, and its corresponds image information ******/
@@ -148,12 +147,12 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
       if (index[j][i] > NO_INDEX)
       {
         k = index[j][i];
-        point2SphericalGrid(scan_pcl_orig.points[k], this->sens_config_, v, u);
+        point2SphericalGrid(scan_pcl.points[k], this->sens_config_, v, u);
         if (u != INVALID_VALUE)
         {
-          depth_map.at < cv::Vec3b > (v, u)[0] = colorMap(scan_pcl.points[k].z, factor_color, base);
-          depth_map.at < cv::Vec3b > (v, u)[1] = colorMap(scan_pcl.points[k].z, factor_color, base);
-          depth_map.at < cv::Vec3b > (v, u)[2] = colorMap(scan_pcl.points[k].z, factor_color, base);
+          depth_map.at < cv::Vec3b > (v, u)[0] = colorMap(scan_transformed_pcl.points[k].z, factor_color, base);
+          depth_map.at < cv::Vec3b > (v, u)[1] = colorMap(scan_transformed_pcl.points[k].z, factor_color, base);
+          depth_map.at < cv::Vec3b > (v, u)[2] = colorMap(scan_transformed_pcl.points[k].z, factor_color, base);
           index_to_cloud.at < cv::Point3d > (v, u).x = k;
           index_to_cloud.at < cv::Point3d > (v, u).y = j;
           index_to_cloud.at < cv::Point3d > (v, u).z = i;
@@ -167,11 +166,9 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
   return;
 }
 
-void OnlineCalibrationAlgorithm::preprocessCloudAndImage(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
-                                                         pcl::PointCloud<pcl::PointXYZ>& scan_pcl_orig,
-                                                         cv::Mat depth_map, cv::Mat index_to_cloud,
-                                                         cv::Mat& image_sobel, cv::Mat& image_discontinuities,
-                                                         sensor_msgs::PointCloud2& scan_discontinuities)
+void OnlineCalibrationAlgorithm::preprocessScanAndImage(cv::Mat last_image, pcl::PointCloud<pcl::PointXYZ>& scan_pcl,
+                                                        cv::Mat depth_map, cv::Mat index_to_cloud, cv::Mat& image_sobel,
+                                                        sensor_msgs::PointCloud2& scan_discontinuities)
 {
   /********** sobel filter **********/
   cv::Mat depth_map_gray;
@@ -210,10 +207,6 @@ void OnlineCalibrationAlgorithm::preprocessCloudAndImage(cv::Mat last_image, sen
   /************* generate discontinuities cloud **********************/
   static pcl::PointCloud<pcl::PointXYZ> scan_discontinuities_pcl;
   pcl::PCLPointCloud2 scan_pcl2;
-  int rows = last_image.rows;
-  int cols = last_image.cols;
-  cv::Mat new_image(rows, cols, CV_8UC3, 0.0);
-  new_image.copyTo(image_discontinuities);
   scan_discontinuities_pcl.clear(); // because is static
   for (u = 0; u < index_to_cloud.cols; u++)
   {
@@ -225,14 +218,7 @@ void OnlineCalibrationAlgorithm::preprocessCloudAndImage(cv::Mat last_image, sen
           && image_binary.at < uchar > (v, u) > threshold_value)
       {
         k = (int)index_to_cloud.at < cv::Point3d > (v, u).x;
-        j = (int)index_to_cloud.at < cv::Point3d > (v, u).y;
-        i = (int)index_to_cloud.at < cv::Point3d > (v, u).z;
-
-        scan_discontinuities_pcl.push_back(scan_pcl_orig.points[k]);
-
-        image_discontinuities.at < cv::Vec3b > (j, i)[0] = MAX_PIXEL;
-        image_discontinuities.at < cv::Vec3b > (j, i)[1] = MAX_PIXEL;
-        image_discontinuities.at < cv::Vec3b > (j, i)[2] = MAX_PIXEL;
+        scan_discontinuities_pcl.push_back(scan_pcl.points[k]);
       }
     }
   }
@@ -243,11 +229,11 @@ void OnlineCalibrationAlgorithm::preprocessCloudAndImage(cv::Mat last_image, sen
   return;
 }
 
-void OnlineCalibrationAlgorithm::lidarDiscontinuities(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
+void OnlineCalibrationAlgorithm::plotAcumulatedPoints(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
                                                       image_geometry::PinholeCameraModel cam_model,
                                                       std::string frame_lidar, std::string frame_odom,
                                                       ros::Time acquisition_time, tf::TransformListener& tf_listener,
-                                                      cv::Mat& plot_image)
+                                                      cv::Mat& image_discontinuities)
 {
 
   /****** variable declarations ******/
@@ -255,71 +241,8 @@ void OnlineCalibrationAlgorithm::lidarDiscontinuities(cv::Mat last_image, sensor
   float factor_color = 15.0; //TODO: get from parameter
   int rows = last_image.rows;
   int cols = last_image.cols;
-
-  /****** get transformation, and transform point cloud (including pcl conversions) ******/
-  sensor_msgs::PointCloud2 scan_transformed;
-  static pcl::PointCloud<pcl::PointXYZ> scan_transformed_pcl;
-  pcl::PCLPointCloud2 scan_transformed_pcl2;
-  static pcl::PointCloud<pcl::PointXYZ> scan_pcl;
-  pcl::PCLPointCloud2 scan_pcl2;
-  try
-  {
-    ros::Duration duration(1.0);
-    tf_listener.waitForTransform(cam_model.tfFrame(), frame_lidar, acquisition_time, duration);
-    pcl_ros::transformPointCloud(cam_model.tfFrame(), scan, scan_transformed, tf_listener);
-  }
-  catch (tf::TransformException& ex)
-  {
-    ROS_WARN("[draw_frames] TF exception:\n%s", ex.what());
-    return;
-  }
-
-  pcl_conversions::toPCL(scan, scan_pcl2);
-  pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl);
-  pcl_conversions::toPCL(scan_transformed, scan_transformed_pcl2);
-  pcl::fromPCLPointCloud2(scan_transformed_pcl2, scan_transformed_pcl);
-
-  /****** get field of view and save index correspondence between cloud and image ******/
-  for (size_t i = 0; i < scan_transformed_pcl.points.size(); ++i)
-  {
-    if (scan_transformed_pcl.points[i].z > 0.0)
-    {
-      // project into image plane
-      cv::Point3d pt_cv(scan_transformed_pcl.points[i].x, scan_transformed_pcl.points[i].y,
-                        scan_transformed_pcl.points[i].z);
-      cv::Point2d uv;
-      uv = cam_model.project3dToPixel(pt_cv);
-
-      if (uv.x >= 0 && uv.y >= 0 && uv.x < cols && uv.y < rows)
-      {
-        // plot points in image
-        static const int RADIUS = 2;
-        float r = 0.0;
-        float g = MAX_PIXEL; //colorMap(scan_transformed_pcl.points[i].z, factor_color, MAX_PIXEL);
-        float b = 0.0;
-        cv::circle(plot_image, uv, RADIUS, CV_RGB(r, g, b), -1);
-      }
-    }
-  }
-
-  return;
-}
-
-void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
-                                              image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
-                                              std::string frame_odom, ros::Time acquisition_time,
-                                              tf::TransformListener& tf_listener, cv::Mat& plot_image)
-{
-
-  /****** variable declarations ******/
-  int i, j, k;
-  float factor_color = 15.0; //TODO: get from parameter
-  int rows = last_image.rows;
-  int cols = last_image.cols;
-  /*int index[rows][cols];
-   for (i = 0; i < cols; i++)
-   for (j = 0; j < rows; j++)
-   index[j][i] = NO_INDEX;*/
+  cv::Mat new_image(rows, cols, CV_8UC3, 0.0);
+  new_image.copyTo(image_discontinuities);
 
   /****** get transformation, and transform point cloud (including pcl conversions) ******/
   sensor_msgs::PointCloud2 scan_transformed;
@@ -383,13 +306,68 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
 
       if (uv.x >= 0 && uv.y >= 0 && uv.x < cols && uv.y < rows)
       {
-        //// Save (x, y, z) and (u, v) information
-        //index[(int)uv.y][(int)uv.x] = i;
-
         // plot points in image
         static const int RADIUS = 1;
         float r = 0.0;
         float g = MAX_PIXEL; //colorMap(cloud_pcl.points[i].z, factor_color, MAX_PIXEL);
+        float b = 0.0;
+        cv::circle(image_discontinuities, uv, RADIUS, CV_RGB(r, g, b), -1);
+      }
+    }
+  }
+
+  return;
+}
+
+void OnlineCalibrationAlgorithm::plotScanInImage(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
+                                                 image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
+                                                 std::string frame_odom, ros::Time acquisition_time,
+                                                 tf::TransformListener& tf_listener, cv::Mat& plot_image)
+{
+
+  /****** variable declarations ******/
+  int i, j, k;
+  float factor_color = 15.0; //TODO: get from parameter
+  int rows = last_image.rows;
+  int cols = last_image.cols;
+
+  /****** get transformation, and transform point cloud (including pcl conversions) ******/
+  sensor_msgs::PointCloud2 scan_transformed;
+  static pcl::PointCloud<pcl::PointXYZ> scan_transformed_pcl;
+  pcl::PCLPointCloud2 scan_transformed_pcl2;
+  pcl::PCLPointCloud2 scan_pcl2;
+  try
+  {
+    ros::Duration duration(1.0);
+    tf_listener.waitForTransform(cam_model.tfFrame(), frame_lidar, acquisition_time, duration);
+    pcl_ros::transformPointCloud(cam_model.tfFrame(), scan, scan_transformed, tf_listener);
+  }
+  catch (tf::TransformException& ex)
+  {
+    ROS_WARN("[draw_frames] TF exception:\n%s", ex.what());
+    return;
+  }
+
+  pcl_conversions::toPCL(scan_transformed, scan_transformed_pcl2);
+  pcl::fromPCLPointCloud2(scan_transformed_pcl2, scan_transformed_pcl);
+
+  /****** get field of view and save index correspondence between cloud and image ******/
+  for (size_t i = 0; i < scan_transformed_pcl.points.size(); ++i)
+  {
+    if (scan_transformed_pcl.points[i].z > 0.0)
+    {
+      // project into image plane
+      cv::Point3d pt_cv(scan_transformed_pcl.points[i].x, scan_transformed_pcl.points[i].y,
+                        scan_transformed_pcl.points[i].z);
+      cv::Point2d uv;
+      uv = cam_model.project3dToPixel(pt_cv);
+
+      if (uv.x >= 0 && uv.y >= 0 && uv.x < cols && uv.y < rows)
+      {
+        // plot points in image
+        static const int RADIUS = 2;
+        float r = 0.0;
+        float g = colorMap(scan_transformed_pcl.points[i].z, factor_color, MAX_PIXEL);
         float b = 0.0;
         cv::circle(plot_image, uv, RADIUS, CV_RGB(r, g, b), -1);
       }
