@@ -70,23 +70,71 @@ void GpsToOdomAlgNode::cb_getGpsFixVelMsg(const geometry_msgs::TwistWithCovarian
 {
   this->alg_.lock();
 
-  // We start working in the original UTM coordinates, but we will convert the data to Map frame prior to publish them
-
-  // We get the velocities from the message
+  //////////////////// Extract velocities in "map" frame /////////////////////////////////
+  // Get the velocities expressed in UTM from the message
   Eigen::Vector3d UTM_velocities = Eigen::Vector3d::Zero();
   UTM_velocities(0) = vel_msg->twist.twist.linear.x; // In UTM frame
   UTM_velocities(1) = vel_msg->twist.twist.linear.y;
   UTM_velocities(2) = vel_msg->twist.twist.linear.z;
 
-  double vx = UTM_velocities(0); // just to improve readability
-  double vy = UTM_velocities(1);
-  double vz = UTM_velocities(2);
+  // Get transform from UTM to MAP
+  try
+  {
+    this->listener_.lookupTransform("map", "utm", ros::Time(0), this->utm_trans_);
+  }
+  catch (tf::TransformException ex)
+  {
+    ROS_ERROR("%s", ex.what());
+    ros::Duration(1.0).sleep();
+  }
 
-  // And compute the orientation as a function of the velocities
-  Eigen::Vector3d UTM_orientation_RPY = Eigen::Vector3d::Zero();
-  UTM_orientation_RPY(0) = 0.0;//atan2(vz, vy);
-  UTM_orientation_RPY(1) = 0.0;//atan2(vz, vx);
-  UTM_orientation_RPY(2) = atan2(vy, vx);
+  // Convert it to Eigen
+  Eigen::Affine3d UTM_to_map_rotation;
+  tf::transformTFToEigen(this->utm_trans_, UTM_to_map_rotation);
+
+  // Convert the velocities to "map" frame
+  Eigen::Vector3d map_velocities = Eigen::Vector3d::Zero();
+  map_velocities = UTM_to_map_rotation.linear() * UTM_velocities;
+
+  // And pass it to the output message
+  this->odom_gps_.twist.twist.linear.x = map_velocities(0);
+  this->odom_gps_.twist.twist.linear.y = map_velocities(1);
+  this->odom_gps_.twist.twist.linear.z = map_velocities(2);
+
+  //////// Extract orientations in "map" frame /////////////////////////////////////////////
+  Eigen::Vector3d map_orientations_RPY = Eigen::Vector3d::Zero();
+
+  double vx = map_velocities(0); // just to improve readability
+  double vy = map_velocities(1);
+  double vz = map_velocities(2);
+
+  //map_orientations_RPY(0) = atan2(vz, vy);
+  //map_orientations_RPY(1) = atan2(vz, vx);
+  //map_orientations_RPY(2) = atan2(vy, vx);
+
+  map_orientations_RPY(0) = 0.0; //We assume that the 3D movement of a ground vehicle is due to pitch and yaw only
+  map_orientations_RPY(1) = -1.0 * atan2(vz, sqrt(vx*vx + vy*vy)); // The -1.0 is to point the heading direction
+                                                                   // up when z > 0 (because positive pitch angles make
+                                                                   // the nose go down when using a front (x) , left (y)
+                                                                   // up (z) representation
+  map_orientations_RPY(2) = atan2(vy, vx);
+
+  // Converting to quarternion to fill the ROS message
+  tf::Quaternion quaternion = tf::createQuaternionFromRPY(map_orientations_RPY(0),
+                                                          map_orientations_RPY(1),
+                                                          map_orientations_RPY(2));
+
+  std::cout << "Roll = "  << map_orientations_RPY(0) * 180.0 / M_PI <<
+           "    Pitch = " << map_orientations_RPY(1) * 180.0 / M_PI <<
+           "    Yaw = "   << map_orientations_RPY(2) * 180.0 / M_PI << std::endl;
+
+  // Pass it to the output message
+  this->odom_gps_.pose.pose.orientation.x = quaternion[0];
+  this->odom_gps_.pose.pose.orientation.y = quaternion[1];
+  this->odom_gps_.pose.pose.orientation.z = quaternion[2];
+  this->odom_gps_.pose.pose.orientation.w = quaternion[3];
+
+
 
   // Now we need to compute the covariance matrix of those orientations,
   // as we have an explicit non-linear relation, we use the a first order approximation
@@ -126,41 +174,24 @@ void GpsToOdomAlgNode::cb_getGpsFixVelMsg(const geometry_msgs::TwistWithCovarian
   Eigen::Matrix3d UTM_orientation_RPY_cov = Eigen::Matrix3d::Zero();
 
   UTM_orientation_RPY_cov = UTM_orientation_RPY_jacobian * UTM_vel_covariance * UTM_orientation_RPY_jacobian.transpose();
-
 */
-  // Now we need to transform all the data from UTM to Map frame
 
-  // First, we get transform UTM to MAP
-  try
-  {
-    this->listener_.lookupTransform("map", "utm", ros::Time(0), this->utm_trans_);
-  }
-  catch (tf::TransformException ex)
-  {
-    ROS_ERROR("%s", ex.what());
-    ros::Duration(1.0).sleep();
-  }
 
-  // Convert it to Eigen
-  Eigen::Affine3d UTM_to_map_rotation;
-  tf::transformTFToEigen(this->utm_trans_, UTM_to_map_rotation);
+  //tf::Matrix3x3(this->utm_trans_.getRotation()).getRPY(map_orientations_RPY(0), map_orientations_RPY(1), map_orientations_RPY(2));
 
-  // Next, we convert the velocities
-  Eigen::Vector3d map_velocities = Eigen::Vector3d::Zero();
-  map_velocities = UTM_to_map_rotation.linear() * UTM_velocities;
+  //tf::Quaternion quaternion_1 = this->utm_trans_.getRotation();
 
-  // And the orientations
-  Eigen::Vector3d map_orientations_RPY = Eigen::Vector3d::Zero();
-  map_orientations_RPY = UTM_to_map_rotation.linear() * UTM_orientation_RPY;
+  //map_orientations_RPY(0) += UTM_orientation_RPY(0);
+  //map_orientations_RPY(1) += UTM_orientation_RPY(1);
+  //map_orientations_RPY(2) += UTM_orientation_RPY(2);
 
-  // Converting to quarternion to fill the ROS message
-//  tf::Quaternion quaternion = tf::createQuaternionFromRPY(map_orientations_RPY(0), map_orientations_RPY(1), map_orientations_RPY(2));
-  tf::Quaternion quaternion = tf::createQuaternionFromRPY(0.0, 0.0, UTM_orientation_RPY(2) + tf::getYaw(this->utm_trans_.getRotation()));
 
-  this->odom_gps_.pose.pose.orientation.x = quaternion[0];
-  this->odom_gps_.pose.pose.orientation.y = quaternion[1];
-  this->odom_gps_.pose.pose.orientation.z = quaternion[2];
-  this->odom_gps_.pose.pose.orientation.w = quaternion[3];
+
+
+  //tf::Quaternion quaternion = tf::createQuaternionFromRPY(UTM_orientation_RPY(0), UTM_orientation_RPY(1), UTM_orientation_RPY(2));
+  //quaternion = quaternion + quaternion_1;
+
+
 /*
   // And finally the covariances
   Eigen::Matrix3d map_vel_cov = Eigen::Matrix3d::Zero();
@@ -181,14 +212,6 @@ void GpsToOdomAlgNode::cb_getGpsFixVelMsg(const geometry_msgs::TwistWithCovarian
   this->odom_gps_.pose.covariance[33] = map_orientations_RPY_cov(2,0);
   this->odom_gps_.pose.covariance[34] = map_orientations_RPY_cov(2,1);
   this->odom_gps_.pose.covariance[35] = map_orientations_RPY_cov(2,2);
-*/
-
-/*
-  // Passing the 3D velocities to the odometry twist in the output message
-  // Mean value
-  this->odom_gps_.twist.twist.linear.x = map_velocities(0);
-  this->odom_gps_.twist.twist.linear.y = map_velocities(1);
-  this->odom_gps_.twist.twist.linear.z = map_velocities(2);
 */
 
 /*
