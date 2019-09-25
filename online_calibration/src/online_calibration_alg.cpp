@@ -214,6 +214,7 @@ void OnlineCalibrationAlgorithm::preprocessCloudAndImage(cv::Mat last_image, sen
   int cols = last_image.cols;
   cv::Mat new_image(rows, cols, CV_8UC3, 0.0);
   new_image.copyTo(image_discontinuities);
+  scan_discontinuities_pcl.clear(); // because is static
   for (u = 0; u < index_to_cloud.cols; u++)
   {
     for (v = 0; v < index_to_cloud.rows; v++)
@@ -238,6 +239,68 @@ void OnlineCalibrationAlgorithm::preprocessCloudAndImage(cv::Mat last_image, sen
 
   pcl::toPCLPointCloud2(scan_discontinuities_pcl, scan_pcl2);
   pcl_conversions::fromPCL(scan_pcl2, scan_discontinuities);
+
+  return;
+}
+
+void OnlineCalibrationAlgorithm::lidarDiscontinuities(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
+                                                      image_geometry::PinholeCameraModel cam_model,
+                                                      std::string frame_lidar, std::string frame_odom,
+                                                      ros::Time acquisition_time, tf::TransformListener& tf_listener,
+                                                      cv::Mat& plot_image)
+{
+
+  /****** variable declarations ******/
+  int i, j, k;
+  float factor_color = 15.0; //TODO: get from parameter
+  int rows = last_image.rows;
+  int cols = last_image.cols;
+
+  /****** get transformation, and transform point cloud (including pcl conversions) ******/
+  sensor_msgs::PointCloud2 scan_transformed;
+  static pcl::PointCloud<pcl::PointXYZ> scan_transformed_pcl;
+  pcl::PCLPointCloud2 scan_transformed_pcl2;
+  static pcl::PointCloud<pcl::PointXYZ> scan_pcl;
+  pcl::PCLPointCloud2 scan_pcl2;
+  try
+  {
+    ros::Duration duration(1.0);
+    tf_listener.waitForTransform(cam_model.tfFrame(), frame_lidar, acquisition_time, duration);
+    pcl_ros::transformPointCloud(cam_model.tfFrame(), scan, scan_transformed, tf_listener);
+  }
+  catch (tf::TransformException& ex)
+  {
+    ROS_WARN("[draw_frames] TF exception:\n%s", ex.what());
+    return;
+  }
+
+  pcl_conversions::toPCL(scan, scan_pcl2);
+  pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl);
+  pcl_conversions::toPCL(scan_transformed, scan_transformed_pcl2);
+  pcl::fromPCLPointCloud2(scan_transformed_pcl2, scan_transformed_pcl);
+
+  /****** get field of view and save index correspondence between cloud and image ******/
+  for (size_t i = 0; i < scan_transformed_pcl.points.size(); ++i)
+  {
+    if (scan_transformed_pcl.points[i].z > 0.0)
+    {
+      // project into image plane
+      cv::Point3d pt_cv(scan_transformed_pcl.points[i].x, scan_transformed_pcl.points[i].y,
+                        scan_transformed_pcl.points[i].z);
+      cv::Point2d uv;
+      uv = cam_model.project3dToPixel(pt_cv);
+
+      if (uv.x >= 0 && uv.y >= 0 && uv.x < cols && uv.y < rows)
+      {
+        // plot points in image
+        static const int RADIUS = 2;
+        float r = 0.0;
+        float g = MAX_PIXEL; //colorMap(scan_transformed_pcl.points[i].z, factor_color, MAX_PIXEL);
+        float b = 0.0;
+        cv::circle(plot_image, uv, RADIUS, CV_RGB(r, g, b), -1);
+      }
+    }
+  }
 
   return;
 }
@@ -279,7 +342,7 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
     pcl_conversions::toPCL(scan_transformed, scan_pcl2);
     pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl);
 
-    if (count > 10) // TODO: get from parameter
+    if (count > 20) // TODO: get from parameter
     {
       clouds_acum.erase(clouds_acum.begin());
     }
@@ -326,7 +389,7 @@ void OnlineCalibrationAlgorithm::sensorFusion(cv::Mat last_image, sensor_msgs::P
         // plot points in image
         static const int RADIUS = 1;
         float r = 0.0;
-        float g = colorMap(cloud_pcl.points[i].z, factor_color, 255);
+        float g = MAX_PIXEL; //colorMap(cloud_pcl.points[i].z, factor_color, MAX_PIXEL);
         float b = 0.0;
         cv::circle(plot_image, uv, RADIUS, CV_RGB(r, g, b), -1);
       }
@@ -479,7 +542,7 @@ bool filterPoint(pcl::PointXYZ point_i, pcl::PointXYZ point_i_pr, pcl::PointXYZ 
   float max_aux = std::max(rho_i_pr - rho_i, rho_i_ps - rho_i_pr);
   float max_final = sqrt(std::max(max_aux, (float)0));
 
-  if (max_final < threshold)
+  if (max_final > threshold)
   {
     is_edge = false;
   }

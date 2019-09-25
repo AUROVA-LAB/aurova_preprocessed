@@ -195,6 +195,14 @@ public:
                                sensor_msgs::PointCloud2& scan_discontinuities);
 
   /**
+   * TODO: doxygen comments
+   */
+  void lidarDiscontinuities(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
+                            image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
+                            std::string frame_odom, ros::Time acquisition_time, tf::TransformListener& tf_listener,
+                            cv::Mat& plot_image);
+
+  /**
    * \brief Method that combine information from camera and lidar point cloud
    *
    * This method gets as principal inputs:
