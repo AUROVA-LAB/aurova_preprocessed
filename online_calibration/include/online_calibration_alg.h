@@ -184,13 +184,13 @@ public:
   void depthImageFromLidar(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
                            image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
                            ros::Time acquisition_time, tf::TransformListener& tf_listener, cv::Mat& index_to_cloud,
-                           cv::Mat& depth_map, pcl::PointCloud<pcl::PointXYZ>& scan_pcl_orig);
+                           cv::Mat& depth_map, pcl::PointCloud<pcl::PointXYZI>& scan_pcl_orig);
 
   /**
    * TODO: doxygen comments
    */
-  void preprocessScanAndImage(cv::Mat last_image, pcl::PointCloud<pcl::PointXYZ>& scan_pcl, cv::Mat depth_map,
-                              cv::Mat index_to_cloud, cv::Mat& image_sobel,
+  void preprocessScanAndImage(cv::Mat last_image, pcl::PointCloud<pcl::PointXYZI>& scan_pcl, cv::Mat depth_map,
+                              cv::Mat index_to_cloud, cv::Mat& image_sobel, cv::Mat& image_sobel_plot,
                               sensor_msgs::PointCloud2& scan_discontinuities);
 
   /**
@@ -206,7 +206,7 @@ public:
   void plotAcumulatedPoints(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
                             image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
                             std::string frame_odom, ros::Time acquisition_time, tf::TransformListener& tf_listener,
-                            cv::Mat& image_discontinuities);
+                            cv::Mat& image_sobel_plot, cv::Mat& image_discontinuities);
 
   /**
    * TODO: doxygen comments

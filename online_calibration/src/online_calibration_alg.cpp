@@ -1,11 +1,11 @@
 #include "online_calibration_alg.h"
 
 void cartesian2SphericalInDegrees(float x, float y, float z, float& range, float& azimuth, float& elevation);
-void point2SphericalGrid(pcl::PointXYZ point, struct SensorConfiguration lidar_configuration, int& row, int& col);
+void point2SphericalGrid(pcl::PointXYZI point, struct SensorConfiguration lidar_configuration, int& row, int& col);
 float colorMap(float dist, float factor, int base);
 float colorMapInv(float dist, float factor, int base);
 void fillGraps(cv::Mat& image);
-bool filterPoint(pcl::PointXYZ point_i, pcl::PointXYZ point_i_pr, pcl::PointXYZ point_i_ps);
+bool filterPoint(pcl::PointXYZI point_i, pcl::PointXYZI point_i_pr, pcl::PointXYZI point_i_ps);
 
 OnlineCalibrationAlgorithm::OnlineCalibrationAlgorithm(void)
 {
@@ -32,15 +32,15 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
                                                      image_geometry::PinholeCameraModel cam_model,
                                                      std::string frame_lidar, ros::Time acquisition_time,
                                                      tf::TransformListener& tf_listener, cv::Mat& index_to_cloud,
-                                                     cv::Mat& depth_map, pcl::PointCloud<pcl::PointXYZ>& scan_pcl)
+                                                     cv::Mat& depth_map, pcl::PointCloud<pcl::PointXYZI>& scan_pcl)
 {
   int i, j, k;
   int rows = last_image.rows;
   int cols = last_image.cols;
-  float factor_color = 15.0; //TODO: get from parameter
+  float factor_color = 80.0; //TODO: get from parameter
   sensor_msgs::PointCloud2 scan_transformed;
   pcl::PCLPointCloud2 scan_pcl2;
-  static pcl::PointCloud<pcl::PointXYZ> scan_transformed_pcl;
+  static pcl::PointCloud<pcl::PointXYZI> scan_transformed_pcl;
   int index[rows][cols];
   for (i = 0; i < cols; i++)
     for (j = 0; j < rows; j++)
@@ -166,8 +166,9 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
   return;
 }
 
-void OnlineCalibrationAlgorithm::preprocessScanAndImage(cv::Mat last_image, pcl::PointCloud<pcl::PointXYZ>& scan_pcl,
+void OnlineCalibrationAlgorithm::preprocessScanAndImage(cv::Mat last_image, pcl::PointCloud<pcl::PointXYZI>& scan_pcl,
                                                         cv::Mat depth_map, cv::Mat index_to_cloud, cv::Mat& image_sobel,
+                                                        cv::Mat& image_sobel_plot,
                                                         sensor_msgs::PointCloud2& scan_discontinuities)
 {
   /********** sobel filter **********/
@@ -189,6 +190,7 @@ void OnlineCalibrationAlgorithm::preprocessScanAndImage(cv::Mat last_image, pcl:
   convertScaleAbs(grad_y, abs_grad_y);
   addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
   grad.copyTo(image_sobel);
+  cv::cvtColor(image_sobel, image_sobel_plot, cv::COLOR_GRAY2BGR);
 
   cv::GaussianBlur(depth_map, depth_map, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
   cv::cvtColor(depth_map, depth_map_gray, CV_BGR2GRAY);
@@ -199,13 +201,14 @@ void OnlineCalibrationAlgorithm::preprocessScanAndImage(cv::Mat last_image, pcl:
   addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
 
   /************ binarization of edges depth imege ********************/
-  int threshold_value = 155; // TODO: get from param
+  int threshold_value = 100; // TODO: get from param
   int threshold_type_bin = 0;
   cv::Mat image_binary;
-  cv::threshold(grad, image_binary, threshold_value, MAX_PIXEL, threshold_type_bin);
+  grad.copyTo(image_binary);
+  //cv::threshold(grad, image_binary, threshold_value, MAX_PIXEL, threshold_type_bin);
 
   /************* generate discontinuities cloud **********************/
-  static pcl::PointCloud<pcl::PointXYZ> scan_discontinuities_pcl;
+  static pcl::PointCloud<pcl::PointXYZI> scan_discontinuities_pcl;
   pcl::PCLPointCloud2 scan_pcl2;
   scan_discontinuities_pcl.clear(); // because is static
   for (u = 0; u < index_to_cloud.cols; u++)
@@ -218,6 +221,7 @@ void OnlineCalibrationAlgorithm::preprocessScanAndImage(cv::Mat last_image, pcl:
           && image_binary.at < uchar > (v, u) > threshold_value)
       {
         k = (int)index_to_cloud.at < cv::Point3d > (v, u).x;
+        scan_pcl.points[k].intensity = (float)image_binary.at < uchar > (v, u);
         scan_discontinuities_pcl.push_back(scan_pcl.points[k]);
       }
     }
@@ -233,12 +237,12 @@ void OnlineCalibrationAlgorithm::plotAcumulatedPoints(cv::Mat last_image, sensor
                                                       image_geometry::PinholeCameraModel cam_model,
                                                       std::string frame_lidar, std::string frame_odom,
                                                       ros::Time acquisition_time, tf::TransformListener& tf_listener,
-                                                      cv::Mat& image_discontinuities)
+                                                      cv::Mat& image_sobel_plot, cv::Mat& image_discontinuities)
 {
 
   /****** variable declarations ******/
   int i, j, k;
-  float factor_color = 15.0; //TODO: get from parameter
+  float factor_color = 80.0; //TODO: get from parameter
   int rows = last_image.rows;
   int cols = last_image.cols;
   cv::Mat new_image(rows, cols, CV_8UC3, 0.0);
@@ -250,10 +254,10 @@ void OnlineCalibrationAlgorithm::plotAcumulatedPoints(cv::Mat last_image, sensor
   sensor_msgs::PointCloud2 cloud_transformed;
   pcl::PCLPointCloud2 scan_pcl2;
   pcl::PCLPointCloud2 cloud_pcl2;
-  static std::vector<pcl::PointCloud<pcl::PointXYZ> > clouds_acum;
-  static pcl::PointCloud<pcl::PointXYZ> scan_pcl;
-  static pcl::PointCloud<pcl::PointXYZ> cloud_pcl;
-  static pcl::PointCloud<pcl::PointXYZ> cloud_pcl_odom;
+  static std::vector<pcl::PointCloud<pcl::PointXYZI> > clouds_acum;
+  static pcl::PointCloud<pcl::PointXYZI> scan_pcl;
+  static pcl::PointCloud<pcl::PointXYZI> cloud_pcl;
+  static pcl::PointCloud<pcl::PointXYZI> cloud_pcl_odom;
   static int count = 0;
   count++;
   try
@@ -265,7 +269,7 @@ void OnlineCalibrationAlgorithm::plotAcumulatedPoints(cv::Mat last_image, sensor
     pcl_conversions::toPCL(scan_transformed, scan_pcl2);
     pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl);
 
-    if (count > 20) // TODO: get from parameter
+    if (count > 1) // TODO: get from parameter
     {
       clouds_acum.erase(clouds_acum.begin());
     }
@@ -307,11 +311,15 @@ void OnlineCalibrationAlgorithm::plotAcumulatedPoints(cv::Mat last_image, sensor
       if (uv.x >= 0 && uv.y >= 0 && uv.x < cols && uv.y < rows)
       {
         // plot points in image
-        static const int RADIUS = 1;
-        float r = 0.0;
-        float g = MAX_PIXEL; //colorMap(cloud_pcl.points[i].z, factor_color, MAX_PIXEL);
-        float b = 0.0;
+        static const int RADIUS = 2;
+        float r = cloud_pcl.points[i].intensity;
+        float g = cloud_pcl.points[i].intensity; //MAX_PIXEL; //colorMap(cloud_pcl.points[i].z, factor_color, MAX_PIXEL);
+        float b = cloud_pcl.points[i].intensity;
         cv::circle(image_discontinuities, uv, RADIUS, CV_RGB(r, g, b), -1);
+        r = EMPTY_PIXEL;
+        g = cloud_pcl.points[i].intensity;
+        b = EMPTY_PIXEL;
+        cv::circle(image_sobel_plot, uv, RADIUS, CV_RGB(r, g, b), -1);
       }
     }
   }
@@ -327,13 +335,13 @@ void OnlineCalibrationAlgorithm::plotScanInImage(cv::Mat last_image, sensor_msgs
 
   /****** variable declarations ******/
   int i, j, k;
-  float factor_color = 15.0; //TODO: get from parameter
+  float factor_color = 80.0; //TODO: get from parameter
   int rows = last_image.rows;
   int cols = last_image.cols;
 
   /****** get transformation, and transform point cloud (including pcl conversions) ******/
   sensor_msgs::PointCloud2 scan_transformed;
-  static pcl::PointCloud<pcl::PointXYZ> scan_transformed_pcl;
+  static pcl::PointCloud<pcl::PointXYZI> scan_transformed_pcl;
   pcl::PCLPointCloud2 scan_transformed_pcl2;
   pcl::PCLPointCloud2 scan_pcl2;
   try
@@ -480,7 +488,7 @@ void cartesian2SphericalInDegrees(float x, float y, float z, float& range, float
   return;
 }
 
-void point2SphericalGrid(pcl::PointXYZ point, struct SensorConfiguration lidar_configuration, int& row, int& col)
+void point2SphericalGrid(pcl::PointXYZI point, struct SensorConfiguration lidar_configuration, int& row, int& col)
 {
   float range = 0.0;
   float elevation = 0.0;
@@ -508,7 +516,7 @@ void point2SphericalGrid(pcl::PointXYZ point, struct SensorConfiguration lidar_c
   }
 }
 
-bool filterPoint(pcl::PointXYZ point_i, pcl::PointXYZ point_i_pr, pcl::PointXYZ point_i_ps)
+bool filterPoint(pcl::PointXYZI point_i, pcl::PointXYZI point_i_pr, pcl::PointXYZI point_i_ps)
 {
   bool is_edge = true;
   float sigma = 0.5;

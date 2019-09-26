@@ -14,6 +14,7 @@ OnlineCalibrationAlgNode::OnlineCalibrationAlgNode(void) :
   this->plot_publisher_ = it_.advertise("/plot_out", 1);
   this->edges_publisher_ = it_.advertise("/edges_out", 1);
   this->sobel_publisher_ = it_.advertise("/sobel_out", 1);
+  this->soplt_publisher_ = it_.advertise("/sobel_plt_out", 1);
 
   // [init subscribers]
   this->camera_subscriber_ = it_.subscribeCamera("/image", 1, &OnlineCalibrationAlgNode::cb_imageInfo, this);
@@ -86,42 +87,44 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   cv::Mat depth_map;
   cv::Mat index_to_cloud;
   cv::Mat image_sobel;
+  cv::Mat image_sobel_plot;
   cv::Mat image_discontinuities;
   sensor_msgs::PointCloud2 scan_discontinuities;
-  static pcl::PointCloud<pcl::PointXYZ> scan_pcl;
+  static pcl::PointCloud<pcl::PointXYZI> scan_pcl;
 
   this->alg_.depthImageFromLidar(this->last_image_, *scan, this->cam_model_, this->frame_lidar_,
                                  this->acquisition_time_, this->tf_listener_, index_to_cloud, depth_map, scan_pcl);
 
   this->alg_.preprocessScanAndImage(this->last_image_, scan_pcl, depth_map, index_to_cloud, image_sobel,
-                                    scan_discontinuities);
+                                    image_sobel_plot, scan_discontinuities);
 
   //////////////////////////////////////////////////////////////////
   //// representation of camera and lidar information
   scan_discontinuities.header = scan->header;
   this->alg_.plotAcumulatedPoints(this->last_image_, scan_discontinuities, this->cam_model_, this->frame_lidar_,
                                   this->frame_odom_, this->acquisition_time_, this->tf_listener_,
-                                  image_discontinuities);
+                                  image_sobel_plot, image_discontinuities);
 
   this->alg_.plotScanInImage(this->last_image_, *scan, this->cam_model_, this->frame_lidar_, this->frame_odom_,
                              this->acquisition_time_, this->tf_listener_, this->plot_image_);
 
   //////////////////////////////////////////////////////////////////
-  //// get match features (and errors) between laser and lidar info
+  //// get match features (and errors) between sobel and disc. info
   //////////////////////////////////////////////////////////////////
   //// apply control law of VS for modify [t|R]
   //////////////////////////////////////////////////////////////////
   //// publish in image topics
   std_msgs::Header header; // empty header
   header.stamp = ros::Time::now(); // time
-  //float resize_factor = 8.0;
-  //cv::Mat image_discontinuities_plt;
-  //cv::resize(image_discontinuities, image_discontinuities_plt, cv::Size(), 1.0, resize_factor);
   cv_bridge::CvImage output_bridge;
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_discontinuities);
   this->edges_publisher_.publish(output_bridge.toImageMsg());
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::MONO8, image_sobel);
   this->sobel_publisher_.publish(output_bridge.toImageMsg());
+  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel_plot);
+  this->soplt_publisher_.publish(output_bridge.toImageMsg());
+  //output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, depth_map);
+  //this->plot_publisher_.publish(output_bridge.toImageMsg());
   this->plot_publisher_.publish(this->input_bridge_plt_->toImageMsg());
 
   this->alg_.unlock();
