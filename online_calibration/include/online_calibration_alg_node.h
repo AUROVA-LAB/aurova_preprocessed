@@ -63,6 +63,7 @@ private:
   image_transport::Publisher plot_publisher_;
   image_transport::Publisher edges_publisher_;
   image_transport::Publisher sobel_publisher_;
+  image_transport::Publisher soplt_publisher_;
 
   // [subscriber attributes]
   ros::Subscriber lidar_subscriber_;

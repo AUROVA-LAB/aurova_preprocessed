@@ -66,6 +66,7 @@ struct SensorConfiguration
   int num_of_azimuth_cells; // To calculate these values: 1 + (max_azimuth_angle - min_azimuth_angle) / grid_azimuth_angular_resolution;
   int num_of_elevation_cells; // or 1 + (max_elevation_angle - min_elevation_angle) / grid_elevation_angular_resolution;
 
+  float max_range;
   float sensor_height;
 };
 
@@ -184,37 +185,37 @@ public:
   void depthImageFromLidar(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
                            image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
                            ros::Time acquisition_time, tf::TransformListener& tf_listener, cv::Mat& index_to_cloud,
-                           cv::Mat& depth_map, pcl::PointCloud<pcl::PointXYZ>& scan_pcl_orig);
+                           cv::Mat& depth_map, pcl::PointCloud<pcl::PointXYZI>& scan_pcl_orig,
+                           sensor_msgs::PointCloud2& scan_discontinuities);
 
   /**
    * TODO: doxygen comments
    */
-  void preprocessCloudAndImage(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
-                               pcl::PointCloud<pcl::PointXYZ>& scan_pcl_orig, cv::Mat depth_map, cv::Mat index_to_cloud,
-                               cv::Mat& image_sobel, cv::Mat& image_discontinuities,
-                               sensor_msgs::PointCloud2& scan_discontinuities);
+  void preprocessScanAndImage(cv::Mat last_image, pcl::PointCloud<pcl::PointXYZI>& scan_pcl, cv::Mat depth_map,
+                              cv::Mat index_to_cloud, cv::Mat& image_sobel, cv::Mat& image_sobel_plot,
+                              sensor_msgs::PointCloud2& scan_discontinuities);
 
   /**
-   * TODO: doxygen comments
-   */
-  void lidarDiscontinuities(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
-                            image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
-                            std::string frame_odom, ros::Time acquisition_time, tf::TransformListener& tf_listener,
-                            cv::Mat& plot_image);
-
-  /**
-   * \brief Method that combine information from camera and lidar point cloud
+   * \brief Method that ...
    *
    * This method gets as principal inputs:
    * @param last_image: is an openCV image.
-   * @param msg: is a point cloud message in ROS format.
+   * @param scan: is a ...
    *
    * And return as outputs:
-   * @param plot_image: is the input image with the laser points plotted.
+   * @param image_discontinuities: is the ...
    */
-  void sensorFusion(cv::Mat last_image, sensor_msgs::PointCloud2 scan, image_geometry::PinholeCameraModel cam_model,
-                    std::string frame_lidar, std::string frame_odom, ros::Time acquisition_time,
-                    tf::TransformListener& tf_listener, cv::Mat& plot_image);
+  void plotAcumulatedPoints(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
+                            image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
+                            std::string frame_odom, ros::Time acquisition_time, tf::TransformListener& tf_listener,
+                            cv::Mat& image_sobel_plot, cv::Mat& image_discontinuities);
+
+  /**
+   * TODO: doxygen comments
+   */
+  void plotScanInImage(cv::Mat last_image, sensor_msgs::PointCloud2 scan, image_geometry::PinholeCameraModel cam_model,
+                       std::string frame_lidar, std::string frame_odom, ros::Time acquisition_time,
+                       tf::TransformListener& tf_listener, cv::Mat& plot_image);
 
   /**
    * TODO: doxygen comments
