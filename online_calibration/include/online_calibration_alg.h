@@ -66,6 +66,7 @@ struct SensorConfiguration
   int num_of_azimuth_cells; // To calculate these values: 1 + (max_azimuth_angle - min_azimuth_angle) / grid_azimuth_angular_resolution;
   int num_of_elevation_cells; // or 1 + (max_elevation_angle - min_elevation_angle) / grid_elevation_angular_resolution;
 
+  float max_range;
   float sensor_height;
 };
 
@@ -184,7 +185,8 @@ public:
   void depthImageFromLidar(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
                            image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
                            ros::Time acquisition_time, tf::TransformListener& tf_listener, cv::Mat& index_to_cloud,
-                           cv::Mat& depth_map, pcl::PointCloud<pcl::PointXYZI>& scan_pcl_orig);
+                           cv::Mat& depth_map, pcl::PointCloud<pcl::PointXYZI>& scan_pcl_orig,
+                           sensor_msgs::PointCloud2& scan_discontinuities);
 
   /**
    * TODO: doxygen comments

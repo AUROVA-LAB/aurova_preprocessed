@@ -32,7 +32,8 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
                                                      image_geometry::PinholeCameraModel cam_model,
                                                      std::string frame_lidar, ros::Time acquisition_time,
                                                      tf::TransformListener& tf_listener, cv::Mat& index_to_cloud,
-                                                     cv::Mat& depth_map, pcl::PointCloud<pcl::PointXYZI>& scan_pcl)
+                                                     cv::Mat& depth_map, pcl::PointCloud<pcl::PointXYZI>& scan_pcl,
+                                                     sensor_msgs::PointCloud2& scan_discontinuities)
 {
   int i, j, k;
   int rows = last_image.rows;
@@ -115,6 +116,7 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
   this->sens_config_.min_elevation_angle = min_elevation;
   this->sens_config_.max_azimuth_angle = max_azimut;
   this->sens_config_.min_azimuth_angle = min_azimut;
+  this->sens_config_.max_range = 100.0; //// TODO: from parameter
   this->sens_config_.grid_azimuth_angular_resolution = 0.2; //// TODO: from parameter
   this->sens_config_.grid_elevation_angular_resolution = 2.0; //// TODO: from parameter
   this->sens_config_.num_of_azimuth_cells = 1
@@ -137,6 +139,11 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
   }
   index_to_cloud_aux.copyTo(index_to_cloud);
 
+  int num_slices = this->sens_config_.num_of_elevation_cells;
+  static std::vector<pcl::PointCloud<pcl::PointXYZI> > scan_slices;
+  scan_slices.clear();
+  scan_slices.resize(num_slices);
+
   /****** generate deph laser map using spherical representation, and its corresponds image information ******/
   int u = 0, v = 0;
   int base = MAX_PIXEL;
@@ -148,8 +155,10 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
       {
         k = index[j][i];
         point2SphericalGrid(scan_pcl.points[k], this->sens_config_, v, u);
+        //ROS_INFO("ROW_INDEX: %d", v);
         if (u != INVALID_VALUE)
         {
+          scan_slices[v].push_back(scan_pcl.points[k]);
           depth_map.at < cv::Vec3b > (v, u)[0] = colorMap(scan_transformed_pcl.points[k].z, factor_color, base);
           depth_map.at < cv::Vec3b > (v, u)[1] = colorMap(scan_transformed_pcl.points[k].z, factor_color, base);
           depth_map.at < cv::Vec3b > (v, u)[2] = colorMap(scan_transformed_pcl.points[k].z, factor_color, base);
@@ -160,8 +169,80 @@ void OnlineCalibrationAlgorithm::depthImageFromLidar(cv::Mat last_image, sensor_
       }
     }
   }
-  fillGraps(depth_map);
+  //fillGraps(depth_map);
   //cv::applyColorMap(depth_map, depth_map, cv::COLORMAP_JET);
+
+  /************** filter slices of scan *********************/
+  float range_pr = 0.0;
+  float range_ps = 0.0;
+  float range_ac = 0.0;
+  float azimuth_pr = 0.0;
+  float azimuth_ps = 0.0;
+  float azimuth_ac = 0.0;
+  float elevation = 0.0;
+  float alpha = 1.0; //// TODO: from parameter
+  float threshold = 0.3; //// TODO: from parameter
+  static pcl::PointCloud<pcl::PointXYZI> scan_discontinuities_pcl;
+  scan_discontinuities_pcl.clear(); // because is static
+  for (i = 0; i < scan_slices.size(); i++)
+  {
+    for (j = 0; j < scan_slices[i].size(); j++)
+    {
+      cartesian2SphericalInDegrees(scan_slices[i].points[j].x, scan_slices[i].points[j].y, scan_slices[i].points[j].z,
+                                   range_ac, azimuth_ac, elevation);
+      if (azimuth_ac > 180.0)
+      {
+        azimuth_ac = azimuth_ac - 360.0;
+      }
+      if (j - 1 < 0)
+      {
+        range_pr = range_ac;
+      }
+      else
+      {
+        cartesian2SphericalInDegrees(scan_slices[i].points[j - 1].x, scan_slices[i].points[j - 1].y,
+                                     scan_slices[i].points[j - 1].z, range_pr, azimuth_pr, elevation);
+        if (azimuth_pr > 180.0)
+        {
+          azimuth_pr = azimuth_pr - 360.0;
+        }
+        if (abs(azimuth_ac - azimuth_pr) > this->sens_config_.grid_azimuth_angular_resolution * 2)
+        {
+          range_pr = this->sens_config_.max_range;
+        }
+      }
+
+      if (j + 1 >= scan_slices[i].size())
+      {
+        range_ps = range_ac;
+      }
+      else
+      {
+        cartesian2SphericalInDegrees(scan_slices[i].points[j + 1].x, scan_slices[i].points[j + 1].y,
+                                     scan_slices[i].points[j + 1].z, range_ps, azimuth_ps, elevation);
+        if (azimuth_ps > 180.0)
+        {
+          azimuth_ps = azimuth_ps - 360.0;
+        }
+        if (abs(azimuth_ac - azimuth_ps) > this->sens_config_.grid_azimuth_angular_resolution * 2)
+        {
+          range_ps = this->sens_config_.max_range;
+        }
+      }
+
+      float max_range = std::max(range_pr - range_ac, range_ps - range_ac);
+      float max_final = std::max(max_range, (float)0.0);
+      max_final = pow(max_final, alpha);
+      if (max_final > threshold)
+      {
+        scan_slices[i].points[j].intensity = max_final * 127;
+        scan_discontinuities_pcl.push_back(scan_slices[i].points[j]);
+      }
+    }
+  }
+
+  pcl::toPCLPointCloud2(scan_discontinuities_pcl, scan_pcl2);
+  pcl_conversions::fromPCL(scan_pcl2, scan_discontinuities);
 
   return;
 }
@@ -205,7 +286,7 @@ void OnlineCalibrationAlgorithm::preprocessScanAndImage(cv::Mat last_image, pcl:
   int threshold_type_bin = 0;
   cv::Mat image_binary;
   grad.copyTo(image_binary);
-  //cv::threshold(grad, image_binary, threshold_value, MAX_PIXEL, threshold_type_bin);
+//cv::threshold(grad, image_binary, threshold_value, MAX_PIXEL, threshold_type_bin);
 
   /************* generate discontinuities cloud **********************/
   static pcl::PointCloud<pcl::PointXYZI> scan_discontinuities_pcl;
@@ -227,8 +308,8 @@ void OnlineCalibrationAlgorithm::preprocessScanAndImage(cv::Mat last_image, pcl:
     }
   }
 
-  pcl::toPCLPointCloud2(scan_discontinuities_pcl, scan_pcl2);
-  pcl_conversions::fromPCL(scan_pcl2, scan_discontinuities);
+  //pcl::toPCLPointCloud2(scan_discontinuities_pcl, scan_pcl2);
+  //pcl_conversions::fromPCL(scan_pcl2, scan_discontinuities);
 
   return;
 }
@@ -269,7 +350,7 @@ void OnlineCalibrationAlgorithm::plotAcumulatedPoints(cv::Mat last_image, sensor
     pcl_conversions::toPCL(scan_transformed, scan_pcl2);
     pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl);
 
-    if (count > 1) // TODO: get from parameter
+    if (count > 50) // TODO: get from parameter
     {
       clouds_acum.erase(clouds_acum.begin());
     }
@@ -311,7 +392,7 @@ void OnlineCalibrationAlgorithm::plotAcumulatedPoints(cv::Mat last_image, sensor
       if (uv.x >= 0 && uv.y >= 0 && uv.x < cols && uv.y < rows)
       {
         // plot points in image
-        static const int RADIUS = 2;
+        static const int RADIUS = 1;
         float r = cloud_pcl.points[i].intensity;
         float g = cloud_pcl.points[i].intensity; //MAX_PIXEL; //colorMap(cloud_pcl.points[i].z, factor_color, MAX_PIXEL);
         float b = cloud_pcl.points[i].intensity;
@@ -319,7 +400,7 @@ void OnlineCalibrationAlgorithm::plotAcumulatedPoints(cv::Mat last_image, sensor
         r = EMPTY_PIXEL;
         g = cloud_pcl.points[i].intensity;
         b = EMPTY_PIXEL;
-        cv::circle(image_sobel_plot, uv, RADIUS, CV_RGB(r, g, b), -1);
+        cv::circle(image_sobel_plot, uv, RADIUS, CV_RGB(b, g, r), -1);
       }
     }
   }

@@ -93,7 +93,8 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   static pcl::PointCloud<pcl::PointXYZI> scan_pcl;
 
   this->alg_.depthImageFromLidar(this->last_image_, *scan, this->cam_model_, this->frame_lidar_,
-                                 this->acquisition_time_, this->tf_listener_, index_to_cloud, depth_map, scan_pcl);
+                                 this->acquisition_time_, this->tf_listener_, index_to_cloud, depth_map, scan_pcl,
+                                 scan_discontinuities);
 
   this->alg_.preprocessScanAndImage(this->last_image_, scan_pcl, depth_map, index_to_cloud, image_sobel,
                                     image_sobel_plot, scan_discontinuities);
@@ -102,8 +103,8 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   //// representation of camera and lidar information
   scan_discontinuities.header = scan->header;
   this->alg_.plotAcumulatedPoints(this->last_image_, scan_discontinuities, this->cam_model_, this->frame_lidar_,
-                                  this->frame_odom_, this->acquisition_time_, this->tf_listener_,
-                                  image_sobel_plot, image_discontinuities);
+                                  this->frame_odom_, this->acquisition_time_, this->tf_listener_, image_sobel_plot,
+                                  image_discontinuities);
 
   this->alg_.plotScanInImage(this->last_image_, *scan, this->cam_model_, this->frame_lidar_, this->frame_odom_,
                              this->acquisition_time_, this->tf_listener_, this->plot_image_);
