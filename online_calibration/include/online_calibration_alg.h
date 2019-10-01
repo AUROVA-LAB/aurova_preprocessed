@@ -42,8 +42,11 @@
 #include <cv_bridge/cv_bridge.h>
 #include <image_geometry/pinhole_camera_model.h>
 #include <tf/transform_listener.h>
+#include <tf/transform_broadcaster.h>
 #include <boost/foreach.hpp>
 #include <sensor_msgs/image_encodings.h>
+#include <termios.h>
+#include <map>
 
 //include online_calibration_alg main library
 
@@ -68,6 +71,17 @@ struct SensorConfiguration
 
   float max_range;
   float sensor_height;
+};
+
+struct Twist
+{
+  float x;
+  float y;
+  float z;
+  float r;
+  float p;
+  float w;
+  float delta_t;
 };
 
 /**
@@ -98,6 +112,7 @@ public:
    */
   typedef online_calibration::OnlineCalibrationConfig Config;
   struct SensorConfiguration sens_config_;
+  struct Twist twist_change_calib_;
 
   /**
    * \brief config variable
@@ -207,6 +222,16 @@ public:
    * TODO: doxygen comments
    */
   void featureMatching(cv::Mat& depth_map, cv::Mat& color_map, cv::Mat& image_matches);
+
+  /**
+   * TODO: doxygen comments
+   */
+  int getch(void);
+
+  /**
+   * TODO: doxygen comments
+   */
+  void mapKeysToVelocities(int key, struct Twist& twist_change_calib);
 };
 
 #endif
