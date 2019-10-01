@@ -12,4 +12,10 @@ This package contains a node that, as input, reads the topics /estimated_ackerma
 This package contains a node that, as input, reads the topics /odometry_gps_fix, of type nav_msgs::Odometry, and /rover/fix_velocity of type geometry_msgs::TwistWithCovariance. This node calculate the orientation using the velocities from gps, and generate new odometry (message type  type nav_msgs::Odometry) with the information provided by /odometry_gps_fix. This message is published in output topic called /odometry_gps.
 
 **virtual_imu**
-This package contains a node that, as input, read the topic /imu/data of type sensor_msgs::Imu. This node generate a new sensor_msgs::Imu that contains the estimation of orientation integrating rpy. The node output is published in the topic /virtual_imu_data. 
+This package contains a node that, as input, read the topic /imu/data of type sensor_msgs::Imu. This node generate a new sensor_msgs::Imu that contains the estimation of orientation integrating rpy. The node output is published in the topic /virtual_imu_data.
+
+**dump_imu_data_for_calibration_with_imutk**
+This package contains a node that takes as input the topic /imu/data and generates two files (one for linear accelerations  and other for angular rates) in the format required for the software imu_tk (https://github.com/AUROVA/imu_tk)
+* ~/dump_imu_data_for_calibration_with_imutk/accelerometer_output_file_path (default: ""): Path for the acc file.
+* ~/dump_imu_data_for_calibration_with_imutk/gyroscope_output_file_path (default: ""):     Path for the gyro file.
+
