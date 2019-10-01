@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>aurova_preprocessed</name>
-  <version>1.0.0</version>
-  <description>The aurova_preprocessed package</description>
+  <name>dump_imu_data_for_calibration_with_imutk</name>
+  <version>0.0.0</version>
+  <description>The dump_imu_data_for_calibration_with_imutk package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="mice85@todo.todo">mice85</maintainer>
+  <maintainer email="idelpino@todo.todo">idelpino</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/reactive_hokuyo</url> -->
+  <!-- <url type="website">http://wiki.ros.org/dump_imu_data_for_calibration_with_imutk</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
@@ -48,18 +48,15 @@
   <!--   <test_depend>gtest</test_depend> -->
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
-  <exec_depend>ackermann_to_odom</exec_depend>
-  <exec_depend>virtual_imu</exec_depend>
-  <exec_depend>gps_to_odom</exec_depend>
-  <exec_depend>online_calibration</exec_depend>
-  <exec_depend>dump_imu_data_for_calibration_with_imutk</exec_depend>
-
   <buildtool_depend>catkin</buildtool_depend>
-  
+  <build_depend>iri_base_algorithm</build_depend>
+  <build_export_depend>iri_base_algorithm</build_export_depend>
+  <exec_depend>iri_base_algorithm</exec_depend>
+
+
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
-    <metapackage/>
-  </export>
 
+  </export>
 </package>
