@@ -18,12 +18,18 @@ DumpImuDataForCalibrationWithImutkAlgNode::DumpImuDataForCalibrationWithImutkAlg
   // [init action servers]
   
   // [init action clients]
-
   std::cout << "Creating output files " << std::endl;
-  std::string acc_filename = "/home/idelpino/Documents/imu_acc.mat";
-  acc_results_file_.open(acc_filename.c_str(), std::ofstream::trunc);
 
-  std::string gyro_filename = "/home/idelpino/Documents/imu_gyro.mat";
+  std::string acc_filename;
+  this->public_node_handle_.getParam("/dump_imu_data_for_calibration_with_imutk/accelerometer_output_file_path", acc_filename);
+  //"/home/idelpino/Documents/imu_acc.mat";
+  std::string gyro_filename;
+  this->public_node_handle_.getParam("/dump_imu_data_for_calibration_with_imutk/gyroscope_output_file_path", gyro_filename);
+  //"/home/idelpino/Documents/imu_gyro.mat";
+
+  assert(!acc_filename.empty() && !gyro_filename.empty() && "Error, path for output files not specified!, please set those params." );
+
+  acc_results_file_.open(acc_filename.c_str(), std::ofstream::trunc);
   gyro_results_file_.open(gyro_filename.c_str(), std::ofstream::trunc);
 
   std::cout << "Output files created!" << std::endl;
@@ -35,6 +41,10 @@ DumpImuDataForCalibrationWithImutkAlgNode::DumpImuDataForCalibrationWithImutkAlg
 DumpImuDataForCalibrationWithImutkAlgNode::~DumpImuDataForCalibrationWithImutkAlgNode(void)
 {
   // [free dynamic memory]
+
+  assert(!acc_data_ready_to_be_written_to_file_.empty() && !gyro_data_ready_to_be_written_to_file_.empty()
+         && "Error, no imu data received!, nothing to save, check that the IMU is detected as /dev/imu" );
+
 
   acc_results_file_  << acc_data_ready_to_be_written_to_file_;
   gyro_results_file_ << gyro_data_ready_to_be_written_to_file_;
@@ -57,6 +67,12 @@ void DumpImuDataForCalibrationWithImutkAlgNode::mainNodeThread(void)
   // [fill action structure and make request to the action server]
 
   // [publish messages]
+
+  if(!flag_first_time_stamp_received_)
+  {
+    ROS_WARN_STREAM("Waiting for imu data...");
+  }
+
 }
 
 /*  [subscriber callbacks] */
@@ -68,6 +84,7 @@ void DumpImuDataForCalibrationWithImutkAlgNode::cb_imuData(const sensor_msgs::Im
   {
     flag_first_time_stamp_received_ = true;
     first_timestamp_ = Imu_msg.header.stamp.sec + (Imu_msg.header.stamp.nsec * 1e-9);
+    std::cout << "First imu data received!!" << std::endl;
   }
 
   double current_timestamp = Imu_msg.header.stamp.sec + (Imu_msg.header.stamp.nsec * 1e-9);
