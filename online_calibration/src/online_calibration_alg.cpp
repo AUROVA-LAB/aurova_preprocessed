@@ -33,6 +33,7 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
                                                    cv::Mat& image_sobel, cv::Mat& image_sobel_plot)
 {
   /****** variable declarations ******/
+  scan.header.frame_id = frame_lidar;
   int i, j, k;
   int rows = last_image.rows;
   int cols = last_image.cols;
@@ -50,7 +51,7 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
   try
   {
     ros::Duration duration(1.0);
-    tf_listener.waitForTransform(cam_model.tfFrame(), frame_lidar, acquisition_time, duration);
+    tf_listener.waitForTransform(cam_model.tfFrame(), frame_lidar, ros::Time::now(), duration);
     pcl_ros::transformPointCloud(cam_model.tfFrame(), scan, scan_transformed, tf_listener);
 
   }

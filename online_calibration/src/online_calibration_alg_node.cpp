@@ -93,6 +93,7 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
                                image_sobel_plot);
 
   scan_discontinuities.header = scan->header;
+  scan_discontinuities.header.frame_id = this->frame_lidar_;
   this->alg_.acumAndProjectPoints(this->last_image_, scan_discontinuities, this->cam_model_, this->frame_lidar_,
                                   this->frame_odom_, this->acquisition_time_, this->tf_listener_, image_sobel_plot,
                                   image_discontinuities);

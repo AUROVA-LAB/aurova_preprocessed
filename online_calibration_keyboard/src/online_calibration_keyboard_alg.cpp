@@ -61,7 +61,7 @@ void OnlineCalibrationKeyboardAlgorithm::mapKeysToVelocities(int key, struct Twi
   st_twist_change_calib.w = 0.0;
   st_twist_change_calib.flag_data = true;
 
-  float step_pos = 0.01;
+  float step_pos = 0.05;
   float step_ang = 0.01;
 
   switch (key)

@@ -56,7 +56,13 @@ private:
   tf::TransformBroadcaster tf_broadcaster_;
 
   // [subscriber attributes]
+  ros::Subscriber delta_tf_subscriber_;
   tf::TransformListener tf_listener_;
+
+  /**
+   * \brief Callback for read poses with delta /tf information.
+   */
+  void cb_deltaTf(const geometry_msgs::Pose::ConstPtr& delta_tf);
 
   // [service attributes]
 
