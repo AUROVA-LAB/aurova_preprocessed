@@ -118,20 +118,20 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
   }
 
   /********* fill the sensor structure *********/
-  this->sens_config_.max_elevation_angle = max_elevation;
-  this->sens_config_.min_elevation_angle = min_elevation;
-  this->sens_config_.max_azimuth_angle = max_azimut;
-  this->sens_config_.min_azimuth_angle = min_azimut;
-  this->sens_config_.max_range = 100.0; //// TODO: from parameter
-  this->sens_config_.grid_azimuth_angular_resolution = 0.2; //// TODO: from parameter
-  this->sens_config_.grid_elevation_angular_resolution = 2.0; //// TODO: from parameter
-  this->sens_config_.num_of_azimuth_cells = 1
-      + (max_azimut - min_azimut) / this->sens_config_.grid_azimuth_angular_resolution;
-  this->sens_config_.num_of_elevation_cells = 1
-      + (max_elevation - min_elevation) / this->sens_config_.grid_elevation_angular_resolution;
+  this->st_sens_config_.max_elevation_angle = max_elevation;
+  this->st_sens_config_.min_elevation_angle = min_elevation;
+  this->st_sens_config_.max_azimuth_angle = max_azimut;
+  this->st_sens_config_.min_azimuth_angle = min_azimut;
+  this->st_sens_config_.max_range = 100.0; //// TODO: from parameter
+  this->st_sens_config_.grid_azimuth_angular_resolution = 0.2; //// TODO: from parameter
+  this->st_sens_config_.grid_elevation_angular_resolution = 2.0; //// TODO: from parameter
+  this->st_sens_config_.num_of_azimuth_cells = 1
+      + (max_azimut - min_azimut) / this->st_sens_config_.grid_azimuth_angular_resolution;
+  this->st_sens_config_.num_of_elevation_cells = 1
+      + (max_elevation - min_elevation) / this->st_sens_config_.grid_elevation_angular_resolution;
 
   /********* generate ordened cloud divided in scan slices *********/
-  int num_slices = this->sens_config_.num_of_elevation_cells;
+  int num_slices = this->st_sens_config_.num_of_elevation_cells;
   static std::vector<pcl::PointCloud<pcl::PointXYZI> > scan_slices;
   scan_slices.clear();
   scan_slices.resize(num_slices);
@@ -143,7 +143,7 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
       if (index[j][i] > NO_INDEX)
       {
         k = index[j][i];
-        point2SphericalGrid(scan_pcl.points[k], this->sens_config_, v, u);
+        point2SphericalGrid(scan_pcl.points[k], this->st_sens_config_, v, u);
         if (u != INVALID_VALUE)
         {
           scan_slices[v].push_back(scan_pcl.points[k]);
@@ -186,9 +186,9 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
         {
           azimuth_pr = azimuth_pr - 360.0;
         }
-        if (abs(azimuth_ac - azimuth_pr) > this->sens_config_.grid_azimuth_angular_resolution * 2)
+        if (abs(azimuth_ac - azimuth_pr) > this->st_sens_config_.grid_azimuth_angular_resolution * 2)
         {
-          range_pr = this->sens_config_.max_range;
+          range_pr = this->st_sens_config_.max_range;
         }
       }
 
@@ -204,9 +204,9 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
         {
           azimuth_ps = azimuth_ps - 360.0;
         }
-        if (abs(azimuth_ac - azimuth_ps) > this->sens_config_.grid_azimuth_angular_resolution * 2)
+        if (abs(azimuth_ac - azimuth_ps) > this->st_sens_config_.grid_azimuth_angular_resolution * 2)
         {
-          range_ps = this->sens_config_.max_range;
+          range_ps = this->st_sens_config_.max_range;
         }
       }
 

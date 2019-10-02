@@ -5,8 +5,7 @@ OnlineCalibrationAlgNode::OnlineCalibrationAlgNode(void) :
 {
   //init class attributes if necessary
   this->loop_rate_ = 20; //in [Hz]
-  this->frame_lidar_ = "/velodyne"; //TODO: get from param
-  this->frame_lidar_calib_ = "/velodyne_calib"; //TODO: get from param
+  this->frame_lidar_ = "/velodyne_calib"; //TODO: get from param
   this->frame_odom_ = "/odom"; //TODO: get from param
   cvInitFont(&this->font_, CV_FONT_HERSHEY_SIMPLEX, 1.0, 1.0);
   image_transport::ImageTransport it_(this->public_node_handle_);
@@ -53,7 +52,6 @@ void OnlineCalibrationAlgNode::mainNodeThread(void)
   // [fill action structure and make request to the action server]
 
   // [publish messages]
-  //this->cb_sendTransform(this->alg_.twist_change_calib_);
 
 }
 
@@ -116,7 +114,6 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   //int key = this->alg_.getch();
   //ROS_INFO("character %c", key);
   //this->alg_.mapKeysToVelocities(key, this->alg_.twist_change_calib_);
-  //this->cb_sendTransform(this->alg_.twist_change_calib_);
 
   //////////////////////////////////////////////////////////////////
   //// publish in image topics
@@ -137,25 +134,6 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
 /*  [service callbacks] */
 
 /*  [action callbacks] */
-void OnlineCalibrationAlgNode::cb_sendTransform(struct Twist twist_change_calib)
-{
-  geometry_msgs::TransformStamped transform;
-  transform.header.frame_id = this->frame_lidar_;
-  transform.child_frame_id = this->frame_lidar_calib_;
-  transform.header.stamp = ros::Time::now();
-  transform.transform.translation.x = twist_change_calib.x * twist_change_calib.delta_t;
-  transform.transform.translation.y = twist_change_calib.y * twist_change_calib.delta_t;
-  transform.transform.translation.z = twist_change_calib.z * twist_change_calib.delta_t;
-  tf::Quaternion quaternion = tf::createQuaternionFromRPY(twist_change_calib.r * twist_change_calib.delta_t,
-                                                          twist_change_calib.p * twist_change_calib.delta_t,
-                                                          twist_change_calib.w * twist_change_calib.delta_t);
-  transform.transform.rotation.x = quaternion[0];
-  transform.transform.rotation.y = quaternion[1];
-  transform.transform.rotation.z = quaternion[2];
-  transform.transform.rotation.w = quaternion[3];
-
-  this->tf_broadcaster_.sendTransform(transform);
-}
 
 /*  [action requests] */
 

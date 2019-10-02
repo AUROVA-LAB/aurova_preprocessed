@@ -22,17 +22,17 @@
 // refer to the IRI wiki page for more information:
 // http://wikiri.upc.es/index.php/Robotics_Lab
 /**
- * \file online_calibration_alg_node.h
+ * \file online_calibration_tf_alg_node.h
  *
- *  Created on: 29 May 2019
+ *  Created on: 2 Oct 2019
  *      Author: m.a.munoz
  */
 
-#ifndef _online_calibration_alg_node_h_
-#define _online_calibration_alg_node_h_
+#ifndef _online_calibration_tf_alg_node_h_
+#define _online_calibration_tf_alg_node_h_
 
 #include <iri_base_algorithm/iri_base_algorithm.h>
-#include "online_calibration_alg.h"
+#include "online_calibration_tf_alg.h"
 
 // [publisher subscriber headers]
 
@@ -44,41 +44,19 @@
  * \brief IRI ROS Specific Algorithm Class
  *
  */
-class OnlineCalibrationAlgNode : public algorithm_base::IriBaseAlgorithm<OnlineCalibrationAlgorithm>
+class OnlineCalibrationTfAlgNode : public algorithm_base::IriBaseAlgorithm<OnlineCalibrationTfAlgorithm>
 {
 private:
 
-  std::string frame_lidar_;
-  std::string frame_odom_;
-  CvFont font_;
-  cv_bridge::CvImagePtr input_bridge_;
-  cv_bridge::CvImagePtr input_bridge_plt_;
-  cv::Mat last_image_;
-  cv::Mat plot_image_;
-  image_geometry::PinholeCameraModel cam_model_;
-  ros::Time acquisition_time_;
-  ros::Time acquisition_time_lidar_;
+  std::string frame_id_;
+  std::string child_frame_id_;
+  geometry_msgs::TransformStamped transform_;
 
   // [publisher attributes]
-  image_transport::Publisher plot_publisher_;
-  image_transport::Publisher edges_publisher_;
-  image_transport::Publisher sobel_publisher_;
-  image_transport::Publisher soplt_publisher_;
+  tf::TransformBroadcaster tf_broadcaster_;
 
   // [subscriber attributes]
-  ros::Subscriber lidar_subscriber_;
-  image_transport::CameraSubscriber camera_subscriber_;
   tf::TransformListener tf_listener_;
-
-  /**
-   * \brief Callback for read image messages.
-   */
-  void cb_imageInfo(const sensor_msgs::ImageConstPtr& image_msg, const sensor_msgs::CameraInfoConstPtr& info_msg);
-
-  /**
-   * \brief Callback for read lidar messages.
-   */
-  void cb_lidarInfo(const sensor_msgs::PointCloud2::ConstPtr& msg);
 
   // [service attributes]
 
@@ -102,7 +80,7 @@ public:
    * This constructor initializes specific class attributes and all ROS
    * communications variables to enable message exchange.
    */
-  OnlineCalibrationAlgNode(void);
+  OnlineCalibrationTfAlgNode(void);
 
   /**
    * \brief Destructor
@@ -110,7 +88,7 @@ public:
    * This destructor frees all necessary dynamic memory allocated within this
    * this class.
    */
-  ~OnlineCalibrationAlgNode(void);
+  ~OnlineCalibrationTfAlgNode(void);
 
 protected:
   /**

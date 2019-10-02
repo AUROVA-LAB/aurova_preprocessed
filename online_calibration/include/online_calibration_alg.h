@@ -111,7 +111,7 @@ public:
    * will then use the same variable type Config.
    */
   typedef online_calibration::OnlineCalibrationConfig Config;
-  struct SensorConfiguration sens_config_;
+  struct SensorConfiguration st_sens_config_;
   struct Twist twist_change_calib_;
 
   /**
