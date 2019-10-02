@@ -73,17 +73,6 @@ struct SensorConfiguration
   float sensor_height;
 };
 
-struct Twist
-{
-  float x;
-  float y;
-  float z;
-  float r;
-  float p;
-  float w;
-  float delta_t;
-};
-
 /**
  * \brief IRI ROS Specific Driver Class
  *
@@ -112,7 +101,6 @@ public:
    */
   typedef online_calibration::OnlineCalibrationConfig Config;
   struct SensorConfiguration st_sens_config_;
-  struct Twist twist_change_calib_;
 
   /**
    * \brief config variable
@@ -222,16 +210,6 @@ public:
    * TODO: doxygen comments
    */
   void featureMatching(cv::Mat& depth_map, cv::Mat& color_map, cv::Mat& image_matches);
-
-  /**
-   * TODO: doxygen comments
-   */
-  int getch(void);
-
-  /**
-   * TODO: doxygen comments
-   */
-  void mapKeysToVelocities(int key, struct Twist& twist_change_calib);
 };
 
 #endif

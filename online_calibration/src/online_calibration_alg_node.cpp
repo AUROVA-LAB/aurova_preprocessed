@@ -21,14 +21,6 @@ OnlineCalibrationAlgNode::OnlineCalibrationAlgNode(void) :
   this->lidar_subscriber_ = this->public_node_handle_.subscribe("/velodyne_points", 1,
                                                                 &OnlineCalibrationAlgNode::cb_lidarInfo, this);
 
-  this->alg_.twist_change_calib_.x = 0.0;
-  this->alg_.twist_change_calib_.y = 0.0;
-  this->alg_.twist_change_calib_.z = 0.0;
-  this->alg_.twist_change_calib_.r = 0.0;
-  this->alg_.twist_change_calib_.p = 0.0;
-  this->alg_.twist_change_calib_.w = 0.0;
-  this->alg_.twist_change_calib_.delta_t = 0.0;
-
   // [init services]
 
   // [init clients]
@@ -96,9 +88,9 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   cv::Mat image_sobel_plot;
   cv::Mat image_discontinuities;
   sensor_msgs::PointCloud2 scan_discontinuities;
-  this->alg_.filterSensorsData(this->last_image_, *scan, this->cam_model_, this->frame_lidar_,
-                               this->acquisition_time_, this->tf_listener_, scan_discontinuities, this->plot_image_,
-                               image_sobel, image_sobel_plot);
+  this->alg_.filterSensorsData(this->last_image_, *scan, this->cam_model_, this->frame_lidar_, this->acquisition_time_,
+                               this->tf_listener_, scan_discontinuities, this->plot_image_, image_sobel,
+                               image_sobel_plot);
 
   scan_discontinuities.header = scan->header;
   this->alg_.acumAndProjectPoints(this->last_image_, scan_discontinuities, this->cam_model_, this->frame_lidar_,
@@ -111,9 +103,6 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   //// apply control law of VS
   //////////////////////////////////////////////////////////////////
   //// integrate velocities to modify [t|R]
-  //int key = this->alg_.getch();
-  //ROS_INFO("character %c", key);
-  //this->alg_.mapKeysToVelocities(key, this->alg_.twist_change_calib_);
 
   //////////////////////////////////////////////////////////////////
   //// publish in image topics
