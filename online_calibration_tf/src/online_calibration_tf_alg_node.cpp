@@ -5,8 +5,8 @@ OnlineCalibrationTfAlgNode::OnlineCalibrationTfAlgNode(void) :
 {
   //init class attributes if necessary
   this->loop_rate_ = 20; //in [Hz]
-  this->frame_id_ = "/velodyne"; //TODO: get from param
-  this->child_frame_id_ = "/velodyne_calib"; //TODO: get from param
+  this->frame_id_ = "/camera_link_static"; //TODO: get from param
+  this->child_frame_id_ = "/camera_link"; //TODO: get from param
   this->transform_.header.frame_id = this->frame_id_;
   this->transform_.child_frame_id = this->child_frame_id_;
   this->transform_.header.stamp = ros::Time::now();

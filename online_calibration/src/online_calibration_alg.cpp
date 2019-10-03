@@ -33,7 +33,6 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
                                                    cv::Mat& image_sobel, cv::Mat& image_sobel_plot)
 {
   /****** variable declarations ******/
-  scan.header.frame_id = frame_lidar;
   int i, j, k;
   int rows = last_image.rows;
   int cols = last_image.cols;
@@ -263,12 +262,12 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
 
   /********* transformation and acumulation of scans (including pcl conversions) *********/
   sensor_msgs::PointCloud2 scan_transformed;
-  sensor_msgs::PointCloud2 cloud;
-  sensor_msgs::PointCloud2 cloud_transformed;
+  sensor_msgs::PointCloud2 cloud_odom;
+  sensor_msgs::PointCloud2 cloud_camera;
   pcl::PCLPointCloud2 scan_pcl2;
   pcl::PCLPointCloud2 cloud_pcl2;
-  static std::vector<pcl::PointCloud<pcl::PointXYZI> > clouds_acum;
-  static pcl::PointCloud<pcl::PointXYZI> scan_pcl;
+  static std::vector<pcl::PointCloud<pcl::PointXYZI> > scans_acum_pcl;
+  static pcl::PointCloud<pcl::PointXYZI> scan_pcl_transformed;
   static pcl::PointCloud<pcl::PointXYZI> cloud_pcl;
   static pcl::PointCloud<pcl::PointXYZI> cloud_pcl_odom;
   static int count = 0;
@@ -280,26 +279,26 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
     pcl_ros::transformPointCloud(frame_odom, scan, scan_transformed, tf_listener);
 
     pcl_conversions::toPCL(scan_transformed, scan_pcl2);
-    pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl);
+    pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl_transformed);
 
     if (count > 50) // TODO: get from parameter
     {
-      clouds_acum.erase(clouds_acum.begin());
+      scans_acum_pcl.erase(scans_acum_pcl.begin());
     }
 
     cloud_pcl_odom.clear();
-    clouds_acum.push_back(scan_pcl);
-    for (i = 0; i < clouds_acum.size(); i++)
+    scans_acum_pcl.push_back(scan_pcl_transformed);
+    for (i = 0; i < scans_acum_pcl.size(); i++)
     {
-      cloud_pcl_odom += clouds_acum[i];
+      cloud_pcl_odom += scans_acum_pcl[i];
     }
 
     pcl::toPCLPointCloud2(cloud_pcl_odom, cloud_pcl2);
-    pcl_conversions::fromPCL(cloud_pcl2, cloud);
-    cloud.header.frame_id = frame_odom;
+    pcl_conversions::fromPCL(cloud_pcl2, cloud_odom);
+    cloud_odom.header.frame_id = frame_odom;
 
-    tf_listener.waitForTransform(cam_model.tfFrame(), frame_odom, acquisition_time, duration);
-    pcl_ros::transformPointCloud(cam_model.tfFrame(), cloud, cloud_transformed, tf_listener);
+    tf_listener.waitForTransform(cam_model.tfFrame(), frame_odom, ros::Time(0), duration);
+    pcl_ros::transformPointCloud(cam_model.tfFrame(), cloud_odom, cloud_camera, tf_listener);
 
   }
   catch (tf::TransformException& ex)
@@ -308,7 +307,7 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
     return;
   }
 
-  pcl_conversions::toPCL(cloud_transformed, cloud_pcl2);
+  pcl_conversions::toPCL(cloud_camera, cloud_pcl2);
   pcl::fromPCLPointCloud2(cloud_pcl2, cloud_pcl);
 
   /********* project the cloud discontinuities in images *********/

@@ -5,7 +5,7 @@ OnlineCalibrationAlgNode::OnlineCalibrationAlgNode(void) :
 {
   //init class attributes if necessary
   this->loop_rate_ = 20; //in [Hz]
-  this->frame_lidar_ = "/velodyne_calib"; //TODO: get from param
+  this->frame_lidar_ = "/velodyne"; //TODO: get from param
   this->frame_odom_ = "/odom"; //TODO: get from param
   cvInitFont(&this->font_, CV_FONT_HERSHEY_SIMPLEX, 1.0, 1.0);
   image_transport::ImageTransport it_(this->public_node_handle_);
@@ -93,7 +93,6 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
                                image_sobel_plot);
 
   scan_discontinuities.header = scan->header;
-  scan_discontinuities.header.frame_id = this->frame_lidar_;
   this->alg_.acumAndProjectPoints(this->last_image_, scan_discontinuities, this->cam_model_, this->frame_lidar_,
                                   this->frame_odom_, this->acquisition_time_, this->tf_listener_, image_sobel_plot,
                                   image_discontinuities);
