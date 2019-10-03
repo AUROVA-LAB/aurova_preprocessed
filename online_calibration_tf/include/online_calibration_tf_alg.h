@@ -30,6 +30,8 @@
 #include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 #include <geometry_msgs/Pose.h>
+#include <iostream>
+#include <fstream>
 
 //include online_calibration_tf_alg main library
 

@@ -10,14 +10,32 @@ OnlineCalibrationTfAlgNode::OnlineCalibrationTfAlgNode(void) :
   this->transform_.header.frame_id = this->frame_id_;
   this->transform_.child_frame_id = this->child_frame_id_;
   this->transform_.header.stamp = ros::Time::now();
-  this->transform_.transform.translation.x = 0.0;
-  this->transform_.transform.translation.y = 0.0;
-  this->transform_.transform.translation.z = 0.0;
-  tf::Quaternion quaternion = tf::createQuaternionFromRPY(0.0, 0.0, 0.0);
-  this->transform_.transform.rotation.x = quaternion[0];
-  this->transform_.transform.rotation.y = quaternion[1];
-  this->transform_.transform.rotation.z = quaternion[2];
-  this->transform_.transform.rotation.w = quaternion[3];
+
+  // Open current_calibration file.
+  // TODO: get path from param
+  std::string current_tf;
+  float x, y, z, qx, qy, qz, qw;
+  this->current_tf_path_ =
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration_tf/data/current_tf.data";
+  this->current_tf_file_i_.open(this->current_tf_path_.c_str());
+  if (this->current_tf_file_i_.is_open())
+  {
+    while (std::getline(this->current_tf_file_i_, current_tf))
+    {
+      std::sscanf(current_tf.c_str(), " %f %f %f %f %f %f %f", &x, &y, &z, &qx, &qy, &qz, &qw);
+      ROS_INFO("%s", current_tf.c_str());
+    }
+  }
+  this->current_tf_file_i_.close();
+
+  // TODO: get current values from file
+  this->transform_.transform.translation.x = x;
+  this->transform_.transform.translation.y = y;
+  this->transform_.transform.translation.z = z;
+  this->transform_.transform.rotation.x = qx;
+  this->transform_.transform.rotation.y = qy;
+  this->transform_.transform.rotation.z = qz;
+  this->transform_.transform.rotation.w = qw;
 
   // [init publishers]
 
@@ -79,11 +97,10 @@ void OnlineCalibrationTfAlgNode::cb_deltaTf(const geometry_msgs::Pose::ConstPtr&
 
   // get RPY from delta_tf and integrate in new quaternion
   tf::Quaternion quaternion_aux2(delta_tf->orientation.x, delta_tf->orientation.y, delta_tf->orientation.z,
-                                delta_tf->orientation.w);
+                                 delta_tf->orientation.w);
   tf::Matrix3x3 matrix2(quaternion_aux2);
   matrix2.getRPY(delta_roll, delta_pitch, delta_yaw);
-  quaternion_aux = tf::createQuaternionFromRPY(current_roll + delta_roll,
-                                               current_pitch + delta_pitch,
+  quaternion_aux = tf::createQuaternionFromRPY(current_roll + delta_roll, current_pitch + delta_pitch,
                                                current_yaw + delta_yaw);
 
   // apply delta_tf to new transform
@@ -96,7 +113,18 @@ void OnlineCalibrationTfAlgNode::cb_deltaTf(const geometry_msgs::Pose::ConstPtr&
   this->transform_.transform.rotation.z = quaternion_aux[2];
   this->transform_.transform.rotation.w = quaternion_aux[3];
 
-  //ROS_INFO("x: %f", delta_tf->position.x);
+  // save new current values to file
+  std::ostringstream new_current_tf_o;
+  std::string new_current_tf;
+  this->current_tf_file_o_.open(this->current_tf_path_.c_str(), std::ofstream::trunc);
+  new_current_tf_o << "   " << this->transform_.transform.translation.x << "   "
+      << this->transform_.transform.translation.y << "   " << this->transform_.transform.translation.z << "   "
+      << this->transform_.transform.rotation.x << "   " << this->transform_.transform.rotation.y << "   "
+      << this->transform_.transform.rotation.z << "   " << this->transform_.transform.rotation.w << std::endl;
+  new_current_tf = new_current_tf_o.str();
+  this->current_tf_file_o_  << new_current_tf;
+  this->current_tf_file_o_.close();
+
   this->alg_.unlock();
 }
 

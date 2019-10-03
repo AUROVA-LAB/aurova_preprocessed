@@ -48,6 +48,9 @@ class OnlineCalibrationTfAlgNode : public algorithm_base::IriBaseAlgorithm<Onlin
 {
 private:
 
+  std::ifstream current_tf_file_i_;
+  std::ofstream current_tf_file_o_;
+  std::string current_tf_path_;
   std::string frame_id_;
   std::string child_frame_id_;
   geometry_msgs::TransformStamped transform_;
