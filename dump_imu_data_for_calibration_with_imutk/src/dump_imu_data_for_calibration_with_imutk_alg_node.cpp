@@ -75,6 +75,11 @@ void DumpImuDataForCalibrationWithImutkAlgNode::mainNodeThread(void)
     ROS_WARN_STREAM("Waiting for imu data...");
   }
 
+  if (flag_recording_data_ && number_of_static_samples_in_current_interval_ % 10 <= 2)
+  {
+    std::cout << "IMU samples gathered so far: " << number_of_static_samples_in_current_interval_ << std::endl;
+  }
+
 }
 
 /*  [subscriber callbacks] */
@@ -89,37 +94,38 @@ void DumpImuDataForCalibrationWithImutkAlgNode::cb_imuData(const sensor_msgs::Im
     std::cout << "First imu data received!!" << std::endl;
   }
 
-  if (flag_recording_data_)
-  {
-    double current_timestamp = Imu_msg.header.stamp.sec + (Imu_msg.header.stamp.nsec * 1e-9);
 
-    std::setiosflags(std::ios::fixed);
-    std::setprecision(11);
-    std::ostringstream s_gyro;
-    std::ostringstream s_acc;
+  double current_timestamp = Imu_msg.header.stamp.sec + (Imu_msg.header.stamp.nsec * 1e-9);
 
-    s_gyro << current_timestamp - first_timestamp_
-           << "," << Imu_msg.angular_velocity.x
-           << "," << Imu_msg.angular_velocity.y
-           << "," << Imu_msg.angular_velocity.z
-           << "," << static_interval_id_
-           << std::endl;
+  std::setiosflags(std::ios::fixed);
+  std::setprecision(11);
+  std::ostringstream s_gyro;
+  std::ostringstream s_acc;
 
-    gyro_data_ready_to_be_written_to_file_ += s_gyro.str();
+  int id = -1; //code for transitions
+  if(flag_recording_data_) id = static_interval_id_; //code for IMU data generated in stationary position
 
-    s_acc  << current_timestamp - first_timestamp_
-           << "," << Imu_msg.linear_acceleration.x
-           << "," << Imu_msg.linear_acceleration.y
-           << "," << Imu_msg.linear_acceleration.z
-           << "," << static_interval_id_
-           << std::endl;
+  s_gyro << current_timestamp - first_timestamp_
+         << "," << Imu_msg.angular_velocity.x
+         << "," << Imu_msg.angular_velocity.y
+         << "," << Imu_msg.angular_velocity.z
+         << "," << id
+         << std::endl;
 
-    acc_data_ready_to_be_written_to_file_ += s_acc.str();
+  gyro_data_ready_to_be_written_to_file_ += s_gyro.str();
 
-    number_of_static_samples_in_current_interval_++;
+  s_acc  << current_timestamp - first_timestamp_
+         << "," << Imu_msg.linear_acceleration.x
+         << "," << Imu_msg.linear_acceleration.y
+         << "," << Imu_msg.linear_acceleration.z
+         << "," << id
+         << std::endl;
 
-    //std::cout << s_acc.str();
-  }
+  acc_data_ready_to_be_written_to_file_ += s_acc.str();
+
+  number_of_static_samples_in_current_interval_++;
+
+  //std::cout << s_acc.str();
 
   this->alg_.unlock();
 }
@@ -147,7 +153,7 @@ void DumpImuDataForCalibrationWithImutkAlgNode::node_config_update(Config &confi
     else
     {
       std::cout << "Stop recording, static interval number " << static_interval_id_
-          << " finished with " << number_of_static_samples_in_current_interval_ << "IMU samples" << std::endl;
+          << " finished with " << number_of_static_samples_in_current_interval_ << " IMU samples" << std::endl;
       number_of_static_samples_in_current_interval_ = 0;
     }
   }
