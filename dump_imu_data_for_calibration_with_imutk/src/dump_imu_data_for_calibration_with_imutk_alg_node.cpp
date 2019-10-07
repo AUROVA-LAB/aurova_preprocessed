@@ -22,10 +22,9 @@ DumpImuDataForCalibrationWithImutkAlgNode::DumpImuDataForCalibrationWithImutkAlg
 
   std::string acc_filename;
   this->public_node_handle_.getParam("/dump_imu_data_for_calibration_with_imutk/accelerometer_output_file_path", acc_filename);
-  //"/home/idelpino/Documents/imu_acc.mat";
+
   std::string gyro_filename;
   this->public_node_handle_.getParam("/dump_imu_data_for_calibration_with_imutk/gyroscope_output_file_path", gyro_filename);
-  //"/home/idelpino/Documents/imu_gyro.mat";
 
   assert(!acc_filename.empty() && !gyro_filename.empty() && "Error, path for output files not specified!, please set those params." );
 
@@ -36,6 +35,10 @@ DumpImuDataForCalibrationWithImutkAlgNode::DumpImuDataForCalibrationWithImutkAlg
 
   flag_first_time_stamp_received_ = false;
   first_timestamp_ = 0.0;
+
+  static_interval_id_  = -1;
+  flag_recording_data_ = false;
+  number_of_static_samples_in_current_interval_ = 0;
 }
 
 DumpImuDataForCalibrationWithImutkAlgNode::~DumpImuDataForCalibrationWithImutkAlgNode(void)
@@ -44,7 +47,6 @@ DumpImuDataForCalibrationWithImutkAlgNode::~DumpImuDataForCalibrationWithImutkAl
 
   assert(!acc_data_ready_to_be_written_to_file_.empty() && !gyro_data_ready_to_be_written_to_file_.empty()
          && "Error, no imu data received!, nothing to save, check that the IMU is detected as /dev/imu" );
-
 
   acc_results_file_  << acc_data_ready_to_be_written_to_file_;
   gyro_results_file_ << gyro_data_ready_to_be_written_to_file_;
@@ -73,6 +75,11 @@ void DumpImuDataForCalibrationWithImutkAlgNode::mainNodeThread(void)
     ROS_WARN_STREAM("Waiting for imu data...");
   }
 
+  if (flag_recording_data_ && number_of_static_samples_in_current_interval_ % 10 <= 2)
+  {
+    std::cout << "IMU samples gathered so far: " << number_of_static_samples_in_current_interval_ << std::endl;
+  }
+
 }
 
 /*  [subscriber callbacks] */
@@ -87,6 +94,7 @@ void DumpImuDataForCalibrationWithImutkAlgNode::cb_imuData(const sensor_msgs::Im
     std::cout << "First imu data received!!" << std::endl;
   }
 
+
   double current_timestamp = Imu_msg.header.stamp.sec + (Imu_msg.header.stamp.nsec * 1e-9);
 
   std::setiosflags(std::ios::fixed);
@@ -94,21 +102,28 @@ void DumpImuDataForCalibrationWithImutkAlgNode::cb_imuData(const sensor_msgs::Im
   std::ostringstream s_gyro;
   std::ostringstream s_acc;
 
-  s_gyro << "   " << current_timestamp - first_timestamp_
-         << "   " << Imu_msg.angular_velocity.x
-         << "   " << Imu_msg.angular_velocity.y
-         << "   " << Imu_msg.angular_velocity.z
+  int id = -1; //code for transitions
+  if(flag_recording_data_) id = static_interval_id_; //code for IMU data generated in stationary position
+
+  s_gyro << current_timestamp - first_timestamp_
+         << "," << Imu_msg.angular_velocity.x
+         << "," << Imu_msg.angular_velocity.y
+         << "," << Imu_msg.angular_velocity.z
+         << "," << id
          << std::endl;
 
   gyro_data_ready_to_be_written_to_file_ += s_gyro.str();
 
-  s_acc  << "   " << current_timestamp - first_timestamp_
-         << "   " << Imu_msg.linear_acceleration.x
-         << "   " << Imu_msg.linear_acceleration.y
-         << "   " << Imu_msg.linear_acceleration.z
+  s_acc  << current_timestamp - first_timestamp_
+         << "," << Imu_msg.linear_acceleration.x
+         << "," << Imu_msg.linear_acceleration.y
+         << "," << Imu_msg.linear_acceleration.z
+         << "," << id
          << std::endl;
 
   acc_data_ready_to_be_written_to_file_ += s_acc.str();
+
+  number_of_static_samples_in_current_interval_++;
 
   //std::cout << s_acc.str();
 
@@ -126,6 +141,23 @@ void DumpImuDataForCalibrationWithImutkAlgNode::node_config_update(Config &confi
 {
   this->alg_.lock();
   this->config_=config;
+
+  if( flag_recording_data_ != config.recording_data)
+  {
+    flag_recording_data_ = config.recording_data;
+    if(flag_recording_data_)
+    {
+      static_interval_id_++;
+      std::cout << "Recording static interval number " << static_interval_id_ << std::endl;
+    }
+    else
+    {
+      std::cout << "Stop recording, static interval number " << static_interval_id_
+          << " finished with " << number_of_static_samples_in_current_interval_ << " IMU samples" << std::endl;
+      number_of_static_samples_in_current_interval_ = 0;
+    }
+  }
+
   this->alg_.unlock();
 }
 

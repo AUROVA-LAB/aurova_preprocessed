@@ -55,6 +55,10 @@ class DumpImuDataForCalibrationWithImutkAlgNode : public algorithm_base::IriBase
     bool flag_first_time_stamp_received_;
     double first_timestamp_;
 
+    int static_interval_id_;
+    bool flag_recording_data_;
+    int number_of_static_samples_in_current_interval_;
+
     // [subscriber attributes]
     ros::Subscriber imu_;
 
