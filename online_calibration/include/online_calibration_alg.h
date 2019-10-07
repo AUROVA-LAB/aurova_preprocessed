@@ -209,6 +209,11 @@ public:
   /**
    * TODO: doxygen comments
    */
+  void getDensityMaps(cv::Mat image, cv::Mat& density_map);
+
+  /**
+   * TODO: doxygen comments
+   */
   void featureMatching(cv::Mat& depth_map, cv::Mat& color_map, cv::Mat& image_matches);
 };
 

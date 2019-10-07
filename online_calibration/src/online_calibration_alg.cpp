@@ -257,7 +257,7 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
   int i, j, k;
   int rows = last_image.rows;
   int cols = last_image.cols;
-  cv::Mat new_image(rows, cols, CV_8UC3, 0.0);
+  cv::Mat new_image(rows, cols, CV_8UC3, EMPTY_PIXEL);
   new_image.copyTo(image_discontinuities);
 
   /********* transformation and acumulation of scans (including pcl conversions) *********/
@@ -327,7 +327,10 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
         float r = cloud_pcl.points[i].intensity;
         float g = cloud_pcl.points[i].intensity;
         float b = cloud_pcl.points[i].intensity;
-        cv::circle(image_discontinuities, uv, RADIUS, CV_RGB(r, g, b), -1);
+        image_discontinuities.at < cv::Vec3b > (uv.y, uv.x)[0] = r;
+        image_discontinuities.at < cv::Vec3b > (uv.y, uv.x)[1] = g;
+        image_discontinuities.at < cv::Vec3b > (uv.y, uv.x)[2] = b;
+        //cv::circle(image_discontinuities, uv, RADIUS, CV_RGB(r, g, b), -1);
         r = EMPTY_PIXEL;
         g = cloud_pcl.points[i].intensity;
         b = EMPTY_PIXEL;
@@ -335,6 +338,53 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
       }
     }
   }
+
+  return;
+}
+
+void OnlineCalibrationAlgorithm::getDensityMaps(cv::Mat image, cv::Mat& density_map)
+{
+  /****** variable declarations ******/
+  int i, j, u, v;
+  int rows = image.rows;
+  int cols = image.cols;
+  int mask_width = 64; // TODO: get from parameter (always pair)
+  int mask_height = 64;
+  float intensity_total;
+  float intensity_ratio;
+  cv::Scalar rgb;
+  cv::Mat roi_image;
+  cv::Rect roi;
+
+  cv::Mat new_image(rows, cols, CV_8UC3, EMPTY_PIXEL);
+  new_image.copyTo(density_map);
+  for (i = 0; i < cols - mask_width; i++)
+  {
+    for (j = 0; j < rows - mask_height; j++)
+    {
+      //roi(i, j, mask_width, mask_height);
+      roi.x = i;
+      roi.y = j;
+      roi.width = mask_width;
+      roi.height = mask_height;
+      roi_image = image(roi);
+      rgb = cv::sum(roi_image);
+      intensity_total = 0.3 * rgb[0] + 0.59 * rgb[1] + 0.11 * rgb[2];
+      intensity_ratio = intensity_total / (mask_width * mask_height);
+      v = j + mask_height / 2;
+      u = i + mask_width / 2;
+      density_map.at < cv::Vec3b > (v, u)[0] = intensity_ratio;
+      density_map.at < cv::Vec3b > (v, u)[1] = intensity_ratio;
+      density_map.at < cv::Vec3b > (v, u)[2] = intensity_ratio;
+    }
+  }
+  cv::normalize(density_map, density_map, 0, 255, cv::NORM_MINMAX, -1);
+  cv::applyColorMap(density_map, density_map, cv::COLORMAP_JET);
+
+  //double s = cv::sum( A )[0]; //sum of elements
+  //cv::Scalar s = cv::sum( A );
+  //output = A.mul(B); //element-wise multiplication
+  //cv::normalize(im, output, 0, 1, cv::NORM_MINMAX);
 
   return;
 }

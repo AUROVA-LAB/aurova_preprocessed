@@ -82,6 +82,9 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
 {
   this->alg_.lock();
 
+  double ini, end;
+  ini = ros::Time::now().toSec();
+
   //////////////////////////////////////////////////////////////////
   //// preprocess all the data (image and lidar-scan)
   cv::Mat image_sobel;
@@ -99,11 +102,13 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
 
   //////////////////////////////////////////////////////////////////
   //// get match features (and errors) between sobel and disc. info
+  cv::Mat density_map;
+  this->alg_.getDensityMaps(image_discontinuities, density_map);
+
   //////////////////////////////////////////////////////////////////
   //// apply control law of VS
   //////////////////////////////////////////////////////////////////
   //// integrate velocities to modify [t|R]
-
   //////////////////////////////////////////////////////////////////
   //// publish in image topics
   std_msgs::Header header; // empty header
@@ -113,9 +118,14 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   this->edges_publisher_.publish(output_bridge.toImageMsg());
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::MONO8, image_sobel);
   this->sobel_publisher_.publish(output_bridge.toImageMsg());
-  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel_plot);
+  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, density_map); //image_sobel_plot);
   this->soplt_publisher_.publish(output_bridge.toImageMsg());
   this->plot_publisher_.publish(this->input_bridge_plt_->toImageMsg());
+
+  // loop time
+  end = ros::Time::now().toSec();
+  ROS_INFO("duration: %f", end - ini);
+
 
   this->alg_.unlock();
 }
