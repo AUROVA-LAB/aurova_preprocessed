@@ -38,7 +38,8 @@ DumpImuDataForCalibrationWithImutkAlgNode::DumpImuDataForCalibrationWithImutkAlg
 
   static_interval_id_  = -1;
   flag_recording_data_ = false;
-  number_of_static_samples_in_current_interval_ = 0;
+  number_of_static_samples_in_current_interval_    = 0;
+  number_of_transient_samples_in_current_interval_ = 0;
 }
 
 DumpImuDataForCalibrationWithImutkAlgNode::~DumpImuDataForCalibrationWithImutkAlgNode(void)
@@ -77,9 +78,14 @@ void DumpImuDataForCalibrationWithImutkAlgNode::mainNodeThread(void)
 
   if (flag_recording_data_ && number_of_static_samples_in_current_interval_ % 10 <= 2)
   {
-    std::cout << "IMU samples gathered so far: " << number_of_static_samples_in_current_interval_ << std::endl;
+    std::cout << "Static IMU samples gathered in current interval: " << number_of_static_samples_in_current_interval_ << std::endl;
   }
 
+
+  if (!flag_recording_data_ && number_of_transient_samples_in_current_interval_ % 10 <= 2)
+  {
+    std::cout << "Transient IMU samples between static intervals: " << number_of_transient_samples_in_current_interval_ << std::endl;
+  }
 }
 
 /*  [subscriber callbacks] */
@@ -123,7 +129,14 @@ void DumpImuDataForCalibrationWithImutkAlgNode::cb_imuData(const sensor_msgs::Im
 
   acc_data_ready_to_be_written_to_file_ += s_acc.str();
 
-  number_of_static_samples_in_current_interval_++;
+  if(flag_recording_data_)
+  {
+    number_of_static_samples_in_current_interval_++;
+  }
+  else
+  {
+    number_of_transient_samples_in_current_interval_++;
+  }
 
   //std::cout << s_acc.str();
 
@@ -149,6 +162,7 @@ void DumpImuDataForCalibrationWithImutkAlgNode::node_config_update(Config &confi
     {
       static_interval_id_++;
       std::cout << "Recording static interval number " << static_interval_id_ << std::endl;
+      number_of_transient_samples_in_current_interval_ = 0;
     }
     else
     {
