@@ -209,7 +209,17 @@ public:
   /**
    * TODO: doxygen comments
    */
-  void getDensityMaps(cv::Mat image, cv::Mat& density_map);
+  void getDensityMaps(cv::Mat image, cv::Mat& density_map, cv::Rect roi);
+
+  /**
+   * TODO: doxygen comments
+   */
+  void getLocalMaximums(cv::Mat density_map, cv::Rect& roi_max);
+
+  /**
+   * TODO: doxygen comments
+   */
+  void maskMatchingMutualInfo(cv::Mat& image_src, cv::Mat& image_dst, cv::Rect roi_max, cv::Mat& correlation_map);
 
   /**
    * TODO: doxygen comments

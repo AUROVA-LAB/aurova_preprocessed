@@ -102,8 +102,17 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
 
   //////////////////////////////////////////////////////////////////
   //// get match features (and errors) between sobel and disc. info
+  int mask_width = 64; // TODO: get from parameter (always pair)
+  int mask_height = 64;
   cv::Mat density_map;
-  this->alg_.getDensityMaps(image_discontinuities, density_map);
+  cv::Mat correlation_map;
+  cv::Rect roi;
+  cv::Rect roi_max;
+  roi_max.width = roi.width = mask_width;
+  roi_max.height = roi.height = mask_height;
+  this->alg_.getDensityMaps(image_discontinuities, density_map, roi);
+  this->alg_.getLocalMaximums(density_map, roi_max);
+  this->alg_.maskMatchingMutualInfo(image_discontinuities, image_sobel, roi_max, correlation_map);
 
   //////////////////////////////////////////////////////////////////
   //// apply control law of VS
@@ -116,7 +125,7 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   cv_bridge::CvImage output_bridge;
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_discontinuities);
   this->edges_publisher_.publish(output_bridge.toImageMsg());
-  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::MONO8, image_sobel);
+  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel);
   this->sobel_publisher_.publish(output_bridge.toImageMsg());
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, density_map); //image_sobel_plot);
   this->soplt_publisher_.publish(output_bridge.toImageMsg());
