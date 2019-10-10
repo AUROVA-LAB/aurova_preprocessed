@@ -36,7 +36,7 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
   int i, j, k;
   int rows = last_image.rows;
   int cols = last_image.cols;
-  float factor_color = 80.0; //TODO: get from parameter
+  float factor_color = 80.0; //TODO: get from parameter (only for plot)
   sensor_msgs::PointCloud2 scan_transformed;
   pcl::PCLPointCloud2 scan_pcl2;
   static pcl::PointCloud<pcl::PointXYZI> scan_pcl;
@@ -161,7 +161,8 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
   float azimuth_ac = 0.0;
   float elevation = 0.0;
   float alpha = 1.0; //// TODO: from parameter
-  float threshold = 0.3; //// TODO: from parameter
+  float threshold = 0.2; //// TODO: from parameter
+  float threshold_up = 2.0; //// TODO: from parameter
   static pcl::PointCloud<pcl::PointXYZI> scan_discontinuities_pcl;
   scan_discontinuities_pcl.clear(); // because is static
   for (i = 0; i < scan_slices.size(); i++)
@@ -216,7 +217,10 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
       max_final = pow(max_final, alpha);
       if (max_final > threshold)
       {
-        scan_slices[i].points[j].intensity = max_final * 127;
+        float scope = max_final - threshold;
+        float scope_max = threshold_up - threshold;
+
+        scan_slices[i].points[j].intensity = scope / scope_max * MAX_PIXEL;
         scan_discontinuities_pcl.push_back(scan_slices[i].points[j]);
       }
     }
@@ -346,50 +350,49 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
 void OnlineCalibrationAlgorithm::getDensityMaps(cv::Mat image, cv::Mat& density_map, cv::Rect roi)
 {
   /****** variable declarations ******/
-  int i, j, u, v;
-  int rows = image.rows;
-  int cols = image.cols;
-  float intensity_total;
-  float intensity_ratio;
-  cv::Scalar rgb;
-  cv::Mat roi_image;
-  cv::Mat new_image(rows, cols, CV_8UC3, EMPTY_PIXEL);
-  new_image.copyTo(density_map);
+  /*int i, j, u, v;
+   int rows = image.rows;
+   int cols = image.cols;
+   float intensity_total;
+   float intensity_ratio;
+   cv::Scalar rgb;
+   cv::Mat roi_image;
+   cv::Mat new_image(rows, cols, CV_8UC3, EMPTY_PIXEL);
+   new_image.copyTo(density_map);
 
-  for (i = 0; i < cols - roi.width; i++)
-  {
-    for (j = 0; j < rows - roi.height; j++)
-    {
-      roi.x = i;
-      roi.y = j;
-      roi_image = image(roi);
-      rgb = cv::sum(roi_image);
-      intensity_total = 0.3 * rgb[0] + 0.59 * rgb[1] + 0.11 * rgb[2];
-      intensity_ratio = intensity_total / (roi.width * roi.height);
-      v = j + roi.height / 2;
-      u = i + roi.width / 2;
-      density_map.at < cv::Vec3b > (v, u)[0] = intensity_ratio;
-      density_map.at < cv::Vec3b > (v, u)[1] = intensity_ratio;
-      density_map.at < cv::Vec3b > (v, u)[2] = intensity_ratio;
-    }
-  }
-  cv::normalize(density_map, density_map, EMPTY_PIXEL, MAX_PIXEL, cv::NORM_MINMAX, -1);
+   for (i = 0; i < cols - roi.width; i += 2)
+   {
+   for (j = 0; j < rows - roi.height; j += 2)
+   {
+   roi.x = i;
+   roi.y = j;
+   roi_image = image(roi);
+   rgb = cv::sum(roi_image);
+   intensity_total = 0.3 * rgb[0] + 0.59 * rgb[1] + 0.11 * rgb[2];
+   intensity_ratio = intensity_total / (roi.width * roi.height);
+   v = j + roi.height / 2;
+   u = i + roi.width / 2;
+   density_map.at < cv::Vec3b > (v, u)[0] = intensity_ratio;
+   density_map.at < cv::Vec3b > (v, u)[1] = intensity_ratio;
+   density_map.at < cv::Vec3b > (v, u)[2] = intensity_ratio;
+   }
+   }
+   cv::normalize(density_map, density_map, EMPTY_PIXEL, MAX_PIXEL, cv::NORM_MINMAX, -1);*/
   //cv::applyColorMap(density_map, density_map, cv::COLORMAP_JET);
   //output = A.mul(B); //element-wise multiplication
-
   return;
 }
 
 void OnlineCalibrationAlgorithm::getLocalMaximums(cv::Mat density_map, cv::Rect& roi_max)
 {
 
-  cv::Point uv_min, uv_max;
-  double min, max;
-  cv::cvtColor(density_map, density_map, CV_BGR2GRAY);
-  cv::minMaxLoc(density_map, &min, &max, &uv_min, &uv_max);
+  /*cv::Point uv_min, uv_max;
+   double min, max;
+   cv::cvtColor(density_map, density_map, CV_BGR2GRAY);
+   cv::minMaxLoc(density_map, &min, &max, &uv_min, &uv_max);
 
-  roi_max.x = uv_max.x;
-  roi_max.y = uv_max.y;
+   roi_max.x = uv_max.x;
+   roi_max.y = uv_max.y;*/
 
   return;
 }
@@ -399,36 +402,36 @@ void OnlineCalibrationAlgorithm::maskMatchingMutualInfo(cv::Mat& image_src, cv::
 {
 
   // match templates with closs correlations
-  cv::Mat image_dst_gray;
-  cv::Mat image_src_gray;
-  cv::cvtColor(image_src, image_src_gray, CV_BGR2GRAY);
-  cv::cvtColor(image_dst, image_dst_gray, CV_BGR2GRAY);
-  int result_rows = image_dst_gray.rows - roi_max.height + 1;
-  int result_cols = image_dst_gray.cols - roi_max.width + 1;
-  cv::Mat result(result_rows, result_cols, CV_32FC1, EMPTY_PIXEL);
-  cv::Mat template_roi = image_src_gray(roi_max);
-  cv::matchTemplate(image_dst_gray, template_roi, result, CV_TM_CCORR_NORMED);
-  cv::normalize(result, result, 0, 1, cv::NORM_MINMAX, -1, cv::Mat());
+  /*cv::Mat image_dst_gray;
+   cv::Mat image_src_gray;
+   cv::cvtColor(image_src, image_src_gray, CV_BGR2GRAY);
+   cv::cvtColor(image_dst, image_dst_gray, CV_BGR2GRAY);
+   int result_rows = image_dst_gray.rows - roi_max.height + 1;
+   int result_cols = image_dst_gray.cols - roi_max.width + 1;
+   cv::Mat result(result_rows, result_cols, CV_32FC1, EMPTY_PIXEL);
+   cv::Mat template_roi = image_src_gray(roi_max);
+   cv::matchTemplate(image_dst_gray, template_roi, result, CV_TM_CCORR_NORMED);
+   cv::normalize(result, result, 0, 1, cv::NORM_MINMAX, -1, cv::Mat());*/
   //cv::normalize(result, result, EMPTY_PIXEL, MAX_PIXEL, cv::NORM_MINMAX, -1);
   //result.copyTo(correlation_map);
-
-  double minVal;
-  double maxVal;
-  cv::Point minLoc;
-  cv::Point maxLoc;
-  cv::Rect roi_match;
-  cv::minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat());
-  roi_match.x = maxLoc.x;
-  roi_match.y = maxLoc.y;
-  roi_match.width = roi_max.width;
-  roi_match.height = roi_max.height;
-  cv::rectangle(image_dst, roi_match, CV_RGB(0, 0, 255));
+  // plot match roi in image
+  /*double minVal;
+   double maxVal;
+   cv::Point minLoc;
+   cv::Point maxLoc;
+   cv::Rect roi_match;
+   cv::minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc, cv::Mat());
+   roi_match.x = maxLoc.x;
+   roi_match.y = maxLoc.y;
+   roi_match.width = roi_max.width;
+   roi_match.height = roi_max.height;
+   cv::rectangle(image_dst, roi_match, CV_RGB(0, 0, 255));*/
 
   // plot max density roi in image
-  float r = EMPTY_PIXEL;
-  float g = MAX_PIXEL;
-  float b = EMPTY_PIXEL;
-  cv::rectangle(image_dst, roi_max, CV_RGB(b, g, r));
+  /*float r = EMPTY_PIXEL;
+   float g = MAX_PIXEL;
+   float b = EMPTY_PIXEL;
+   cv::rectangle(image_src, roi_max, CV_RGB(b, g, r));*/
 
   return;
 }

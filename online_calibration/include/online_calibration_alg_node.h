@@ -50,6 +50,9 @@ private:
 
   std::string frame_lidar_;
   std::string frame_odom_;
+  std::string out_path_sobel_;
+  std::string out_path_edges_;
+  bool save_images_;
   CvFont font_;
   cv_bridge::CvImagePtr input_bridge_;
   cv_bridge::CvImagePtr input_bridge_plt_;

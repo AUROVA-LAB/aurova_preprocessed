@@ -10,6 +10,12 @@ OnlineCalibrationAlgNode::OnlineCalibrationAlgNode(void) :
   cvInitFont(&this->font_, CV_FONT_HERSHEY_SIMPLEX, 1.0, 1.0);
   image_transport::ImageTransport it_(this->public_node_handle_);
 
+  this->save_images_ = false;
+  this->out_path_sobel_ =
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/tr_01/sobel";
+  this->out_path_edges_ =
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/tr_01/edges";
+
   // [init publishers]
   this->plot_publisher_ = it_.advertise("/plot_out", 1);
   this->edges_publisher_ = it_.advertise("/edges_out", 1);
@@ -102,17 +108,17 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
 
   //////////////////////////////////////////////////////////////////
   //// get match features (and errors) between sobel and disc. info
-  int mask_width = 64; // TODO: get from parameter (always pair)
-  int mask_height = 64;
-  cv::Mat density_map;
-  cv::Mat correlation_map;
-  cv::Rect roi;
-  cv::Rect roi_max;
-  roi_max.width = roi.width = mask_width;
-  roi_max.height = roi.height = mask_height;
-  this->alg_.getDensityMaps(image_discontinuities, density_map, roi);
-  this->alg_.getLocalMaximums(density_map, roi_max);
-  this->alg_.maskMatchingMutualInfo(image_discontinuities, image_sobel, roi_max, correlation_map);
+  /*int mask_width = 48; // TODO: get from parameter (always pair)
+   int mask_height = 48;
+   cv::Mat density_map;
+   cv::Mat correlation_map;
+   cv::Rect roi;
+   cv::Rect roi_max;
+   roi_max.width = roi.width = mask_width;
+   roi_max.height = roi.height = mask_height;
+   this->alg_.getDensityMaps(image_discontinuities, density_map, roi);
+   this->alg_.getLocalMaximums(density_map, roi_max);
+   this->alg_.maskMatchingMutualInfo(image_discontinuities, image_sobel, roi_max, correlation_map);*/
 
   //////////////////////////////////////////////////////////////////
   //// apply control law of VS
@@ -127,14 +133,30 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   this->edges_publisher_.publish(output_bridge.toImageMsg());
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel);
   this->sobel_publisher_.publish(output_bridge.toImageMsg());
-  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, density_map); //image_sobel_plot);
+  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel_plot);
   this->soplt_publisher_.publish(output_bridge.toImageMsg());
   this->plot_publisher_.publish(this->input_bridge_plt_->toImageMsg());
+
+  // save images
+  if (this->save_images_)
+  {
+    static int cont = 0;
+
+    std::ostringstream out_path_sobel;
+    std::ostringstream out_path_edges;
+
+    out_path_sobel << this->out_path_sobel_ << cont << ".jpg";
+    out_path_edges << this->out_path_edges_ << cont << ".jpg";
+
+    cv::imwrite(out_path_sobel.str(), image_sobel);
+    cv::imwrite(out_path_edges.str(), image_discontinuities);
+
+    cont ++;
+  }
 
   // loop time
   end = ros::Time::now().toSec();
   ROS_INFO("duration: %f", end - ini);
-
 
   this->alg_.unlock();
 }
