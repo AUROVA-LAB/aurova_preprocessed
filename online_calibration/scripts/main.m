@@ -1,52 +1,77 @@
 clear, clc, close all
 
 %************* CONSTANTS ***************%
-MASK_WIDTH = 64;
-MASK_HEIGHT = 64;
+ROI_WIDTH = 64;
+ROI_HEIGHT = 64;
 STEP_IMAGES = 10;
-INI_IMAGES = 300;
+INI_IMAGES = 250;
 NUM_IMAGES = INI_IMAGES; %987;
 W_SOBEL = 1.0;
 
 %************** read images ***************%
-filename_sobel_base = 'images/tr_01/sobel';
-filename_edges_base = 'images/tr_01/edges';
+sobel_filename_base = 'images/tr_01/sobel';
+discnt_filename_base = 'images/tr_01/edges';
 
 for index = INI_IMAGES:STEP_IMAGES:NUM_IMAGES
-filename_sobel = strcat(filename_sobel_base, num2str(index,'%d'));
-filename_edges = strcat(filename_edges_base, num2str(index,'%d'));
-filename_sobel = strcat(filename_sobel, '.jpg');
-filename_edges = strcat(filename_edges, '.jpg');
-image_sobel = imread(filename_sobel);
-image_edges = imread(filename_edges);
-image_sobel = image_sobel .* W_SOBEL;
+sobel_filename = strcat(sobel_filename_base, num2str(index,'%d'));
+discnt_filename = strcat(discnt_filename_base, num2str(index,'%d'));
+sobel_filename = strcat(sobel_filename, '.jpg');
+discnt_filename = strcat(discnt_filename, '.jpg');
+sobel_image = imread(sobel_filename);
+discnt_image = imread(discnt_filename);
+[h, w, c] = size(sobel_image);
+
+%********* preprocess image ***************%
+sobel_image = sobel_image .* W_SOBEL;
+sobel_image_g = imgaussfilt(sobel_image, 5.0);
+discnt_image_g = imgaussfilt(discnt_image, 5.0);
+sobel_image = sobel_image* 0.5 + sobel_image_g;
+discnt_image = discnt_image * 0.5 + discnt_image_g;
 
 %******** image entropy calculation ********%
-[image_entropy, image_entropy_mask] = imageEntropy(image_edges, MASK_WIDTH, MASK_HEIGHT);
-max_val = max(max(image_entropy));
-[y, x] = find(image_entropy == max_val);
-plot_edges = insertShape(image_edges, 'rectangle', [x(1) y(1) MASK_WIDTH MASK_HEIGHT], 'LineWidth', 2, 'Color', 'green');
-plot_sobel = insertShape(image_sobel, 'rectangle', [x(1) y(1) MASK_WIDTH MASK_HEIGHT], 'LineWidth', 2, 'Color', 'green');
+[d_entropy_map, d_entropy_map_mask] = imageEntropy(discnt_image, ROI_WIDTH, ROI_HEIGHT);
+max_val = max(max(d_entropy_map));
+[y, x] = find(d_entropy_map == max_val);
+discnt_plot = insertShape(discnt_image, 'rectangle', [x(1) y(1) ROI_WIDTH ROI_HEIGHT], 'LineWidth', 2, 'Color', 'green');
+sobel_plot = insertShape(sobel_image, 'rectangle', [x(1) y(1) ROI_WIDTH ROI_HEIGHT], 'LineWidth', 2, 'Color', 'green');
+template = discnt_image(y(1):y(1)+ROI_HEIGHT-1, x(1):x(1)+ROI_WIDTH-1);
 
-%********* template matching **************%
-% template = image_edges(y(1):y(1)+MASK_HEIGHT, x(1):x(1)+MASK_WIDTH);
-% % plot_match = tmc(template, image_sobel);
-% % [y, x] = location(image_sobel, template, plot_match);
-% map_corr = crossCorrelation(image_sobel, template);
-% max_val = max(max(map_corr));
-% [y, x] = find(map_corr == max_val);
-% plot_sobel = insertShape(plot_sobel, 'rectangle', [x(1) y(1) MASK_WIDTH MASK_HEIGHT], 'LineWidth', 2, 'Color', 'red');
+%********** cross correlation **************%
+% corr_map = imageCrossCorrelation(sobel_image, template);
+% max_val = max(max(corr_map));
+% [y, x] = find(corr_map == max_val);
+% sobel_plot = insertShape(sobel_plot, 'rectangle', [x(1) y(1) ROI_WIDTH ROI_HEIGHT], 'LineWidth', 2, 'Color', 'red');
+
+%************ KL divergence **************%
+kl_map = imageKLDivergence(sobel_image, template);
+kl_map = kl_map(1:h-ROI_HEIGHT-1, 1:w-ROI_WIDTH-1);
+min_val = min(min(kl_map));
+[y, x] = find(kl_map == min_val);
+sobel_plot = insertShape(sobel_plot, 'rectangle', [x(1) y(1) ROI_WIDTH ROI_HEIGHT], 'LineWidth', 2, 'Color', 'red');
+match = sobel_image(y(1):y(1)+ROI_HEIGHT-1, x(1):x(1)+ROI_WIDTH-1);
+kl_map_plot = kl_map/max(max(kl_map));
+kl_map_plot = kl_map_plot - min(min(kl_map_plot));
+kl_map_plot = kl_map_plot/max(max(kl_map_plot));
 
 %********** mutual information ************%
+% mi_map = imageMutualInformation(sobel_image, template);
+% mi_map = mi_map(1:h-ROI_HEIGHT-1, 1:w-ROI_WIDTH-1);
+% max_val = max(max(mi_map));
+% [y, x] = find(mi_map == max_val);
+% sobel_plot = insertShape(sobel_plot, 'rectangle', [x(1) y(1) ROI_WIDTH ROI_HEIGHT], 'LineWidth', 2, 'Color', 'red');
+% match = sobel_image(y(1):y(1)+ROI_HEIGHT-1, x(1):x(1)+ROI_WIDTH-1);
+% mi_map_plot = mi_map/max(max(mi_map));
+% mi_map_plot = mi_map_plot - min(min(mi_map_plot));
+% mi_map_plot = mi_map_plot/max(max(mi_map_plot));
 
 %*********** representation ***************%
 close all
 movegui(figure,'southeast');
-imshow(image_entropy);
+imshow(kl_map_plot);
 movegui(figure,'southwest');
-imshow(image_entropy_mask);
-movegui(figure,'northeast');
-imshow(plot_sobel);
+imshow(d_entropy_map_mask);
 movegui(figure,'northwest');
-imshow(plot_edges);
+imshow(discnt_plot);
+movegui(figure,'northeast');
+imshow(sobel_plot);
 end
