@@ -29,7 +29,8 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
                                                    image_geometry::PinholeCameraModel cam_model,
                                                    std::string frame_lidar, ros::Time acquisition_time,
                                                    tf::TransformListener& tf_listener,
-                                                   sensor_msgs::PointCloud2& scan_discontinuities, cv::Mat& plot_image,
+                                                   sensor_msgs::PointCloud2& scan_discontinuities,
+                                                   sensor_msgs::PointCloud2& gray_edges, cv::Mat& plot_image,
                                                    cv::Mat& image_sobel, cv::Mat& image_sobel_plot)
 {
   /****** variable declarations ******/
@@ -45,6 +46,8 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
   for (i = 0; i < cols; i++)
     for (j = 0; j < rows; j++)
       index[j][i] = NO_INDEX;
+  cv::Mat last_image_gray;
+  cv::cvtColor(last_image, last_image_gray, CV_BGR2GRAY);
 
   /************** transform scan to camera frame ****************/
   try
@@ -131,10 +134,14 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
       + (max_elevation - min_elevation) / this->st_sens_config_.grid_elevation_angular_resolution;
 
   /********* generate ordened cloud divided in scan slices *********/
+  pcl::PointXYZI gray_pt;
   int num_slices = this->st_sens_config_.num_of_elevation_cells;
   static std::vector<pcl::PointCloud<pcl::PointXYZI> > scan_slices;
+  static std::vector<pcl::PointCloud<pcl::PointXYZI> > gray_slices;
   scan_slices.clear();
+  gray_slices.clear();
   scan_slices.resize(num_slices);
+  gray_slices.resize(num_slices);
   int u = 0, v = 0;
   for (i = 0; i < cols; i++)
   {
@@ -146,7 +153,12 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
         point2SphericalGrid(scan_pcl.points[k], this->st_sens_config_, v, u);
         if (u != INVALID_VALUE)
         {
+          // convert gray value to range scale
+          gray_pt.x = double(last_image_gray.at < uchar > (j, i)) * (this->st_sens_config_.max_range / MAX_PIXEL);
+
+          // save info in slices structure
           scan_slices[v].push_back(scan_pcl.points[k]);
+          gray_slices[v].push_back(gray_pt);
         }
       }
     }
@@ -156,58 +168,78 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
   float range_pr = 0.0;
   float range_ps = 0.0;
   float range_ac = 0.0;
+  float gray_pr = 0.0;
+  float gray_ps = 0.0;
+  float gray_ac = 0.0;
   float azimuth_pr = 0.0;
   float azimuth_ps = 0.0;
   float azimuth_ac = 0.0;
   float elevation = 0.0;
   float alpha = 1.0; //// TODO: from parameter
   float threshold = 0.2; //// TODO: from parameter
+  float gthreshold_up = 40.0; //// TODO: from parameter
+  float gthreshold = 5.0; //// TODO: from parameter
   float threshold_up = 2.0; //// TODO: from parameter
   static pcl::PointCloud<pcl::PointXYZI> scan_discontinuities_pcl;
+  static pcl::PointCloud<pcl::PointXYZI> gray_edges_pcl;
   scan_discontinuities_pcl.clear(); // because is static
+  gray_edges_pcl.clear(); // because is static
   for (i = 0; i < scan_slices.size(); i++)
   {
     for (j = 0; j < scan_slices[i].size(); j++)
     {
+      // actual points
       cartesian2SphericalInDegrees(scan_slices[i].points[j].x, scan_slices[i].points[j].y, scan_slices[i].points[j].z,
                                    range_ac, azimuth_ac, elevation);
-      if (azimuth_ac > 180.0)
+      if (azimuth_ac > 180.0) // azimut correction
       {
         azimuth_ac = azimuth_ac - 360.0;
       }
+      gray_ac = gray_slices[i].points[j].x;
+
+      // previous points
       if (j - 1 < 0)
       {
         range_pr = range_ac;
+        gray_pr = gray_ac;
       }
       else
       {
         cartesian2SphericalInDegrees(scan_slices[i].points[j - 1].x, scan_slices[i].points[j - 1].y,
                                      scan_slices[i].points[j - 1].z, range_pr, azimuth_pr, elevation);
-        if (azimuth_pr > 180.0)
+        if (azimuth_pr > 180.0) // azimut correction
         {
           azimuth_pr = azimuth_pr - 360.0;
         }
+        gray_pr = gray_slices[i].points[j - 1].x;
+
         if (abs(azimuth_ac - azimuth_pr) > this->st_sens_config_.grid_azimuth_angular_resolution * 2)
         {
           range_pr = this->st_sens_config_.max_range;
+          gray_pr = this->st_sens_config_.max_range;
         }
       }
 
+      // posterior points
       if (j + 1 >= scan_slices[i].size())
       {
         range_ps = range_ac;
+        gray_ps = gray_ac;
       }
       else
       {
         cartesian2SphericalInDegrees(scan_slices[i].points[j + 1].x, scan_slices[i].points[j + 1].y,
                                      scan_slices[i].points[j + 1].z, range_ps, azimuth_ps, elevation);
-        if (azimuth_ps > 180.0)
+        if (azimuth_ps > 180.0) // azimut correction
         {
           azimuth_ps = azimuth_ps - 360.0;
         }
+        gray_ps = gray_slices[i].points[j + 1].x;
+
         if (abs(azimuth_ac - azimuth_ps) > this->st_sens_config_.grid_azimuth_angular_resolution * 2)
         {
           range_ps = this->st_sens_config_.max_range;
+          gray_ps = this->st_sens_config_.max_range;
         }
       }
 
@@ -223,13 +255,30 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
         scan_slices[i].points[j].intensity = scope / scope_max * MAX_PIXEL;
         scan_discontinuities_pcl.push_back(scan_slices[i].points[j]);
       }
+
+      // filter gray values
+      max_range = std::max(gray_pr - gray_ac, gray_ps - gray_ac);
+      max_final = std::max(max_range, (float)0.0);
+      max_final = pow(max_final, alpha);
+      if (max_final > gthreshold)
+      {
+        float scope = max_final - gthreshold;
+        float scope_max = gthreshold_up - gthreshold;
+
+        gray_slices[i].points[j].x = scan_slices[i].points[j].x;
+        gray_slices[i].points[j].y = scan_slices[i].points[j].y;
+        gray_slices[i].points[j].z = scan_slices[i].points[j].z;
+        gray_slices[i].points[j].intensity = scope / scope_max * MAX_PIXEL;
+        gray_edges_pcl.push_back(gray_slices[i].points[j]);
+      }
     }
   }
   pcl::toPCLPointCloud2(scan_discontinuities_pcl, scan_pcl2);
   pcl_conversions::fromPCL(scan_pcl2, scan_discontinuities);
+  pcl::toPCLPointCloud2(gray_edges_pcl, scan_pcl2);
+  pcl_conversions::fromPCL(scan_pcl2, gray_edges);
 
   /************** sobel filter **************/
-  cv::Mat last_image_gray;
   cv::Mat grad;
   cv::Mat grad_x, grad_y;
   cv::Mat abs_grad_x, abs_grad_y;
@@ -251,11 +300,13 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
   return;
 }
 
-void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
+void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor_msgs::PointCloud2 scan_disc,
+                                                      sensor_msgs::PointCloud2 gray_edges,
                                                       image_geometry::PinholeCameraModel cam_model,
                                                       std::string frame_lidar, std::string frame_odom,
                                                       ros::Time acquisition_time, tf::TransformListener& tf_listener,
-                                                      cv::Mat& image_sobel_plot, cv::Mat& image_discontinuities)
+                                                      cv::Mat& image_sobel_plot, cv::Mat& image_discontinuities,
+                                                      cv::Mat& image_edges)
 {
 
   /****** variable declarations ******/
@@ -264,46 +315,67 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
   int cols = last_image.cols;
   cv::Mat new_image(rows, cols, CV_8UC3, EMPTY_PIXEL);
   new_image.copyTo(image_discontinuities);
+  new_image.copyTo(image_edges);
 
   /********* transformation and acumulation of scans (including pcl conversions) *********/
   sensor_msgs::PointCloud2 scan_transformed;
+  sensor_msgs::PointCloud2 gray_transformed;
   sensor_msgs::PointCloud2 cloud_odom;
+  sensor_msgs::PointCloud2 gcloud_odom;
   sensor_msgs::PointCloud2 cloud_camera;
+  sensor_msgs::PointCloud2 gcloud_camera;
   pcl::PCLPointCloud2 scan_pcl2;
   pcl::PCLPointCloud2 cloud_pcl2;
   static std::vector<pcl::PointCloud<pcl::PointXYZI> > scans_acum_pcl;
+  static std::vector<pcl::PointCloud<pcl::PointXYZI> > gray_acum_pcl;
   static pcl::PointCloud<pcl::PointXYZI> scan_pcl_transformed;
+  static pcl::PointCloud<pcl::PointXYZI> gray_pcl_transformed;
   static pcl::PointCloud<pcl::PointXYZI> cloud_pcl;
+  static pcl::PointCloud<pcl::PointXYZI> gcloud_pcl;
   static pcl::PointCloud<pcl::PointXYZI> cloud_pcl_odom;
+  static pcl::PointCloud<pcl::PointXYZI> gcloud_pcl_odom;
   static int count = 0;
   count++;
   try
   {
     ros::Duration duration(1.0);
     tf_listener.waitForTransform(frame_odom, frame_lidar, ros::Time::now(), duration);
-    pcl_ros::transformPointCloud(frame_odom, scan, scan_transformed, tf_listener);
+    pcl_ros::transformPointCloud(frame_odom, scan_disc, scan_transformed, tf_listener);
+    tf_listener.waitForTransform(frame_odom, frame_lidar, ros::Time::now(), duration);
+    pcl_ros::transformPointCloud(frame_odom, gray_edges, gray_transformed, tf_listener);
 
     pcl_conversions::toPCL(scan_transformed, scan_pcl2);
     pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl_transformed);
+    pcl_conversions::toPCL(gray_transformed, scan_pcl2);
+    pcl::fromPCLPointCloud2(scan_pcl2, gray_pcl_transformed);
 
     if (count > 50) // TODO: get from parameter
     {
       scans_acum_pcl.erase(scans_acum_pcl.begin());
+      gray_acum_pcl.erase(gray_acum_pcl.begin());
     }
 
     cloud_pcl_odom.clear();
+    gcloud_pcl_odom.clear();
     scans_acum_pcl.push_back(scan_pcl_transformed);
+    gray_acum_pcl.push_back(gray_pcl_transformed);
     for (i = 0; i < scans_acum_pcl.size(); i++)
     {
       cloud_pcl_odom += scans_acum_pcl[i];
+      gcloud_pcl_odom += gray_acum_pcl[i];
     }
 
     pcl::toPCLPointCloud2(cloud_pcl_odom, cloud_pcl2);
     pcl_conversions::fromPCL(cloud_pcl2, cloud_odom);
     cloud_odom.header.frame_id = frame_odom;
+    pcl::toPCLPointCloud2(gcloud_pcl_odom, cloud_pcl2);
+    pcl_conversions::fromPCL(cloud_pcl2, gcloud_odom);
+    gcloud_odom.header.frame_id = frame_odom;
 
     tf_listener.waitForTransform(cam_model.tfFrame(), frame_odom, ros::Time(0), duration);
     pcl_ros::transformPointCloud(cam_model.tfFrame(), cloud_odom, cloud_camera, tf_listener);
+    tf_listener.waitForTransform(cam_model.tfFrame(), frame_odom, ros::Time(0), duration);
+    pcl_ros::transformPointCloud(cam_model.tfFrame(), gcloud_odom, gcloud_camera, tf_listener);
 
   }
   catch (tf::TransformException& ex)
@@ -314,6 +386,8 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
 
   pcl_conversions::toPCL(cloud_camera, cloud_pcl2);
   pcl::fromPCLPointCloud2(cloud_pcl2, cloud_pcl);
+  pcl_conversions::toPCL(gcloud_camera, cloud_pcl2);
+  pcl::fromPCLPointCloud2(cloud_pcl2, gcloud_pcl);
 
   /********* project the cloud discontinuities in images *********/
   for (size_t i = 0; i < cloud_pcl.points.size(); ++i)
@@ -335,15 +409,41 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
         image_discontinuities.at < cv::Vec3b > (uv.y, uv.x)[0] = r;
         image_discontinuities.at < cv::Vec3b > (uv.y, uv.x)[1] = g;
         image_discontinuities.at < cv::Vec3b > (uv.y, uv.x)[2] = b;
-        //cv::circle(image_discontinuities, uv, RADIUS, CV_RGB(r, g, b), -1);
         r = EMPTY_PIXEL;
         g = cloud_pcl.points[i].intensity;
         b = EMPTY_PIXEL;
+        //new_image.at < cv::Vec3b > (uv.y, uv.x)[0] = image_sobel_plot.at < cv::Vec3b > (uv.y, uv.x)[0];
+        //new_image.at < cv::Vec3b > (uv.y, uv.x)[1] = image_sobel_plot.at < cv::Vec3b > (uv.y, uv.x)[1];
+        //new_image.at < cv::Vec3b > (uv.y, uv.x)[2] = image_sobel_plot.at < cv::Vec3b > (uv.y, uv.x)[2];
         cv::circle(image_sobel_plot, uv, RADIUS, CV_RGB(b, g, r), -1);
       }
     }
   }
 
+  for (size_t i = 0; i < gcloud_pcl.points.size(); ++i)
+  {
+    if (gcloud_pcl.points[i].z > 0.0)
+    {
+      // project into image plane
+      cv::Point3d pt_cv(gcloud_pcl.points[i].x, gcloud_pcl.points[i].y, gcloud_pcl.points[i].z);
+      cv::Point2d uv;
+      uv = cam_model.project3dToPixel(pt_cv);
+
+      if (uv.x >= 0 && uv.y >= 0 && uv.x < cols && uv.y < rows)
+      {
+        // plot points in image
+        static const int RADIUS = 1;
+        float r = gcloud_pcl.points[i].intensity;
+        float g = gcloud_pcl.points[i].intensity;
+        float b = gcloud_pcl.points[i].intensity;
+        image_edges.at < cv::Vec3b > (uv.y, uv.x)[0] = r;
+        image_edges.at < cv::Vec3b > (uv.y, uv.x)[1] = g;
+        image_edges.at < cv::Vec3b > (uv.y, uv.x)[2] = b;
+      }
+    }
+  }
+
+  //new_image.copyTo(image_sobel_plot);
   return;
 }
 

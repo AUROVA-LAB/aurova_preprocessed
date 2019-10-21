@@ -52,6 +52,7 @@ private:
   std::string frame_odom_;
   std::string out_path_sobel_;
   std::string out_path_edges_;
+  std::string out_path_discnt_;
   bool save_images_;
   CvFont font_;
   cv_bridge::CvImagePtr input_bridge_;
@@ -65,7 +66,7 @@ private:
   // [publisher attributes]
   image_transport::Publisher plot_publisher_;
   image_transport::Publisher edges_publisher_;
-  image_transport::Publisher sobel_publisher_;
+  image_transport::Publisher discnt_publisher_;
   image_transport::Publisher soplt_publisher_;
 
   // [subscriber attributes]
