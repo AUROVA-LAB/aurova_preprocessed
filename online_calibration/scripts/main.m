@@ -3,14 +3,16 @@ clear, clc, close all
 %************* CONSTANTS ***************%
 ROI_WIDTH = 64;
 ROI_HEIGHT = 64;
-STEP_IMAGES = 10;
-INI_IMAGES = 250;
-NUM_IMAGES = INI_IMAGES; %987;
+STEP_IMAGES = 5;
+INI_IMAGES = 50;
+NUM_IMAGES = 495; %495;
 W_SOBEL = 1.0;
 
 %************** read images ***************%
-sobel_filename_base = 'images/tr_01/sobel';
-discnt_filename_base = 'images/tr_01/edges';
+sobel_filename_base = 'images/input/tr_01/sobel';
+discnt_filename_base = 'images/input/tr_01/discnt';
+sobel_filename_base_out = 'images/output/tr_01/plot';
+discnt_filename_base_out = 'images/output/tr_01/plot';
 
 for index = INI_IMAGES:STEP_IMAGES:NUM_IMAGES
 sobel_filename = strcat(sobel_filename_base, num2str(index,'%d'));
@@ -65,13 +67,22 @@ kl_map_plot = kl_map_plot/max(max(kl_map_plot));
 % mi_map_plot = mi_map_plot/max(max(mi_map_plot));
 
 %*********** representation ***************%
-close all
-movegui(figure,'southeast');
-imshow(kl_map_plot);
-movegui(figure,'southwest');
-imshow(d_entropy_map_mask);
-movegui(figure,'northwest');
-imshow(discnt_plot);
-movegui(figure,'northeast');
-imshow(sobel_plot);
+% close all
+% movegui(figure,'southeast');
+% imshow(kl_map_plot);
+% movegui(figure,'southwest');
+% imshow(d_entropy_map_mask);
+% movegui(figure,'northwest');
+% imshow(discnt_plot);
+% movegui(figure,'northeast');
+% imshow(sobel_plot);
+
+%************* save results ****************%
+sobel_filename = strcat(sobel_filename_base_out, num2str(index,'%d'));
+discnt_filename = strcat(discnt_filename_base_out, num2str(index,'%d'));
+sobel_filename = strcat(sobel_filename, '_b.jpg');
+discnt_filename = strcat(discnt_filename, '_a.jpg');
+imwrite(sobel_plot, sobel_filename);
+imwrite(discnt_plot, discnt_filename);
+
 end
