@@ -51,7 +51,6 @@ private:
   std::string frame_lidar_;
   std::string frame_odom_;
   std::string out_path_sobel_;
-  std::string out_path_edges_;
   std::string out_path_discnt_;
   bool save_images_;
   CvFont font_;
@@ -65,7 +64,7 @@ private:
 
   // [publisher attributes]
   image_transport::Publisher plot_publisher_;
-  image_transport::Publisher edges_publisher_;
+  image_transport::Publisher sobel_publisher_;
   image_transport::Publisher discnt_publisher_;
   image_transport::Publisher soplt_publisher_;
 

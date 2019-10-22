@@ -189,8 +189,8 @@ public:
   void filterSensorsData(cv::Mat last_image, sensor_msgs::PointCloud2 scan,
                          image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
                          ros::Time acquisition_time, tf::TransformListener& tf_listener,
-                         sensor_msgs::PointCloud2& scan_discontinuities, sensor_msgs::PointCloud2& gray_edges,
-                         cv::Mat& plot_image, cv::Mat& image_sobel, cv::Mat& image_sobel_plot);
+                         sensor_msgs::PointCloud2& scan_discontinuities, cv::Mat& plot_image, cv::Mat& image_sobel,
+                         cv::Mat& image_sobel_plot);
 
   /**
    * \brief Method that ...
@@ -202,10 +202,10 @@ public:
    * And return as outputs:
    * @param image_discontinuities: is the ...
    */
-  void acumAndProjectPoints(cv::Mat last_image, sensor_msgs::PointCloud2 scan_disc, sensor_msgs::PointCloud2 gray_edges,
+  void acumAndProjectPoints(cv::Mat last_image, sensor_msgs::PointCloud2 scan_disc,
                             image_geometry::PinholeCameraModel cam_model, std::string frame_lidar,
                             std::string frame_odom, ros::Time acquisition_time, tf::TransformListener& tf_listener,
-                            cv::Mat& image_sobel_plot, cv::Mat& image_discontinuities, cv::Mat& image_edges);
+                            cv::Mat& image_sobel_plot, cv::Mat& image_discontinuities);
 
   /**
    * TODO: doxygen comments
