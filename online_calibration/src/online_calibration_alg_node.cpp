@@ -12,15 +12,13 @@ OnlineCalibrationAlgNode::OnlineCalibrationAlgNode(void) :
 
   this->save_images_ = false;
   this->out_path_sobel_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/tr_02/sobel";
-  this->out_path_edges_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/tr_02/edges";
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/tr_01/sobel";
   this->out_path_discnt_ =
-        "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/tr_02/discnt";
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/tr_01/discnt";
 
   // [init publishers]
   this->plot_publisher_ = it_.advertise("/plot_out", 1);
-  this->edges_publisher_ = it_.advertise("/edges_out", 1);
+  this->sobel_publisher_ = it_.advertise("/sobel_out", 1);
   this->discnt_publisher_ = it_.advertise("/discnt_out", 1);
   this->soplt_publisher_ = it_.advertise("/sobel_plt_out", 1);
 
@@ -98,18 +96,15 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   cv::Mat image_sobel;
   cv::Mat image_sobel_plot;
   cv::Mat image_discontinuities;
-  cv::Mat image_edges;
   sensor_msgs::PointCloud2 scan_discontinuities;
-  sensor_msgs::PointCloud2 gray_edges;
   this->alg_.filterSensorsData(this->last_image_, *scan, this->cam_model_, this->frame_lidar_, this->acquisition_time_,
-                               this->tf_listener_, scan_discontinuities, gray_edges, this->plot_image_, image_sobel,
+                               this->tf_listener_, scan_discontinuities, this->plot_image_, image_sobel,
                                image_sobel_plot);
 
   scan_discontinuities.header = scan->header;
-  gray_edges.header = scan->header;
-  this->alg_.acumAndProjectPoints(this->last_image_, scan_discontinuities, gray_edges, this->cam_model_,
-                                  this->frame_lidar_, this->frame_odom_, this->acquisition_time_, this->tf_listener_,
-                                  image_sobel_plot, image_discontinuities, image_edges);
+  this->alg_.acumAndProjectPoints(this->last_image_, scan_discontinuities, this->cam_model_, this->frame_lidar_,
+                                  this->frame_odom_, this->acquisition_time_, this->tf_listener_, image_sobel_plot,
+                                  image_discontinuities);
 
   //////////////////////////////////////////////////////////////////
   //// get match features (and errors) between sobel and disc. info
@@ -136,8 +131,8 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   cv_bridge::CvImage output_bridge;
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_discontinuities);
   this->discnt_publisher_.publish(output_bridge.toImageMsg());
-  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_edges);
-  this->edges_publisher_.publish(output_bridge.toImageMsg());
+  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel);
+  this->sobel_publisher_.publish(output_bridge.toImageMsg());
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel_plot);
   this->soplt_publisher_.publish(output_bridge.toImageMsg());
   this->plot_publisher_.publish(this->input_bridge_plt_->toImageMsg());
@@ -148,15 +143,12 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
     static int cont = 0;
 
     std::ostringstream out_path_sobel;
-    std::ostringstream out_path_edges;
     std::ostringstream out_path_discnt;
 
     out_path_sobel << this->out_path_sobel_ << cont << ".jpg";
-    out_path_edges << this->out_path_edges_ << cont << ".jpg";
     out_path_discnt << this->out_path_discnt_ << cont << ".jpg";
 
     cv::imwrite(out_path_sobel.str(), image_sobel);
-    cv::imwrite(out_path_edges.str(), image_edges);
     cv::imwrite(out_path_discnt.str(), image_discontinuities);
 
     cont++;
