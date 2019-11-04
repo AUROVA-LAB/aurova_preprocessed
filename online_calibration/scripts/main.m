@@ -4,9 +4,10 @@ clear, clc, close all
 ROI_WIDTH = 64;
 ROI_HEIGHT = 64;
 STEP_IMAGES = 5;
-INI_IMAGES = 50;
-NUM_IMAGES = 495; %495;
+INI_IMAGES = 150;
+NUM_IMAGES = INI_IMAGES; %495;
 W_SOBEL = 1.0;
+RADIUS = 2;
 
 %************** read images ***************%
 sobel_filename_base = 'images/input/tr_01/sobel';
@@ -25,82 +26,70 @@ discnt_image = imread(discnt_filename);
 
 %********* preprocess image ***************%
 sobel_image = sobel_image .* W_SOBEL;
-sobel_image_g = imgaussfilt(sobel_image, 5.0);
+% sobel_image_g = imgaussfilt(sobel_image, 5.0);
 discnt_image_g = imgaussfilt(discnt_image, 5.0);
-sobel_image = sobel_image* 0.5 + sobel_image_g;
-discnt_image = discnt_image * 0.5 + discnt_image_g;
+% sobel_image = sobel_image* 0.5 + sobel_image_g;
+discnt_image_g = discnt_image * 0.5 + discnt_image_g;
 
 %******** image entropy calculation ********%
-[d_entropy_map, d_entropy_map_mask] = imageEntropy(discnt_image, ROI_WIDTH, ROI_HEIGHT);
-d_entropy_map = d_entropy_map(1:h-ROI_HEIGHT-1, 1:w-ROI_WIDTH-1);
-d_entropy_map_mask = d_entropy_map_mask(1:h-ROI_HEIGHT-1, 1:w-ROI_WIDTH-1);
-max_val = max(max(d_entropy_map));
-[y, x] = find(d_entropy_map == max_val);
-discnt_plot = insertShape(discnt_image, 'rectangle', [x(1) y(1) ROI_WIDTH ROI_HEIGHT], 'LineWidth', 2, 'Color', 'green');
-sobel_plot = insertShape(sobel_image, 'rectangle', [x(1) y(1) ROI_WIDTH ROI_HEIGHT], 'LineWidth', 2, 'Color', 'green');
-template = discnt_image(y(1):y(1)+ROI_HEIGHT-1, x(1):x(1)+ROI_WIDTH-1);
-d_entropy_map_plot = d_entropy_map - min(min(d_entropy_map));
-d_entropy_map_plot = d_entropy_map_plot/max(max(d_entropy_map_plot));
+[entropy_map, entropy_map_mask] = imageEntropy(discnt_image_g, ROI_WIDTH, ROI_HEIGHT);
+entropy_map = entropy_map(1:h-ROI_HEIGHT-1, 1:w-ROI_WIDTH-1);
+entropy_map_mask = entropy_map_mask(1:h-ROI_HEIGHT-1, 1:w-ROI_WIDTH-1);
+entropy_map_plot = entropy_map - min(min(entropy_map));
+entropy_map_plot = entropy_map_plot/max(max(entropy_map_plot));
+entropy_color_map = ind2rgb(uint8(entropy_map_plot*256), jet(256));
 
 %******* local maximun calculation ********%
-d_entropy_map_plot_g = imgaussfilt(d_entropy_map_plot, 5.0) .* d_entropy_map_mask;
-TF = imregionalmax(d_entropy_map_plot_g);
-[m, n] = find(TF > 0);
+entropy_map_plot_g = imgaussfilt(entropy_map_plot, 6.0) .* entropy_map_mask;
+maximums = imregionalmax(entropy_map_plot_g);
+[kp_y, kp_x] = find(maximums > 0); % keypoints
 clear k;
-k(1:length(n), 1) = 2;
-d_entropy_map_plot_g = insertShape(d_entropy_map_plot_g, 'circle', [n, m, k], 'LineWidth', 1, 'Color', 'red');
-color_map = ind2rgb(uint8(d_entropy_map_plot*256), jet(256));
-
-%********** cross correlation **************%
-% corr_map = imageCrossCorrelation(sobel_image, template);
-% max_val = max(max(corr_map));
-% [y, x] = find(corr_map == max_val);
-% sobel_plot = insertShape(sobel_plot, 'rectangle', [x(1) y(1) ROI_WIDTH ROI_HEIGHT], 'LineWidth', 2, 'Color', 'red');
+k(1:length(kp_x), 1) = RADIUS;
+kp_x_plt = kp_x + ROI_WIDTH/2;
+kp_y_plt = kp_y + ROI_HEIGHT/2;
+entropy_map_plot_g = insertShape(entropy_map_plot_g, 'circle', [kp_x, kp_y, k], 'LineWidth', 2, 'Color', 'green');
+discnt_plot = insertShape(discnt_image, 'circle', [kp_x_plt, kp_y_plt, k], 'LineWidth', 2, 'Color', 'green');
+sobel_plot = insertShape(sobel_image, 'circle', [kp_x_plt, kp_y_plt, k], 'LineWidth', 2, 'Color', 'green');
 
 %************ KL divergence **************%
-% kl_map = imageKLDivergence(sobel_image, template);
-% kl_map = kl_map(1:h-ROI_HEIGHT-1, 1:w-ROI_WIDTH-1);
-% min_val = min(min(kl_map));
-% [y, x] = find(kl_map == min_val);
-% sobel_plot = insertShape(sobel_plot, 'rectangle', [x(1) y(1) ROI_WIDTH ROI_HEIGHT], 'LineWidth', 2, 'Color', 'red');
-% match = sobel_image(y(1):y(1)+ROI_HEIGHT-1, x(1):x(1)+ROI_WIDTH-1);
-% kl_map_plot = kl_map - min(min(kl_map));
-% kl_map_plot = kl_map_plot/max(max(kl_map_plot));
-
-%********** mutual information ************%
-% mi_map = imageMutualInformation(sobel_image, template);
-% mi_map = mi_map(1:h-ROI_HEIGHT-1, 1:w-ROI_WIDTH-1);
-% max_val = max(max(mi_map));
-% [y, x] = find(mi_map == max_val);
-% sobel_plot = insertShape(sobel_plot, 'rectangle', [x(1) y(1) ROI_WIDTH ROI_HEIGHT], 'LineWidth', 2, 'Color', 'red');
-% match = sobel_image(y(1):y(1)+ROI_HEIGHT-1, x(1):x(1)+ROI_WIDTH-1);
-% mi_map_plot = mi_map/max(max(mi_map));
-% mi_map_plot = mi_map_plot - min(min(mi_map_plot));
-% mi_map_plot = mi_map_plot/max(max(mi_map_plot));
+len = length(kp_x);
+kp_u = zeros(len, 1);
+kp_v = zeros(len, 1);
+for n = 1:len
+    template = discnt_image(kp_y(n):kp_y(n)+ROI_HEIGHT-1, kp_x(n):kp_x(n)+ROI_WIDTH-1);
+    kl_map = imageKLDivergence(sobel_image, template, kp_x(n), kp_y(n), ROI_WIDTH/2, ROI_HEIGHT/2);
+    min_val = min(kl_map(kl_map > 0));
+    [v, u] = find(kl_map == min_val); % keypoints
+    kp_u(n) = u;
+    kp_v(n) = v;
+    sobel_plot = insertShape(sobel_plot, 'line', [u+ROI_WIDTH/2 v+ROI_HEIGHT/2 kp_x(n)+ROI_WIDTH/2 kp_y(n)+ROI_HEIGHT/2], 'LineWidth', 1, 'Color', 'yellow');
+    sobel_plot = insertShape(sobel_plot, 'circle', [u+ROI_WIDTH/2 v+ROI_HEIGHT/2 RADIUS], 'LineWidth', 2, 'Color', 'red');
+    match = sobel_image(v:v+ROI_HEIGHT-1, u:u+ROI_WIDTH-1);
+end
 
 %*********** representation ***************%
-% close all
-% movegui(figure,'southeast');
-% imshow(d_entropy_map_plot_g);
-% movegui(figure,'southwest');
-% imshow(color_map);
-% movegui(figure,'northwest');
-% imshow(discnt_plot);
-% movegui(figure,'northeast');
-% imshow(sobel_plot);
+close all
+movegui(figure,'southeast');
+imshow(entropy_map_plot_g);
+movegui(figure,'southwest');
+imshow(entropy_color_map);
+movegui(figure,'northwest');
+imshow(discnt_plot);
+movegui(figure,'northeast');
+imshow(sobel_plot);
 
 %************* save results ****************%
 % sobel_filename = strcat(sobel_filename_base_out, num2str(index,'%d'));
-% sobel_filename = strcat(sobel_filename, '_s.jpg');
+% sobel_filename = strcat(sobel_filename, '_a.jpg');
 % imwrite(sobel_plot, sobel_filename);
-discnt_filename = strcat(discnt_filename_base_out, num2str(index,'%d'));
-discnt_filename = strcat(discnt_filename, '_d.jpg');
-imwrite(discnt_plot, discnt_filename);
-discnt_filename = strcat(discnt_filename_base_out, num2str(index,'%d'));
-discnt_filename = strcat(discnt_filename, '_e.jpg');
-imwrite(d_entropy_map_plot_g, discnt_filename);
-discnt_filename = strcat(discnt_filename_base_out, num2str(index,'%d'));
-discnt_filename = strcat(discnt_filename, '_m.jpg');
-imwrite(color_map, discnt_filename);
+% discnt_filename = strcat(discnt_filename_base_out, num2str(index,'%d'));
+% discnt_filename = strcat(discnt_filename, '_d.jpg');
+% imwrite(discnt_plot, discnt_filename);
+% discnt_filename = strcat(discnt_filename_base_out, num2str(index,'%d'));
+% discnt_filename = strcat(discnt_filename, '_e.jpg');
+% imwrite(entropy_map_plot_g, discnt_filename);
+% discnt_filename = strcat(discnt_filename_base_out, num2str(index,'%d'));
+% discnt_filename = strcat(discnt_filename, '_m.jpg');
+% imwrite(entropy_color_map, discnt_filename);
 
 end

@@ -17,7 +17,7 @@ for i = 1:u-w
         template_dist = imageDistributionMLE(roi, 1, 256);
         entropy(j, i) = entropy(j, i) - sum(template_dist .* log2(template_dist));
         
-        if (entropy(j, i) < entropy_max * 0.75) % TODO: adjustable
+        if (entropy(j, i) < entropy_max * 0.77) % TODO: adjustable
             entropy_mask(j, i) = 0;
         else
             entropy_mask(j, i) = 1;
