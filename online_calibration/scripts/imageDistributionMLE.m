@@ -1,18 +1,18 @@
-function h = imageDistributionMLE(image, min, max)
+function mle = imageDistributionMLE(image, min, max)
 
 % variable declarations
-h(min:max) = double(1);
-[v, u] = size(image);
+mle(min:max) = double(1); % '1' to prevent '0' for entropies
+[v, u, c] = size(image);
 
 % histogram of image
 for i=1:u
     for j=1:v
-        h(image(j, i)) = h(image(j, i)) + 1;
+        mle(image(j, i)) = mle(image(j, i)) + 1;
     end
 end
 
 % normalization
-h = h / sum(h);
+mle = mle / sum(mle);
 
 end
 
