@@ -12,9 +12,9 @@ OnlineCalibrationAlgNode::OnlineCalibrationAlgNode(void) :
 
   this->save_images_ = false;
   this->out_path_sobel_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/tr_01/sobel";
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/tr_01_dt_02/canny";
   this->out_path_discnt_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/tr_01/discnt";
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/tr_01_dt_02/discnt";
 
   // [init publishers]
   this->plot_publisher_ = it_.advertise("/plot_out", 1);
