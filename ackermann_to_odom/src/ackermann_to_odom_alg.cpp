@@ -23,8 +23,10 @@ void AckermannToOdomAlgorithm::config_update(Config& config, uint32_t level)
 
 // AckermannToOdomAlgorithm Public API
 void AckermannToOdomAlgorithm::generateNewOdometryMsg2D(ackermann_msgs::AckermannDriveStamped estimated_ackermann_state,
-                                                      sensor_msgs::Imu virtual_imu_msg, geometry_msgs::PoseWithCovarianceStamped& odometry_pose,
-                                                      nav_msgs::Odometry& odometry, geometry_msgs::TransformStamped& odom_trans)
+                                                        sensor_msgs::Imu virtual_imu_msg,
+                                                        geometry_msgs::PoseWithCovarianceStamped& odometry_pose,
+                                                        nav_msgs::Odometry& odometry,
+                                                        geometry_msgs::TransformStamped& odom_trans)
 {
 
   int i, j;
@@ -35,6 +37,9 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg2D(ackermann_msgs::Ackerman
   static double t_1;
   static double t_2;
   static bool first_exec = true;
+  float d_vehicle = 1.08; // TODO: get from param and modify git .rm
+  bool flag_imu = true; // TODO: get from param and modify git .rm
+  tf::Quaternion quaternion = tf::createQuaternionFromRPY(0, 0, 0);;
 
   /////////////////////////////////////////////////
   //// POSE AND VELOCITY
@@ -53,13 +58,22 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg2D(ackermann_msgs::Ackerman
   float steering_radians = estimated_ackermann_state.drive.steering_angle * M_PI / 180.0;
 
   //angle
-  tf::Quaternion q(virtual_imu_msg.orientation.x, virtual_imu_msg.orientation.y, virtual_imu_msg.orientation.z,
-                   virtual_imu_msg.orientation.w);
-  tf::Matrix3x3 m(q);
-  double roll, pitch, yaw;
-  m.getRPY(roll, pitch, yaw);
-  pose_yaw = yaw;
-  tf::Quaternion quaternion = tf::createQuaternionFromRPY(0, 0, pose_yaw);
+  if (flag_imu)
+  {
+    tf::Quaternion q(virtual_imu_msg.orientation.x, virtual_imu_msg.orientation.y, virtual_imu_msg.orientation.z,
+                     virtual_imu_msg.orientation.w);
+    tf::Matrix3x3 m(q);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw);
+    pose_yaw = yaw;
+    quaternion = tf::createQuaternionFromRPY(0, 0, pose_yaw);
+  }
+  else
+  {
+    float angular_speed_yaw = (lineal_speed / d_vehicle) * sin(steering_radians);
+    pose_yaw = pose_yaw_prev + angular_speed_yaw * delta_t;
+    quaternion = tf::createQuaternionFromRPY(0, 0, pose_yaw);
+  }
 
   //pose
   float lineal_speed_x = lineal_speed * cos(pose_yaw) * cos(steering_radians);
@@ -73,6 +87,7 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg2D(ackermann_msgs::Ackerman
     pose_x = 0.0;
     pose_y = 0.0;
     quaternion = tf::createQuaternionFromRPY(0, 0, 0);
+    ROS_INFO("isnan(pose_yaw)");
   }
 
   // For next step
@@ -80,12 +95,14 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg2D(ackermann_msgs::Ackerman
   {
     pose_x_prev = pose_x;
     pose_y_prev = pose_y;
+    pose_yaw_prev = pose_yaw;
   }
   else
   {
     pose_x = pose_x_prev;
     pose_y = pose_y_prev;
-
+    pose_yaw = pose_yaw_prev;
+    quaternion = tf::createQuaternionFromRPY(0, 0, pose_yaw);
   }
   /////////////////////////////////////////////////
 
@@ -121,7 +138,7 @@ void AckermannToOdomAlgorithm::generateNewOdometryMsg2D(ackermann_msgs::Ackerman
   odometry_pose.pose.pose.orientation.y = quaternion[1];
   odometry_pose.pose.pose.orientation.z = quaternion[2];
   odometry_pose.pose.pose.orientation.w = quaternion[3];
-  odometry_pose.pose.covariance[0] = 0.5;
+  odometry_pose.pose.covariance[0] = 0.5; // TODO: calculation of variances !!!
   odometry_pose.pose.covariance[7] = 0.5;
   odometry_pose.pose.covariance[35] = 0.5;
   /////////////////////////////////////////////////
