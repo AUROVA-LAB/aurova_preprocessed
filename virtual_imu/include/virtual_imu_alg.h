@@ -159,20 +159,6 @@ public:
    */
   void createVirtualImu(sensor_msgs::Imu originl_imu_msg, sensor_msgs::Imu& virtual_imu_msg);
 
-  /**
-   * \brief rpy from velocity.
-   *
-   * This method gets gps velocity vector and calculate the orientation.
-   *
-   * @param x is the speed in the x component.
-   * @param y is the speed in the y component.
-   * @param z is the speed in the z component.
-   * @param roll is the orientation in the x axe.
-   * @param pitch is the orientation in the y axe.
-   * @param yaw is the orientation in the z axe.
-   */
-  void rpyFromGpsVelocity(float& roll, float& pitch, float& yaw, float x, float y, float z);
-
 };
 
 #endif

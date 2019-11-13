@@ -52,15 +52,6 @@ class VirtualImuAlgNode : public algorithm_base::IriBaseAlgorithm<VirtualImuAlgo
 {
 private:
 
-  std::ofstream acc_results_file_;
-  std::string acc_data_ready_to_be_written_to_file_;
-
-  std::ofstream gyro_results_file_;
-  std::string gyro_data_ready_to_be_written_to_file_;
-
-  bool flag_first_time_stamp_received_;
-  double first_timestamp_;
-
   sensor_msgs::Imu originl_imu_msg_;
 
   // [publisher attributes]
