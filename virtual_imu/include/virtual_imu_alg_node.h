@@ -35,7 +35,9 @@
 #include "virtual_imu_alg.h"
 #include "sensor_msgs/Imu.h"
 #include "geometry_msgs/TwistWithCovarianceStamped.h"
-#include <fstream>
+#include <Eigen/Dense>
+#include <XmlRpcException.h>
+//#include <fstream>
 
 // [publisher subscriber headers]
 
@@ -66,6 +68,21 @@ private:
    * \brief Callback for read imu messages.
    */
   void cb_imuData(const sensor_msgs::Imu& Imu_msg);
+
+  Eigen::Vector3d acc_reading_;
+  Eigen::Vector3d acc_corrected_;
+
+  Eigen::Vector3d acc_bias_;
+  Eigen::Matrix3d acc_scale_factor_;
+  Eigen::Matrix3d acc_misaligment_;
+
+  Eigen::Vector3d gyro_reading_;
+  Eigen::Vector3d gyro_corrected_;
+
+  Eigen::Vector3d gyro_bias_;
+  Eigen::Matrix3d gyro_scale_factor_;
+  Eigen::Matrix3d gyro_misaligment_;
+
 
   // [service attributes]
 
