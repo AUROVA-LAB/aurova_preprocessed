@@ -1,12 +1,12 @@
 clear, clc, close all
 
 %************* CONSTANTS ***************%
-ROI_WIDTH = 64;
-ROI_HEIGHT = 64;
+ROI_WIDTH = 128;
+ROI_HEIGHT = 128;
 STEP_IMAGES = 5;
 INI_IMAGES = 150;
 NUM_IMAGES = INI_IMAGES; %495;
-W_SOBEL = 1.0;
+W_SOBEL = 1.5;
 RADIUS = 2;
 
 %************** read images ***************%
@@ -54,60 +54,60 @@ discnt_plot = insertShape(discnt_image, 'circle', [kp_x_plt, kp_y_plt, k], 'Line
 sobel_plot = insertShape(sobel_image, 'circle', [kp_x_plt, kp_y_plt, k], 'LineWidth', 2, 'Color', 'green');
 
 %*****************************************%
-% THRESHOLD_TM = 20;
-% THRESHOLD = 0;
-% REDUCTION = 20;
-% len = length(kp_x);
-% kp_u = zeros(len, 1);
-% kp_v = zeros(len, 1);
-% for n = 1:len
-%     template = discnt_image(kp_y(n):kp_y(n)+ROI_HEIGHT-1, kp_x(n):kp_x(n)+ROI_WIDTH-1);
-%     [pt_y_tm, pt_x_tm] = find(template > THRESHOLD_TM); % cloud template
-%     clear pt_z_tm;
-%     pt_z_tm(1:length(pt_x_tm), 1) = double(0);
-%     for i = 1:length(pt_x_tm)
-%         pt_z_tm(i, 1) = (template(pt_y_tm(i, 1), pt_x_tm(i, 1)) - THRESHOLD_TM) / REDUCTION;
-%     end
-%     pt_x_tm = pt_x_tm + kp_x(n);
-%     pt_y_tm = pt_y_tm + kp_y(n);
-%     pt_xyz_tm = [pt_x_tm'; pt_y_tm'; pt_z_tm']';
-%     pt_cloud_tm = pointCloud(pt_xyz_tm);
-%     [pt_y, pt_x] = find(sobel_image(:, :, 1) > THRESHOLD); % cloud image
-%     clear pt_z;
-%     pt_z(1:length(pt_x), 1) = double(0);
-%      for i = 1:length(pt_x)
-%         pt_z(i, 1) = (sobel_image(pt_y(i, 1), pt_x(i, 1)) - THRESHOLD) / REDUCTION;
-%     end
-%     pt_xyz = [pt_x'; pt_y'; pt_z']';
-%     pt_cloud = pointCloud(pt_xyz);
-%     tform = pcregistericp(pt_cloud_tm, pt_cloud); % register ICP
-%     trvec = tform2trvec(tform.T');
-%     kp_u = kp_x(n) + trvec(1);
-%     kp_v = kp_y(n) + trvec(2);
-%     kp_u_plt = kp_u + ROI_WIDTH/2;
-%     kp_v_plt = kp_v + ROI_HEIGHT/2;
-%     kp_x_plt = kp_x(n) + ROI_WIDTH/2;
-%     kp_y_plt = kp_y(n) + ROI_HEIGHT/2;
-%     sobel_plot = insertShape(sobel_plot, 'line', [kp_u_plt kp_v_plt kp_x_plt kp_y_plt], 'LineWidth', 1, 'Color', 'yellow');
-%     sobel_plot = insertShape(sobel_plot, 'circle', [kp_u_plt kp_v_plt RADIUS], 'LineWidth', 2, 'Color', 'red');
-%     %match = sobel_image(kp_v:kp_v+ROI_HEIGHT-1, kp_u:kp_u+ROI_WIDTH-1);
-% end
-
-%************ KL divergence **************%
+THRESHOLD_TM = 10;
+THRESHOLD = 0;
+REDUCTION = 20;
 len = length(kp_x);
 kp_u = zeros(len, 1);
 kp_v = zeros(len, 1);
 for n = 1:len
     template = discnt_image(kp_y(n):kp_y(n)+ROI_HEIGHT-1, kp_x(n):kp_x(n)+ROI_WIDTH-1);
-    kl_map = imageKLDivergence(sobel_image, template, kp_x(n), kp_y(n), ROI_WIDTH/2, ROI_HEIGHT/2);
-    min_val = min(kl_map(kl_map > 0));
-    [v, u] = find(kl_map == min_val); % keypoints
-    kp_u(n) = u;
-    kp_v(n) = v;
-    sobel_plot = insertShape(sobel_plot, 'line', [u+ROI_WIDTH/2 v+ROI_HEIGHT/2 kp_x(n)+ROI_WIDTH/2 kp_y(n)+ROI_HEIGHT/2], 'LineWidth', 1, 'Color', 'yellow');
-    sobel_plot = insertShape(sobel_plot, 'circle', [u+ROI_WIDTH/2 v+ROI_HEIGHT/2 RADIUS], 'LineWidth', 2, 'Color', 'red');
-    match = sobel_image(v:v+ROI_HEIGHT-1, u:u+ROI_WIDTH-1);
+    [pt_y_tm, pt_x_tm] = find(template > THRESHOLD_TM); % cloud template
+    clear pt_z_tm;
+    pt_z_tm(1:length(pt_x_tm), 1) = double(0);
+    for i = 1:length(pt_x_tm)
+        pt_z_tm(i, 1) = (template(pt_y_tm(i, 1), pt_x_tm(i, 1)) - THRESHOLD_TM) / REDUCTION;
+    end
+    pt_x_tm = pt_x_tm + kp_x(n);
+    pt_y_tm = pt_y_tm + kp_y(n);
+    pt_xyz_tm = [pt_x_tm'; pt_y_tm'; pt_z_tm']';
+    pt_cloud_tm = pointCloud(pt_xyz_tm);
+    [pt_y, pt_x] = find(sobel_image(:, :, 1) > THRESHOLD); % cloud image
+    clear pt_z;
+    pt_z(1:length(pt_x), 1) = double(0);
+     for i = 1:length(pt_x)
+        pt_z(i, 1) = (sobel_image(pt_y(i, 1), pt_x(i, 1)) - THRESHOLD) / REDUCTION;
+    end
+    pt_xyz = [pt_x'; pt_y'; pt_z']';
+    pt_cloud = pointCloud(pt_xyz);
+    tform = pcregistericp(pt_cloud_tm, pt_cloud); % register ICP
+    trvec = tform2trvec(tform.T');
+    kp_u = kp_x(n) + trvec(1);
+    kp_v = kp_y(n) + trvec(2);
+    kp_u_plt = kp_u + ROI_WIDTH/2;
+    kp_v_plt = kp_v + ROI_HEIGHT/2;
+    kp_x_plt = kp_x(n) + ROI_WIDTH/2;
+    kp_y_plt = kp_y(n) + ROI_HEIGHT/2;
+    sobel_plot = insertShape(sobel_plot, 'line', [kp_u_plt kp_v_plt kp_x_plt kp_y_plt], 'LineWidth', 1, 'Color', 'yellow');
+    sobel_plot = insertShape(sobel_plot, 'circle', [kp_u_plt kp_v_plt RADIUS], 'LineWidth', 2, 'Color', 'red');
+    %match = sobel_image(kp_v:kp_v+ROI_HEIGHT-1, kp_u:kp_u+ROI_WIDTH-1);
 end
+
+%************ KL divergence **************%
+% len = length(kp_x);
+% kp_u = zeros(len, 1);
+% kp_v = zeros(len, 1);
+% for n = 1:len
+%     template = discnt_image(kp_y(n):kp_y(n)+ROI_HEIGHT-1, kp_x(n):kp_x(n)+ROI_WIDTH-1);
+%     kl_map = imageKLDivergence(sobel_image, template, kp_x(n), kp_y(n), ROI_WIDTH/2, ROI_HEIGHT/2);
+%     min_val = min(kl_map(kl_map > 0));
+%     [v, u] = find(kl_map == min_val); % keypoints
+%     kp_u(n) = u;
+%     kp_v(n) = v;
+%     sobel_plot = insertShape(sobel_plot, 'line', [u+ROI_WIDTH/2 v+ROI_HEIGHT/2 kp_x(n)+ROI_WIDTH/2 kp_y(n)+ROI_HEIGHT/2], 'LineWidth', 1, 'Color', 'yellow');
+%     sobel_plot = insertShape(sobel_plot, 'circle', [u+ROI_WIDTH/2 v+ROI_HEIGHT/2 RADIUS], 'LineWidth', 2, 'Color', 'red');
+%     match = sobel_image(v:v+ROI_HEIGHT-1, u:u+ROI_WIDTH-1);
+% end
 
 %*********** representation ***************%
 close all

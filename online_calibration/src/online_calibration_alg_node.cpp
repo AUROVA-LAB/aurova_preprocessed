@@ -6,15 +6,15 @@ OnlineCalibrationAlgNode::OnlineCalibrationAlgNode(void) :
   //init class attributes if necessary
   this->loop_rate_ = 20; //in [Hz]
   this->frame_lidar_ = "/velodyne"; //TODO: get from param
-  this->frame_odom_ = "/odom"; //TODO: get from param
+  this->frame_odom_ = "/map"; //TODO: get from param
   cvInitFont(&this->font_, CV_FONT_HERSHEY_SIMPLEX, 1.0, 1.0);
   image_transport::ImageTransport it_(this->public_node_handle_);
 
   this->save_images_ = false;
   this->out_path_sobel_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/tr_01_dt_02/canny";
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/tr_01_dt_01/sobel";
   this->out_path_discnt_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/tr_01_dt_02/discnt";
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/tr_01_dt_01/discnt";
 
   // [init publishers]
   this->plot_publisher_ = it_.advertise("/plot_out", 1);

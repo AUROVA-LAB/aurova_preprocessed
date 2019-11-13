@@ -55,37 +55,37 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
   int delta = 0;
   int ddepth = CV_16S;
 
-  /*cv::GaussianBlur(last_image, last_image, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
+  cv::GaussianBlur(last_image, last_image, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
   cv::cvtColor(last_image, last_image_gray, CV_BGR2GRAY);
   cv::Sobel(last_image_gray, grad_x, ddepth, 1, 0, 3, scale, delta, cv::BORDER_DEFAULT);
   cv::Sobel(last_image_gray, grad_y, ddepth, 0, 1, 3, scale, delta, cv::BORDER_DEFAULT);
   convertScaleAbs(grad_x, abs_grad_x);
   convertScaleAbs(grad_y, abs_grad_y);
   addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
-  grad.copyTo(image_sobel);*/
-
-  /************* canny detector *****************/
-  cv::Mat detected_edges;
-  int lowThreshold = 20;
-  int const max_lowThreshold = 100;
-  int ratio = 3;
-  int kernel_size = 3;
-
-  cv::GaussianBlur(last_image, last_image, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
-  cv::cvtColor(last_image, last_image_gray, CV_BGR2GRAY);
-  cv::blur(last_image_gray, detected_edges, cv::Size(3, 3));
-  cv::Canny(detected_edges, detected_edges, lowThreshold, lowThreshold * ratio, kernel_size);
-  //image_sobel = cv::Scalar::all(0);
-  //last_image.copyTo(image_sobel, detected_edges);
-  detected_edges.copyTo(image_sobel);
+  grad.copyTo(image_sobel);
   cv::cvtColor(image_sobel, image_sobel_plot, cv::COLOR_GRAY2BGR);
   cv::cvtColor(image_sobel, image_sobel, cv::COLOR_GRAY2BGR);
   cv::cvtColor(last_image_gray, last_image_gray, cv::COLOR_GRAY2BGR);
 
+  /************* canny detector *****************/
+  //cv::Mat detected_edges;
+  //int lowThreshold = 20;
+  //int const max_lowThreshold = 100;
+  //int ratio = 3;
+  //int kernel_size = 3;
+  //cv::GaussianBlur(last_image, last_image, cv::Size(3, 3), 0, 0, cv::BORDER_DEFAULT);
+  //cv::cvtColor(last_image, last_image_gray, CV_BGR2GRAY);
+  //cv::blur(last_image_gray, detected_edges, cv::Size(3, 3));
+  //cv::Canny(detected_edges, detected_edges, lowThreshold, lowThreshold * ratio, kernel_size);
+  ////image_sobel = cv::Scalar::all(0);
+  ////last_image.copyTo(image_sobel, detected_edges);
+  //detected_edges.copyTo(image_sobel);
+
+
   /************** transform scan to camera frame ****************/
   try
   {
-    ros::Duration duration(1.0);
+    ros::Duration duration(5.0);
     tf_listener.waitForTransform(cam_model.tfFrame(), frame_lidar, ros::Time::now(), duration);
     pcl_ros::transformPointCloud(cam_model.tfFrame(), scan, scan_transformed, tf_listener);
 
@@ -201,8 +201,9 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
   float azimuth_ac = 0.0;
   float elevation = 0.0;
   float alpha = 1.0; //// TODO: from parameter
-  float threshold = 1.5; //// TODO: from parameter
-  float threshold_up = 2.0; //// TODO: from parameter
+  float threshold = 0.0; //// TODO: from parameter
+  float threshold_up = 50.0; //// TODO: from parameter
+  float max_range = 10.0; //// TODO: from parameter
   static pcl::PointCloud<pcl::PointXYZI> scan_discontinuities_pcl;
   scan_discontinuities_pcl.clear(); // because is static
   for (i = 0; i < scan_slices.size(); i++)
@@ -261,17 +262,17 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
       float max_range = std::max(range_pr - range_ac, range_ps - range_ac);
       float max_final = std::max(max_range, (float)0.0);
       max_final = pow(max_final, alpha);
-      if (max_final > threshold)
+      if (max_final > threshold && range_ac < max_range)
       {
-        /*float scope = max_final - threshold;
+        float scope = max_final - threshold;
         float scope_max = threshold_up - threshold;
 
         if (scope > scope_max)
         {
           scope = scope_max;
-        }*/
+        }
 
-        scan_slices[i].points[j].intensity = /*scope / scope_max */ MAX_PIXEL;
+        scan_slices[i].points[j].intensity = scope / scope_max * MAX_PIXEL;
         scan_discontinuities_pcl.push_back(scan_slices[i].points[j]);
       }
     }
@@ -311,14 +312,14 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
   count++;
   try
   {
-    ros::Duration duration(1.0);
+    ros::Duration duration(5.0);
     tf_listener.waitForTransform(frame_odom, frame_lidar, ros::Time::now(), duration);
     pcl_ros::transformPointCloud(frame_odom, scan_disc, scan_transformed, tf_listener);
 
     pcl_conversions::toPCL(scan_transformed, scan_pcl2);
     pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl_transformed);
 
-    if (count > 50) // TODO: get from parameter
+    if (count > 150) // TODO: get from parameter
     {
       scans_acum_pcl.erase(scans_acum_pcl.begin());
     }
