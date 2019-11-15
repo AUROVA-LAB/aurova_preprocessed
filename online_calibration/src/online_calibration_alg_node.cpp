@@ -133,9 +133,9 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   this->discnt_publisher_.publish(output_bridge.toImageMsg());
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel);
   this->sobel_publisher_.publish(output_bridge.toImageMsg());
-  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel_plot);
-  this->soplt_publisher_.publish(output_bridge.toImageMsg());
-  this->plot_publisher_.publish(this->input_bridge_plt_->toImageMsg());
+  //output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel_plot);
+  //this->soplt_publisher_.publish(output_bridge.toImageMsg());
+  t//his->plot_publisher_.publish(this->input_bridge_plt_->toImageMsg());
 
   // save images
   if (this->save_images_)
