@@ -3,6 +3,7 @@
 void cartesian2SphericalInDegrees(float x, float y, float z, float& range, float& azimuth, float& elevation);
 void point2SphericalGrid(pcl::PointXYZI point, struct SensorConfiguration lidar_configuration, int& row, int& col);
 float colorMap(float dist, float factor, int base);
+float colorMapExp(float dist, float sigma, int base);
 
 OnlineCalibrationAlgorithm::OnlineCalibrationAlgorithm(void)
 {
@@ -47,11 +48,11 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
       index[j][i] = NO_INDEX;
 
   /***********conversion to grayscale **********/
-  cv::Mat last_image_gray;
-  cv::cvtColor(last_image, last_image_gray, CV_BGR2GRAY);
-  cv::cvtColor(last_image_gray, image_sobel, cv::COLOR_GRAY2BGR);
-  cv::cvtColor(last_image_gray, image_sobel_plot, cv::COLOR_GRAY2BGR);
-  cv::applyColorMap(image_sobel, image_sobel, cv::COLORMAP_JET);
+  //cv::Mat last_image_gray;
+  //cv::cvtColor(last_image, last_image_gray, CV_BGR2GRAY);
+  //cv::cvtColor(last_image_gray, image_sobel, cv::COLOR_GRAY2BGR);
+  //cv::cvtColor(last_image_gray, image_sobel_plot, cv::COLOR_GRAY2BGR);
+  //cv::applyColorMap(image_sobel, image_sobel, cv::COLORMAP_JET);
 
   /************** sobel filter **************/
   /*cv::Mat last_image_gray_filter;
@@ -109,10 +110,10 @@ void OnlineCalibrationAlgorithm::filterSensorsData(cv::Mat last_image, sensor_ms
   pcl::fromPCLPointCloud2(scan_pcl2, scan_transformed_pcl);
 
   /****** get field of view and save index correspondence between cloud and image ******/
-  float max_elevation = -10000.0;
+  /*float max_elevation = -10000.0;
   float min_elevation = 10000.0;
   float max_azimut = -10000.0;
-  float min_azimut = 10000.0;
+  float min_azimut = 10000.0;*/
   static pcl::PointCloud<pcl::PointXYZI> scan_discontinuities_pcl;
   scan_discontinuities_pcl.clear(); // because is static
   for (i = 0; i < scan_transformed_pcl.points.size(); ++i)
@@ -308,6 +309,9 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
   cv::Mat new_image(rows, cols, CV_8UC3, EMPTY_PIXEL);
   new_image.copyTo(image_discontinuities);
   float factor_color = 30.0; //TODO: get from parameter (only for plot)
+  float sigma = 2000; //TODO: get from parameter
+  float groung_filter_value = 1.2; //TODO: get from parameter
+  int num_scans_acum = 150; //TODO: get from parameter
   //new_image.copyTo(image_sobel_plot);
 
   /********* transformation and acumulation of scans (including pcl conversions) *********/
@@ -331,7 +335,7 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
     pcl_conversions::toPCL(scan_transformed, scan_pcl2);
     pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl_transformed);
 
-    if (count > 150) // TODO: get from parameter
+    if (count > num_scans_acum)
     {
       scans_acum_pcl.erase(scans_acum_pcl.begin());
     }
@@ -362,7 +366,7 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
   /********* project the cloud discontinuities in images *********/
   for (size_t i = 0; i < cloud_pcl.points.size(); ++i)
   {
-    if (cloud_pcl.points[i].z > 0.0)
+    if (cloud_pcl.points[i].z > 0.0 && cloud_pcl.points[i].y < groung_filter_value)
     {
       // project into image plane
       cv::Point3d pt_cv(cloud_pcl.points[i].x, cloud_pcl.points[i].y, cloud_pcl.points[i].z);
@@ -373,9 +377,9 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
       {
         // plot points in image
         static const int RADIUS = 2;
-        float r = colorMap(cloud_pcl.points[i].z, factor_color, MAX_PIXEL); //cloud_pcl.points[i].intensity;
-        float g = r;
-        float b = r;
+        float g = colorMapExp(cloud_pcl.points[i].z, sigma, MAX_PIXEL); //cloud_pcl.points[i].intensity;
+        float r = cloud_pcl.points[i].intensity;
+        float b = 0.0;
         image_discontinuities.at < cv::Vec3b > (uv.y, uv.x)[0] = r;
         image_discontinuities.at < cv::Vec3b > (uv.y, uv.x)[1] = g;
         image_discontinuities.at < cv::Vec3b > (uv.y, uv.x)[2] = b;
@@ -387,7 +391,7 @@ void OnlineCalibrationAlgorithm::acumAndProjectPoints(cv::Mat last_image, sensor
     }
   }
 
-  cv::applyColorMap(image_discontinuities, image_discontinuities, cv::COLORMAP_JET);
+  //cv::applyColorMap(image_discontinuities, image_discontinuities, cv::COLORMAP_JET);
 
   return;
 }
@@ -593,6 +597,21 @@ float colorMap(float dist, float factor, int base)
   {
     color_map = 0.0;
   }
+
+  return color_map;
+}
+
+float colorMapExp(float dist, float sigma, int base)
+{
+  float color_map;
+  float ini = 0.0;
+
+  dist = dist * 100.0 + 200.0; //conversion to cm and displacement
+
+  float normalization_factor =  float(base) / ((1 / (sqrt(2*M_PI) * sigma)) * exp(-(pow(ini, 2) / (2 * pow(sigma, 2)))));
+  float exp_value =  (1 / (sqrt(2*M_PI) * sigma)) * exp(-(pow(dist, 2) / (2 * pow(sigma, 2))));
+
+  color_map = exp_value * normalization_factor;
 
   return color_map;
 }

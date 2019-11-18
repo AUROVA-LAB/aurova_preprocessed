@@ -12,9 +12,9 @@ OnlineCalibrationAlgNode::OnlineCalibrationAlgNode(void) :
 
   this->save_images_ = false;
   this->out_path_sobel_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/tr_01_dt_01/sobel";
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/tr_01_dt_02/image";
   this->out_path_discnt_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/tr_01_dt_01/discnt";
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/tr_01_dt_02/scans";
 
   // [init publishers]
   this->plot_publisher_ = it_.advertise("/plot_out", 1);
@@ -131,11 +131,11 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   cv_bridge::CvImage output_bridge;
   output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_discontinuities);
   this->discnt_publisher_.publish(output_bridge.toImageMsg());
-  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel);
-  this->sobel_publisher_.publish(output_bridge.toImageMsg());
+  //output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel);
+  //this->sobel_publisher_.publish(output_bridge.toImageMsg());
   //output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel_plot);
   //this->soplt_publisher_.publish(output_bridge.toImageMsg());
-  t//his->plot_publisher_.publish(this->input_bridge_plt_->toImageMsg());
+  this->plot_publisher_.publish(this->input_bridge_->toImageMsg());
 
   // save images
   if (this->save_images_)
@@ -148,7 +148,7 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
     out_path_sobel << this->out_path_sobel_ << cont << ".jpg";
     out_path_discnt << this->out_path_discnt_ << cont << ".jpg";
 
-    cv::imwrite(out_path_sobel.str(), image_sobel);
+    cv::imwrite(out_path_sobel.str(), this->last_image_);
     cv::imwrite(out_path_discnt.str(), image_discontinuities);
 
     cont++;
