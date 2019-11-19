@@ -4,7 +4,7 @@ clear, clc, close all
 ROI_WIDTH = 64;
 ROI_HEIGHT = 64;
 STEPS = 5;
-INI = 100;
+INI = 280;
 NUM = INI; % 480
 
 %************** read images ***************%
@@ -29,37 +29,36 @@ scans_mix(:, :, 1) = intensity(:, :, 1);
 scans_mix(:, :, 3) = intensity(:, :, 1);
 [h, w, c] = size(image);
 
+%*********** preprocess images ************%
+% image_gray = rgb2gray(image);
+% [sobel_mag, solbel_dir] = imgradient(image_gray, 'sobel');
+
 %********* segmentation of images *********%
-k = 5;
+k = 6;
 image_seg = imageKmeansSeg(image, k);
 scans_seg = imageKmeansSeg(scans, k);
 scans_mix_seg = imageKmeansSeg(scans_mix, k);
 intensity_seg = imageKmeansSeg(intensity, k);
+scans_seg_k = zeros(h, w, k);
+for n = 1:k
+    scans_seg_k(:, :, n) = scans_seg == n;
+end
 
 %******** generate images for plot **********%
-scans_plot = scans;
-image_plot = image;
-intensity_plot = intensity;
-scans_mix_plot = scans_mix;
-image_seg = image_seg * (255 / k);
-image_seg = ind2rgb(uint8(image_seg), jet(256));
-scans_seg = scans_seg * (255 / k);
-scans_seg = ind2rgb(uint8(scans_seg), jet(256));
-scans_mix_seg = scans_mix_seg * (255 / k);
-scans_mix_seg = ind2rgb(uint8(scans_mix_seg), jet(256));
-intensity_seg = intensity_seg * (255 / k);
-intensity_seg = ind2rgb(uint8(intensity_seg), jet(256));
 
 %************* plot images *****************%
 close all
+montage(scans_seg_k);
 movegui(figure,'southeast');
-imshow(scans_mix_seg);
-movegui(figure,'southwest');
-imshow(scans_mix_plot);
-movegui(figure,'northwest');
-imshow(scans_seg);
-movegui(figure,'northeast');
-imshow(image_seg);
+imshow(image);
+% movegui(figure,'southeast');
+% imshow(scans_mix_seg_plot);
+% movegui(figure,'southwest');
+% imshow(scans_mix_plot);
+% movegui(figure,'northwest');
+% imshow(scans_seg_plot);
+% movegui(figure,'northeast');
+% imshow(image_seg_plot);
 
 %************* save results ****************%
 % image_filename = strcat(image_filename_base_out, num2str(index,'%d'));
