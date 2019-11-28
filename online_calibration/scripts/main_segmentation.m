@@ -9,7 +9,7 @@ INI = 280;
 NUM = INI; % 480
 SAVE_RESULTS = 0;
 SAVE_BLOBS = 1;
-PLOT_RESULTS = 0;
+PLOT_RESULTS = 1;
 
 %*************** STRUCTS ****************%
 
@@ -79,9 +79,9 @@ for n = 1:k
         if area(m) > MIN_BLOB_AREA
             blob.image_blob = labels == m;
             blob.label = m;
-            blob.centroid = centroid(m);
+            blob.centroid = centroid(m, :);
             blob.area = area(m);
-            blob.bbox = bbox(m);
+            blob.bbox = bbox(m, :);
             blob.cluster_id = n;
             blobs_per_seg = [blobs_per_seg; blob];
         end
@@ -90,24 +90,43 @@ end
 
 %********** segmentation image ***********%
 d = 10;
+offbox = 40;
 plot = [];
 plot_sobel = [];
 plot_scans = [];
 plot_intensity = [];
 for n = 1:length(blobs_per_seg)
-    mask = blobs_per_seg(n).image_blob;
-    for m = 1:d
-        mask = imageDilate(mask, 3, 2);
-    end
+    
     kn = blobs_per_seg(n).cluster_id;
-    segment = activecontour(image, mask);
-    plot = cat(3, plot, image_gray .* uint8(segment));
-    plot_sobel = cat(3, plot_sobel, uint8(sobel_mag) .* uint8(segment));
-    plot_scans = cat(3, plot_scans, scans(:, :, 1) .* uint8(mask) .* uint8(scans_seg_slices(:, :, kn)));
-    plot_intensity = cat(3, plot_intensity, intensity(:, :, 1) .* uint8(mask) .* uint8(scans_seg_slices(:, :, kn)));
+    mask(1:h, 1:w) = 0;
+    x1 = blobs_per_seg(n).bbox(1) - offbox;
+    x2 = blobs_per_seg(n).bbox(1) + blobs_per_seg(n).bbox(3) + offbox - 1;
+    y1 = blobs_per_seg(n).bbox(2) - offbox;
+    y2 = blobs_per_seg(n).bbox(2) + blobs_per_seg(n).bbox(4) + offbox - 1;
+    
+    if x1 < 1
+        x1 = 1;
+    end
+    if x2 > w
+        x2 = w;
+    end
+    if y1 < 1
+        y1 = 1;
+    end
+    if y2 > h
+        y2 = h;
+    end
+    
+    mask(y1:y2, x1:x2) = 1;
+    mask = activecontour(image, mask);
+    
+    %******** generate images for plot **********%
+    plot = cat(3, plot, image_gray .* uint8(mask));
+    plot_sobel = cat(3, plot_sobel, uint8(sobel_mag) .* uint8(mask));
+    plot_scans = cat(3, plot_scans, uint8(blobs_per_seg(n).image_blob) .* uint8(scans_seg_slices(:, :, kn)) * 255);
+    plot_intensity = cat(3, plot_intensity, intensity(:, :, 1) .* uint8(blobs_per_seg(n).image_blob) .* uint8(scans_seg_slices(:, :, kn)));
 end
 
-%******** generate images for plot **********%
  
 %************* plot images *****************%
 if PLOT_RESULTS
