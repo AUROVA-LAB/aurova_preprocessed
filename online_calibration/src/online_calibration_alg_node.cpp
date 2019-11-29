@@ -12,11 +12,11 @@ OnlineCalibrationAlgNode::OnlineCalibrationAlgNode(void) :
 
   this->save_images_ = false;
   this->out_path_sobel_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/tr_01_dt_07/image";
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/raw_data_02/image";
   this->out_path_discnt_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/tr_01_dt_07/scans";
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/raw_data_02/scan";
   this->out_path_intensity_ =
-        "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/tr_01_dt_07/intensity";
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/raw_data_02/intensity";
   // [init publishers]
   this->plot_publisher_ = it_.advertise("/plot_out", 1);
   this->sobel_publisher_ = it_.advertise("/sobel_out", 1);
@@ -94,18 +94,18 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
 
   //////////////////////////////////////////////////////////////////
   //// preprocess all the data (image and lidar-scan)
-  cv::Mat image_sobel;
-  cv::Mat image_sobel_plot;
-  cv::Mat image_discontinuities;
-  sensor_msgs::PointCloud2 scan_discontinuities;
-  this->alg_.filterSensorsData(this->last_image_, *scan, this->cam_model_, this->frame_lidar_, this->acquisition_time_,
-                               this->tf_listener_, scan_discontinuities, this->plot_image_, image_sobel,
-                               image_sobel_plot);
+  /*cv::Mat image_sobel;
+   cv::Mat image_sobel_plot;
+   cv::Mat image_discontinuities;
+   sensor_msgs::PointCloud2 scan_discontinuities;
+   this->alg_.filterSensorsData(this->last_image_, *scan, this->cam_model_, this->frame_lidar_, this->acquisition_time_,
+   this->tf_listener_, scan_discontinuities, this->plot_image_, image_sobel,
+   image_sobel_plot);
 
-  scan_discontinuities.header = scan->header;
-  this->alg_.acumAndProjectPoints(this->last_image_, scan_discontinuities, this->cam_model_, this->frame_lidar_,
-                                  this->frame_odom_, this->acquisition_time_, this->tf_listener_, image_sobel_plot,
-                                  image_discontinuities);
+   scan_discontinuities.header = scan->header;
+   this->alg_.acumAndProjectPoints(this->last_image_, scan_discontinuities, this->cam_model_, this->frame_lidar_,
+   this->frame_odom_, this->acquisition_time_, this->tf_listener_, image_sobel_plot,
+   image_discontinuities);*/
 
   //////////////////////////////////////////////////////////////////
   //// get match features (and errors) between sobel and disc. info
@@ -127,33 +127,42 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   //// integrate velocities to modify [t|R]
   //////////////////////////////////////////////////////////////////
   //// publish in image topics
-  std_msgs::Header header; // empty header
-  header.stamp = ros::Time::now(); // time
-  cv_bridge::CvImage output_bridge;
-  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_discontinuities);
-  this->discnt_publisher_.publish(output_bridge.toImageMsg());
+  //std_msgs::Header header; // empty header
+  //header.stamp = ros::Time::now(); // time
+  //cv_bridge::CvImage output_bridge;
+  //output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_discontinuities);
+  //this->discnt_publisher_.publish(output_bridge.toImageMsg());
   //output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel);
   //this->sobel_publisher_.publish(output_bridge.toImageMsg());
-  output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel_plot);
-  this->soplt_publisher_.publish(output_bridge.toImageMsg());
+  //output_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::RGB8, image_sobel_plot);
+  //this->soplt_publisher_.publish(output_bridge.toImageMsg());
   this->plot_publisher_.publish(this->input_bridge_->toImageMsg());
 
-  // save images
+  //////////////////////////////////////////////////////////
+  // save images and scan
+  pcl::PCLPointCloud2 scan_pcl2;
+  static pcl::PointCloud<pcl::PointXYZI> scan_pcl;
+
+  pcl_conversions::toPCL(*scan, scan_pcl2);
+  pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl);
+
   if (this->save_images_)
   {
     static int cont = 0;
 
     std::ostringstream out_path_sobel;
     std::ostringstream out_path_discnt;
-    std::ostringstream out_path_intensity;
+    //std::ostringstream out_path_intensity;
 
     out_path_sobel << this->out_path_sobel_ << cont << ".jpg";
-    out_path_discnt << this->out_path_discnt_ << cont << ".jpg";
-    out_path_intensity << this->out_path_intensity_ << cont << ".jpg";
+    out_path_discnt << this->out_path_discnt_ << cont << ".pcd";
+    //out_path_intensity << this->out_path_intensity_ << cont << ".jpg";
 
     cv::imwrite(out_path_sobel.str(), this->last_image_);
-    cv::imwrite(out_path_discnt.str(), image_discontinuities);
-    cv::imwrite(out_path_intensity.str(), image_sobel_plot);
+    //cv::imwrite(out_path_discnt.str(), image_discontinuities);
+    //cv::imwrite(out_path_intensity.str(), image_sobel_plot);
+
+    pcl::io::savePCDFileASCII (out_path_discnt.str(), scan_pcl);
 
     cont++;
   }
