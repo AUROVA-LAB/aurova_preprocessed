@@ -3,7 +3,7 @@ clear, clc, close all
 %************* CONSTANTS ***************%
 MIN_BLOB_AREA = 50;
 INDEX_IMAGE = 280;
-INDEX_BLOB = 5;
+INDEX_BLOB = 4;
 PLOT_RESULTS = 1;
 
 %*********** read blobs images ************%
@@ -39,9 +39,9 @@ for m = 1:length(area)
         scans_filtered = scans_filtered + (labels == m);
     end
 end
-% scans_edges = imgradient(double(scans_filtered)*255, 'sobel');
-scans_edges = edge(double(scans_filtered)*255, 'canny', 0.1);
-scans_edges = double(scans_edges) * 255;
+scans_edges = imgradient(double(scans_filtered)*255, 'sobel');
+% scans_edges = edge(double(scans_filtered)*255, 'canny', 0.1);
+% scans_edges = double(scans_edges) * 255;
 
 %***************** ICP ********************%
 THRESHOLD_TM = 20;

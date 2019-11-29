@@ -97,28 +97,33 @@ plot_scans = [];
 plot_intensity = [];
 for n = 1:length(blobs_per_seg)
     
+    mask = blobs_per_seg(n).image_blob;
+    for m = 1:d
+        mask = imageDilate(mask, 3, 2);
+    end
     kn = blobs_per_seg(n).cluster_id;
-    mask(1:h, 1:w) = 0;
-    x1 = blobs_per_seg(n).bbox(1) - offbox;
-    x2 = blobs_per_seg(n).bbox(1) + blobs_per_seg(n).bbox(3) + offbox - 1;
-    y1 = blobs_per_seg(n).bbox(2) - offbox;
-    y2 = blobs_per_seg(n).bbox(2) + blobs_per_seg(n).bbox(4) + offbox - 1;
     
-    if x1 < 1
-        x1 = 1;
-    end
-    if x2 > w
-        x2 = w;
-    end
-    if y1 < 1
-        y1 = 1;
-    end
-    if y2 > h
-        y2 = h;
-    end
-    
-    mask(y1:y2, x1:x2) = 1;
-    mask = activecontour(image, mask);
+%     mask(1:h, 1:w) = 0;
+%     x1 = blobs_per_seg(n).bbox(1) - offbox;
+%     x2 = blobs_per_seg(n).bbox(1) + blobs_per_seg(n).bbox(3) + offbox - 1;
+%     y1 = blobs_per_seg(n).bbox(2) - offbox;
+%     y2 = blobs_per_seg(n).bbox(2) + blobs_per_seg(n).bbox(4) + offbox - 1;
+%     
+%     if x1 < 1
+%         x1 = 1;
+%     end
+%     if x2 > w
+%         x2 = w;
+%     end
+%     if y1 < 1
+%         y1 = 1;
+%     end
+%     if y2 > h
+%         y2 = h;
+%     end
+%     
+%     mask(y1:y2, x1:x2) = 1;
+%     mask = activecontour(image, mask);
     
     %******** generate images for plot **********%
     plot = cat(3, plot, image_gray .* uint8(mask));
