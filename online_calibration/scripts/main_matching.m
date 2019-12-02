@@ -3,7 +3,7 @@ clear, clc, close all
 %************* CONSTANTS ***************%
 MIN_BLOB_AREA = 50;
 INDEX_IMAGE = 280;
-INDEX_BLOB = 4;
+INDEX_BLOB = 1;
 PLOT_RESULTS = 1;
 
 %*********** read blobs images ************%
