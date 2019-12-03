@@ -6,22 +6,22 @@ OnlineCalibrationAlgNode::OnlineCalibrationAlgNode(void) :
   //init class attributes if necessary
   this->loop_rate_ = 20; //in [Hz]
   this->frame_lidar_ = "/velodyne"; //TODO: get from param
-  this->frame_odom_ = "/map"; //TODO: get from param
+  this->frame_map_ = "/map"; //TODO: get from param
   cvInitFont(&this->font_, CV_FONT_HERSHEY_SIMPLEX, 1.0, 1.0);
   image_transport::ImageTransport it_(this->public_node_handle_);
 
-  this->save_images_ = false;
-  this->out_path_sobel_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/raw_data_02/image";
-  this->out_path_discnt_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/raw_data_02/scan";
-  this->out_path_intensity_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/raw_data_02/intensity";
+  this->save_data_ = false;
+  this->out_path_image_ =
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/raw_data_07/image";
+  this->out_path_scan_ =
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/raw_data_07/scan";
+  this->out_path_tf_ =
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/raw_data_07/tf";
   // [init publishers]
   this->plot_publisher_ = it_.advertise("/plot_out", 1);
-  this->sobel_publisher_ = it_.advertise("/sobel_out", 1);
-  this->discnt_publisher_ = it_.advertise("/discnt_out", 1);
-  this->soplt_publisher_ = it_.advertise("/sobel_plt_out", 1);
+  //this->sobel_publisher_ = it_.advertise("/sobel_out", 1);
+  //this->discnt_publisher_ = it_.advertise("/discnt_out", 1);
+  //this->soplt_publisher_ = it_.advertise("/sobel_plt_out", 1);
 
   // [init subscribers]
   this->camera_subscriber_ = it_.subscribeCamera("/image", 1, &OnlineCalibrationAlgNode::cb_imageInfo, this);
@@ -139,30 +139,75 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   this->plot_publisher_.publish(this->input_bridge_->toImageMsg());
 
   //////////////////////////////////////////////////////////
-  // save images and scan
+  // get transform info
+  tf::StampedTransform transform_map;
+  tf::StampedTransform transform_cam;
+  try
+  {
+    ros::Duration duration(5.0);
+    this->tf_listener_.lookupTransform(this->frame_map_, this->frame_lidar_, ros::Time(0), transform_map);
+    this->tf_listener_.lookupTransform(this->cam_model_.tfFrame(), this->frame_map_, ros::Time(0), transform_cam);
+  }
+  catch (tf::TransformException& ex)
+  {
+    ROS_WARN("[draw_frames] TF exception:\n%s", ex.what());
+    return;
+  }
+
+  float transform_map_x = transform_map.getOrigin().x();
+  float transform_map_y = transform_map.getOrigin().y();
+  float transform_map_z = transform_map.getOrigin().z();
+  double transform_map_r = 0.0;
+  double transform_map_p = 0.0;
+  double transform_map_w = 0.0;
+  tf::Quaternion quaternion_aux = transform_map.getRotation();
+  tf::Matrix3x3 matrix(quaternion_aux);
+  matrix.getRPY(transform_map_r, transform_map_p, transform_map_w);
+
+  float transform_cam_x = transform_cam.getOrigin().x();
+  float transform_cam_y = transform_cam.getOrigin().y();
+  float transform_cam_z = transform_cam.getOrigin().z();
+  double transform_cam_r = 0.0;
+  double transform_cam_p = 0.0;
+  double transform_cam_w = 0.0;
+  tf::Quaternion quaternion_aux2 = transform_cam.getRotation();
+  tf::Matrix3x3 matrix2(quaternion_aux2);
+  matrix2.getRPY(transform_cam_r, transform_cam_p, transform_cam_w);
+  //////////////////////////////////////////////////////////
+
+  //////////////////////////////////////////////////////////
+  // save images, scan, and transform
   pcl::PCLPointCloud2 scan_pcl2;
   static pcl::PointCloud<pcl::PointXYZI> scan_pcl;
 
   pcl_conversions::toPCL(*scan, scan_pcl2);
   pcl::fromPCLPointCloud2(scan_pcl2, scan_pcl);
 
-  if (this->save_images_)
+  if (this->save_data_)
   {
     static int cont = 0;
 
-    std::ostringstream out_path_sobel;
-    std::ostringstream out_path_discnt;
-    //std::ostringstream out_path_intensity;
+    std::ostringstream out_path_image;
+    std::ostringstream out_path_scan;
+    std::ostringstream out_path_tf;
+    std::ostringstream out_tf;
+    std::ofstream file_tf;
 
-    out_path_sobel << this->out_path_sobel_ << cont << ".jpg";
-    out_path_discnt << this->out_path_discnt_ << cont << ".pcd";
-    //out_path_intensity << this->out_path_intensity_ << cont << ".jpg";
 
-    cv::imwrite(out_path_sobel.str(), this->last_image_);
-    //cv::imwrite(out_path_discnt.str(), image_discontinuities);
-    //cv::imwrite(out_path_intensity.str(), image_sobel_plot);
+    out_path_image << this->out_path_image_ << cont << ".jpg";
+    out_path_scan << this->out_path_scan_ << cont << ".pcd";
+    out_path_tf << this->out_path_tf_ << cont << ".csv";
 
-    pcl::io::savePCDFileASCII (out_path_discnt.str(), scan_pcl);
+    cv::imwrite(out_path_image.str(), this->last_image_);
+    pcl::io::savePCDFileASCII(out_path_scan.str(), scan_pcl);
+
+    file_tf.open(out_path_tf.str().c_str(), std::ofstream::trunc);
+    out_tf << transform_map_x << ", " << transform_map_y << ", " << transform_map_z << ", " << transform_map_r << ", "
+        << transform_map_p << ", " << transform_map_w << "\n";
+    out_tf << transform_cam_x << ", " << transform_cam_y << ", " << transform_cam_z << ", " << transform_cam_r << ", "
+        << transform_cam_p << ", " << transform_cam_w << "\n";
+    file_tf << out_tf.str();
+    file_tf.close();
 
     cont++;
   }

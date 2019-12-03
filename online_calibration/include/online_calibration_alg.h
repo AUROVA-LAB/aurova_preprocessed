@@ -48,6 +48,7 @@
 #include <boost/foreach.hpp>
 #include <sensor_msgs/image_encodings.h>
 #include <iostream>
+#include <fstream>
 
 //include online_calibration_alg main library
 

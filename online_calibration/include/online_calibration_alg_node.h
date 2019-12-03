@@ -49,11 +49,11 @@ class OnlineCalibrationAlgNode : public algorithm_base::IriBaseAlgorithm<OnlineC
 private:
 
   std::string frame_lidar_;
-  std::string frame_odom_;
-  std::string out_path_sobel_;
-  std::string out_path_discnt_;
-  std::string out_path_intensity_;
-  bool save_images_;
+  std::string frame_map_;
+  std::string out_path_image_;
+  std::string out_path_scan_;
+  std::string out_path_tf_;
+  bool save_data_;
   CvFont font_;
   cv_bridge::CvImagePtr input_bridge_;
   cv_bridge::CvImagePtr input_bridge_plt_;
@@ -61,13 +61,12 @@ private:
   cv::Mat plot_image_;
   image_geometry::PinholeCameraModel cam_model_;
   ros::Time acquisition_time_;
-  ros::Time acquisition_time_lidar_;
 
   // [publisher attributes]
   image_transport::Publisher plot_publisher_;
-  image_transport::Publisher sobel_publisher_;
-  image_transport::Publisher discnt_publisher_;
-  image_transport::Publisher soplt_publisher_;
+  //image_transport::Publisher sobel_publisher_;
+  //image_transport::Publisher discnt_publisher_;
+  //image_transport::Publisher soplt_publisher_;
 
   // [subscriber attributes]
   ros::Subscriber lidar_subscriber_;
