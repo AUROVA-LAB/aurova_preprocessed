@@ -1,29 +1,33 @@
 clear, clc, close all
 
-%*************** read files *****************%
-index = 150;
-window_size = 50;
+%************* global variables *************%
+index = 1;
+window_size = 800;
 scan_filename_base = 'images/input/raw_data_01/scan';
-scan_filename = strcat(scan_filename_base, num2str(index,'%d.pcd'));
-scan = pcread(scan_filename);
+tf_filename_base = 'images/input/raw_data_01/tf';
 
-cloud = scan;
-index = index + 1;
-step = 1;
-previous_tform = pcregistericp(scan, cloud);
 
-for n = index:step:index + window_size
+%** transformation and acumulation scans ***%
+step = 5;
+for n = index : step : index+window_size
     
     scan_filename = strcat(scan_filename_base, num2str(n,'%d.pcd'));
+    tf_filename = strcat(tf_filename_base, num2str(n,'%d.csv'));
     scan = pcread(scan_filename);
+    xyz_rpy = csvread(tf_filename);
+    tform_lidar2map = getTfAffineMatrix(xyz_rpy, 1);
+
     scan = helperProcessPointCloud(scan);
-    scan = pctransform(scan, previous_tform);
-        
-    transform = pcregistericp(scan, cloud);
-    scan = pctransform(scan, transform);
+    scan = pctransform(scan, tform_lidar2map);
     
-    cloud = pcmerge(cloud, scan, 0.1);
-    previous_tform = transform;
+    if n == index
+        cloud = scan;
+    else
+        %tform_icp = pcregistericp(scan, cloud); % try ndt and cpd
+        %scan = pctransform(scan, tform_icp);
+        cloud = pcmerge(cloud, scan, 0.01);
+    end
 end
 
+cloud = helperProcessPointCloud(cloud);
 pcshow(cloud, 'MarkerSize', 30);
