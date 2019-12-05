@@ -4,3 +4,5 @@
 /virtual_imu/documentation/html
 /virtual_imu/documentation/latex
 /online_calibration/scripts/images
+/online_calibration/scripts/raw_data
+/online_calibration/scripts/mat_data
