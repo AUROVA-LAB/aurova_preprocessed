@@ -27,6 +27,7 @@ else
         xyz_rpy = csvread(tf_filename);
         tform_lidar2map = getTfAffineMatrix(xyz_rpy, 1);
         tform_map2camera = getTfAffineMatrix(xyz_rpy, 2);
+        scan = helperProcessPointCloud(scan);
         scan_mapframe = pctransform(scan, tform_lidar2map);
         tfs_lidar2map = [tfs_lidar2map; {tform_lidar2map}];
         tfs_map2camera = [tfs_map2camera; {tform_map2camera}];
