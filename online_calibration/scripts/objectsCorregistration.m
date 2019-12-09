@@ -1,13 +1,9 @@
-function plot_gray = objectsCorregistration(objects_gray, objects_depth, index)
+function plot_gray = objectsCorregistration(objects_gray, objects_depth, image)
 
 MIN_BLOB_AREA = 50;
 THRESHOLD_TM = 20;
 THRESHOLD = 20;
 [h, w, c] = size(objects_gray);
-
-image_filename_base = 'raw_data/input/raw_data_01/image';
-image_filename = strcat(image_filename_base, num2str(index,'%d.jpg'));
-image = imread(image_filename);
     
 image_gray = rgb2gray(image);
 plot_gray_r = image_gray;

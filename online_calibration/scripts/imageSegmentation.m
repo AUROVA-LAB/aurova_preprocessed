@@ -1,16 +1,12 @@
-function [objects_gray, objects_depth] = imageSegmentation(image_depth, index, is_m_data)
+function [objects_gray, objects_depth] = imageSegmentation(image, image_depth, index, read_mat)
 
-if is_m_data
-    objects_gray = load('mat_data/objects_gray.mat', 'objects_gray');
+if read_mat
+    objects_gray = load(num2str(index,'mat_data/objects_gray%d.mat'), 'objects_gray');
+    objects_depth = load(num2str(index,'mat_data/objects_depth%d.mat'), 'objects_depth');
     objects_gray = objects_gray.objects_gray;
-    objects_depth = load('mat_data/objects_depth.mat', 'objects_depth');
     objects_depth = objects_depth.objects_depth;
 else
     MIN_BLOB_AREA = 2000;
-
-    image_filename_base = 'raw_data/input/raw_data_01/image';
-    image_filename = strcat(image_filename_base, num2str(index,'%d.jpg'));
-    image = imread(image_filename);
     [h, w, c] = size(image_depth);
 
     %*********** preprocess images ************%
@@ -107,8 +103,8 @@ else
         objects_depth = cat(3, objects_depth, uint8(blobs_per_seg(n).image_blob) .* uint8(image_depth_slices(:, :, kn)) * 255);
     end
 
-    save('mat_data/objects_gray.mat', 'objects_gray');
-    save('mat_data/objects_depth.mat', 'objects_depth');
+    save(num2str(index,'mat_data/objects_gray%d.mat'), 'objects_gray');
+    save(num2str(index,'mat_data/objects_depth%d.mat'), 'objects_depth');
 end
 
 end

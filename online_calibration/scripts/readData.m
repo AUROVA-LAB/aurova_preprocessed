@@ -1,21 +1,29 @@
-function [scans_lidarframe, scans_mapframe, tfs_lidar2map, tfs_map2camera] = ...
-    readData(is_m_data, index, window_size)
+function [scans_lidarframe, scans_mapframe, tfs_lidar2map, tfs_map2camera, image] = ...
+    readData(read_mat, index, window_size)
 
-if is_m_data
-    scans_lidarframe = load('mat_data/scans_lidarframe.mat', 'scans_lidarframe');
-    scans_mapframe = load('mat_data/scans_mapframe.mat', 'scans_mapframe');
-    tfs_lidar2map = load('mat_data/tfs_lidar2map.mat', 'tfs_lidar2map');
-    tfs_map2camera = load('mat_data/tfs_map2camera.mat', 'tfs_map2camera');
+if read_mat
+    scans_lidarframe = load(num2str(index,'mat_data/scans_lidarframe%d.mat'), 'scans_lidarframe');
+    scans_mapframe = load(num2str(index,'mat_data/scans_mapframe%d.mat'), 'scans_mapframe');
+    tfs_lidar2map = load(num2str(index,'mat_data/tfs_lidar2map%d.mat'), 'tfs_lidar2map');
+    tfs_map2camera = load(num2str(index,'mat_data/tfs_map2camera%d.mat'), 'tfs_map2camera');
+    image = load(num2str(index,'mat_data/image%d.mat'), 'image');
     scans_lidarframe = scans_lidarframe.scans_lidarframe;
     scans_mapframe = scans_mapframe.scans_mapframe;
     tfs_lidar2map = tfs_lidar2map.tfs_lidar2map;
     tfs_map2camera = tfs_map2camera.tfs_map2camera;
+    image = image.image;
 else
-    scan_filename_base = 'raw_data/input/raw_data_01/scan';
-    tf_filename_base = 'raw_data/input/raw_data_01/tf';
+    scan_filename_base = 'raw_data/sec_0202/scan';
+    tf_filename_base = 'raw_data/sec_0202/tf';
+    image_filename_base = 'raw_data/sec_0202/image';
+    image_filename = strcat(image_filename_base, num2str(index,'%d.jpg'));
+    image = imread(image_filename);
     step = -1;
     ini = index + window_size/2;
     endl = index - window_size/2;
+    if endl < 0
+        endl = 0;
+    end
     scans_lidarframe = {};
     scans_mapframe = {};
     tfs_lidar2map = {};
@@ -35,10 +43,11 @@ else
         scans_mapframe = [scans_mapframe; {scan_mapframe}];
         
     end
-    save('mat_data/scans_lidarframe.mat', 'scans_lidarframe');
-    save('mat_data/scans_mapframe.mat', 'scans_mapframe');
-    save('mat_data/tfs_lidar2map.mat', 'tfs_lidar2map');
-    save('mat_data/tfs_map2camera.mat', 'tfs_map2camera');
+    save(num2str(index,'mat_data/scans_lidarframe%d.mat'), 'scans_lidarframe');
+    save(num2str(index,'mat_data/scans_mapframe%d.mat'), 'scans_mapframe');
+    save(num2str(index,'mat_data/tfs_lidar2map%d.mat'), 'tfs_lidar2map');
+    save(num2str(index,'mat_data/tfs_map2camera%d.mat'), 'tfs_map2camera');
+    save(num2str(index,'mat_data/image%d.mat'), 'image');
 end
 
 end
