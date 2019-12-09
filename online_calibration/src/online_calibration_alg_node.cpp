@@ -12,11 +12,11 @@ OnlineCalibrationAlgNode::OnlineCalibrationAlgNode(void) :
 
   this->save_data_ = false;
   this->out_path_image_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/raw_data_07/image";
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/raw_data/sec_0205/image";
   this->out_path_scan_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/raw_data_07/scan";
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/raw_data/sec_0205/scan";
   this->out_path_tf_ =
-      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/images/input/raw_data_07/tf";
+      "/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/raw_data/sec_0205/tf";
   // [init publishers]
   this->plot_publisher_ = it_.advertise("/plot_out", 1);
   //this->sobel_publisher_ = it_.advertise("/sobel_out", 1);
@@ -144,14 +144,12 @@ void OnlineCalibrationAlgNode::cb_lidarInfo(const sensor_msgs::PointCloud2::Cons
   tf::StampedTransform transform_cam;
   try
   {
-    ros::Duration duration(5.0);
     this->tf_listener_.lookupTransform(this->frame_map_, this->frame_lidar_, ros::Time(0), transform_map);
     this->tf_listener_.lookupTransform(this->cam_model_.tfFrame(), this->frame_map_, ros::Time(0), transform_cam);
   }
   catch (tf::TransformException& ex)
   {
     ROS_WARN("[draw_frames] TF exception:\n%s", ex.what());
-    return;
   }
 
   float transform_map_x = transform_map.getOrigin().x();
