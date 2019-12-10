@@ -13,9 +13,9 @@ if read_mat
     tfs_map2camera = tfs_map2camera.tfs_map2camera;
     image = image.image;
 else
-    scan_filename_base = 'raw_data/sec_0202/scan';
-    tf_filename_base = 'raw_data/sec_0202/tf';
-    image_filename_base = 'raw_data/sec_0202/image';
+    scan_filename_base = 'raw_data/sec_0101/scan';
+    tf_filename_base = 'raw_data/sec_0101/tf';
+    image_filename_base = 'raw_data/sec_0101/image';
     image_filename = strcat(image_filename_base, num2str(index,'%d.jpg'));
     image = imread(image_filename);
     step = -1;

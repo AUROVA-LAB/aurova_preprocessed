@@ -13,9 +13,10 @@ else
     image_gray = rgb2gray(image);
     image_gray_g = imgaussfilt(image_gray, 2.0);
     % [sobel_mag, solbel_dir] = imgradient(image_gray_g, 'sobel');
+    [image_grad, image_dir] = imgradient(image_gray, 'sobel');
 
     %********* segmentation of depth im ********%
-    k = 6;
+    k = 4;
     if c == 1
         image_depth_3c = cat(3, image_depth, image_depth, image_depth);
     else
@@ -96,10 +97,11 @@ else
     %     end
     %     
     %     mask(y1:y2, x1:x2) = 1;
-        mask = activecontour(image, mask);
+        %mask = activecontour(image, mask);
 
         %******** generate images for plot **********%
-        objects_gray = cat(3, objects_gray, image_gray .* uint8(mask));
+        %objects_gray = cat(3, objects_gray, image_gray .* uint8(mask));
+        objects_gray = cat(3, objects_gray, uint8(image_grad) .* uint8(mask));
         objects_depth = cat(3, objects_depth, uint8(blobs_per_seg(n).image_blob) .* uint8(image_depth_slices(:, :, kn)) * 255);
     end
 

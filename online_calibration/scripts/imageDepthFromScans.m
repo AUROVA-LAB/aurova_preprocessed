@@ -1,4 +1,4 @@
-function image_depth = imageDepthFromScans(scans_mapframe, tfs_map2camera, index, sigma, base, read_mat)
+function image_depth = imageDepthFromScans(scans_mapframe, tfs_map2camera, index, window_size, sigma, base, read_mat)
 
 if read_mat
     image_depth = load(num2str(index,'mat_data/image_depth%d.mat'), 'image_depth');
@@ -8,12 +8,13 @@ else
     xy = camera_params.ImageSize;
     image_depth(1:xy(2), 1:xy(1)) = uint8(0);
     m = length(scans_mapframe);
-    id =  (m - 1) / 2 + 1;
+    id =  window_size / 2 + 1;
     tform_map2camera = tfs_map2camera{id};
     for j = 1:m
         scan_cameraframe = pctransform(scans_mapframe{j}, tform_map2camera);
         points_camframe = scan_cameraframe.Location;
         points_camframe = points_camframe(points_camframe(:, 3) > 0, :);
+        %points_camframe = points_camframe(points_camframe(:, 2) < 1.4, :);
 
         image_points = worldToImageSimple(camera_params, points_camframe);
         n = length(points_camframe(:, 1));
