@@ -1,25 +1,30 @@
 clear, clc, close all
 
 %****************** global variables ******************%
-index = 251; % 190, 450, 250, 750, 100, 251, 335, 810, 240
-window_size = 500;
+index = 250;
+window_size = 0;
 sigma = 10;
 base = 255;
-read_mat = [true true true false];
-exec_flag = [true true true true];
+read_mat = [false false false false];
+exec_flag = [true true false false];
 
 %************* read and store raw data ****************% T = [30 - 40] s
 if exec_flag(1)
     [scans_lidarframe, scans_mapframe, tfs_lidar2map, tfs_map2camera, image] = ...
         readData(read_mat(1), index, window_size);
+    
+    image_gray = rgb2gray(image);
+    %image_gray = imgaussfilt(image_gray, 2.0);
+    [image_grad, image_dir] = imgradient(image_gray, 'sobel');
+    image_grad = image_grad / max(max(image_grad));
     figure
-    imshow(image)
+    imshow(image_grad)
 end
 
 %********** project 3D points into 2D pixel plane ********%; T = 5 s
 if exec_flag(2)
     image_depth = imageDepthFromScans(scans_mapframe, tfs_map2camera, ...
-                                                                 index, window_size, sigma, base, read_mat(2));
+                                      index, window_size, sigma, base, read_mat(2));
     figure
     imshow(image_depth)
 end

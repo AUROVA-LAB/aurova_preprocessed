@@ -11,8 +11,7 @@ else
 
     %*********** preprocess images ************%
     image_gray = rgb2gray(image);
-    image_gray_g = imgaussfilt(image_gray, 2.0);
-    % [sobel_mag, solbel_dir] = imgradient(image_gray_g, 'sobel');
+    %image_gray = imgaussfilt(image_gray, 2.0);
     [image_grad, image_dir] = imgradient(image_gray, 'sobel');
 
     %********* segmentation of depth im ********%

@@ -27,7 +27,7 @@ else
             end
         end
     end
-    save(num2str(index,'mat_data/image_depth%d.mat'), 'image_depth');
+%     save(num2str(index,'mat_data/image_depth%d.mat'), 'image_depth');
 end
 
 end

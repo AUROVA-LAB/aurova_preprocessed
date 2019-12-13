@@ -13,9 +13,9 @@ if read_mat
     tfs_map2camera = tfs_map2camera.tfs_map2camera;
     image = image.image;
 else
-    scan_filename_base = 'raw_data/sec_0101/scan';
-    tf_filename_base = 'raw_data/sec_0101/tf';
-    image_filename_base = 'raw_data/sec_0101/image';
+    scan_filename_base = 'raw_data/sec_0203/scan';
+    tf_filename_base = 'raw_data/sec_0203/tf';
+    image_filename_base = 'raw_data/sec_0203/image';
     image_filename = strcat(image_filename_base, num2str(index,'%d.jpg'));
     image = imread(image_filename);
     step = -1;
@@ -35,7 +35,7 @@ else
         xyz_rpy = csvread(tf_filename);
         tform_lidar2map = getTfAffineMatrix(xyz_rpy, 1);
         tform_map2camera = getTfAffineMatrix(xyz_rpy, 2);
-        scan = helperProcessPointCloud(scan);
+        %scan = helperProcessPointCloud(scan);
         scan_mapframe = pctransform(scan, tform_lidar2map);
         tfs_lidar2map = [tfs_lidar2map; {tform_lidar2map}];
         tfs_map2camera = [tfs_map2camera; {tform_map2camera}];
@@ -43,11 +43,11 @@ else
         scans_mapframe = [scans_mapframe; {scan_mapframe}];
         
     end
-    save(num2str(index,'mat_data/scans_lidarframe%d.mat'), 'scans_lidarframe');
-    save(num2str(index,'mat_data/scans_mapframe%d.mat'), 'scans_mapframe');
-    save(num2str(index,'mat_data/tfs_lidar2map%d.mat'), 'tfs_lidar2map');
-    save(num2str(index,'mat_data/tfs_map2camera%d.mat'), 'tfs_map2camera');
-    save(num2str(index,'mat_data/image%d.mat'), 'image');
+%     save(num2str(index,'mat_data/scans_lidarframe%d.mat'), 'scans_lidarframe');
+%     save(num2str(index,'mat_data/scans_mapframe%d.mat'), 'scans_mapframe');
+%     save(num2str(index,'mat_data/tfs_lidar2map%d.mat'), 'tfs_lidar2map');
+%     save(num2str(index,'mat_data/tfs_map2camera%d.mat'), 'tfs_map2camera');
+%     save(num2str(index,'mat_data/image%d.mat'), 'image');
 end
 
 end
