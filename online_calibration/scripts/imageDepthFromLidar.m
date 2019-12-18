@@ -9,11 +9,10 @@ for j = 1:m
     point = scan_lidarframe.Location(j, :);
     intensity = scan_lidarframe.Intensity(j);
     
-    point_pc_lid = pointCloud(point);
-    
-    point_pc_map = pctransform(point_pc_lid, tf_lidar2map);
-    point_pc_cam = pctransform(point_pc_map, tf_map2camera);
-    point_camframe = point_pc_cam.Location;
+    point_pc_lid = cat(2, point, 1);
+    point_pc_map = point_pc_lid * tf_lidar2map.T;
+    point_pc_cam = point_pc_map * tf_map2camera.T;
+    point_camframe = point_pc_cam(1:3);
     
     image_point = worldToImageSimple(camera_params, point_camframe);
 
