@@ -1,21 +1,26 @@
 clear, clc, close all
 
 %****************** global variables ******************%
-index = 260;
-window_size = 0;
+id_dataset = 1;
+id_sample = 260;
+id_pair = 1;
 sigma = 20;
 sigma_flt = 5;
 sobel_fact = 0.5;
 base = 255;
 threshold_dw = 0.0;
 threshold_up = 70;
-read_mat = [false false false false];
-exec_flag = [true true true false];
+exec_flag = [true true true true];
+filenames_cell{1} = 'raw_data/sec_0101/';
+filenames_cell{2} = 'raw_data/sec_0105/';
+filenames_cell{3} = 'raw_data/sec_0107/';
+filenames_cell{4} = 'raw_data/sec_0202/';
+filenames_cell{5} = 'raw_data/sec_0203/';
 
 %************* read and store raw data ****************%
+% TODO: return pc, images, etc, instead to cells
 if exec_flag(1)
-    [scans_lidarframe, scans_mapframe, tfs_lidar2map, tfs_map2camera, image] = ...
-        readData(read_mat(1), index, window_size);
+    [scans_lidarframe, scans_mapframe, tfs_lidar2map, tfs_map2camera, image] = readData(filenames_cell{id_dataset}, id_sample);
     [h, w, c] = size(image);
 end
 
@@ -53,154 +58,161 @@ if exec_flag(3)
     imshow(image_discnt)
 end
 
-%****************************************************%
+%********* TODO: encapsule this block in functions!! **********%
 % introduction of points manually
-sel = 1;
-p1_tmplt_array = [145 259; 447 157; 220 225];
-p2_tmplt_array = [149 247; 446 174; 252 220];
-p11_src_array = [90 217; 385 144; 141 210];
-p12_src_array = [122 217; 443 144; 221 210];
-p21_src_array = [90 250; 385 195; 141 267];
-p1_tmplt = p1_tmplt_array(sel, :);
-p2_tmplt = p2_tmplt_array(sel, :);
-p11_src = p11_src_array(sel, :);
-p12_src = p12_src_array(sel, :);
-p21_src = p21_src_array(sel, :);
+if exec_flag(4)
+    p1_tmplt_array{5, 260} = [145 259; 447 157; 220 225];
+    p2_tmplt_array{5, 260} = [149 247; 446 174; 252 220];
+    p11_src_array{5, 260} = [90 217; 385 144; 141 210];
+    p12_src_array{5, 260} = [122 217; 443 144; 221 210];
+    p21_src_array{5, 260} = [90 250; 385 195; 141 267];
+    p1_tmplt_array{1, 260} = [137 179];
+    p2_tmplt_array{1, 260} = [111 166];
+    p11_src_array{1, 260} = [82 146];
+    p12_src_array{1, 260} = [178 146];
+    p21_src_array{1, 260} = [82 215];
+    p1_tmplt = p1_tmplt_array{id_dataset, id_sample}(id_pair, :);
+    p2_tmplt = p2_tmplt_array{id_dataset, id_sample}(id_pair, :);
+    p11_src = p11_src_array{id_dataset, id_sample}(id_pair, :);
+    p12_src = p12_src_array{id_dataset, id_sample}(id_pair, :);
+    p21_src = p21_src_array{id_dataset, id_sample}(id_pair, :);
 
-% scale and rotation info of lidar pair
-p0_tmplt = p2_tmplt - p1_tmplt;
-[dist_tmplt, rot_tmplt, ele] = cartesian2SphericalInDegrees(p0_tmplt(1), p0_tmplt(2), 0);
-source = image_grad(p11_src(2):p21_src(2), p11_src(1):p12_src(1));
-dist_min = dist_tmplt * (2/3);
+    % scale and rotation info of lidar pair
+    p0_tmplt = p2_tmplt - p1_tmplt;
+    [dist_tmplt, rot_tmplt, ele] = cartesian2SphericalInDegrees(p0_tmplt(1), p0_tmplt(2), 0);
+    source = image_grad(p11_src(2):p21_src(2), p11_src(1):p12_src(1));
+    dist_min = dist_tmplt * (2/3);
+    dist_max = dist_tmplt * (3/2);
 
-% keypoints lidar in pc format centered around p1_tmplt
-inix = p1_tmplt(1) - 100;
-if inix < 1 
-    inix = 1;
-end
-endx = p1_tmplt(1) + 100;
-if endx > w
-    endx = w;
-end
-iniy = p1_tmplt(2) - 100;
-if iniy < 1 
-    iniy = 1;
-end
-endy = p1_tmplt(2) + 100;
-if endy > h
-    endy = h;
-end
-template_discnt = image_discnt(iniy:endy, inix:endx);
-[pt_y_tm, pt_x_tm] = find(template_discnt > 10); % cloud template
-pt_z_tm(1:length(pt_x_tm), 1) = double(0);
-pt_x_tm = pt_x_tm - p1_tmplt(1) + inix;
-pt_y_tm = pt_y_tm - p1_tmplt(2) + iniy;
-pt_xyz_tm = [pt_x_tm'; pt_y_tm'; pt_z_tm']';
-pt_cloud_tm = pointCloud(pt_xyz_tm);
+    % keypoints lidar in pc format centered around p1_tmplt
+    inix = p1_tmplt(1) - 100;
+    if inix < 1 
+        inix = 1;
+    end
+    endx = p1_tmplt(1) + 100;
+    if endx > w
+        endx = w;
+    end
+    iniy = p1_tmplt(2) - 100;
+    if iniy < 1 
+        iniy = 1;
+    end
+    endy = p1_tmplt(2) + 100;
+    if endy > h
+        endy = h;
+    end
+    template_discnt = image_discnt(iniy:endy, inix:endx);
+    [pt_y_tm, pt_x_tm] = find(template_discnt > 10); % cloud template
+    pt_z_tm(1:length(pt_x_tm), 1) = double(0);
+    pt_x_tm = pt_x_tm - p1_tmplt(1) + inix;
+    pt_y_tm = pt_y_tm - p1_tmplt(2) + iniy;
+    pt_xyz_tm = [pt_x_tm'; pt_y_tm'; pt_z_tm']';
+    pt_cloud_tm = pointCloud(pt_xyz_tm);
 
-% N keypoints image in array format
-[kp_y, kp_x] = find(source > 50);
-kp_y = kp_y + p11_src(2);
-kp_x = kp_x + p11_src(1);
-kp_src = cat(2, kp_y, kp_x);
-N = length(kp_y);
+    % N keypoints image in array format
+    [kp_y, kp_x] = find(source > 100);
+    kp_y = kp_y + p11_src(2);
+    kp_x = kp_x + p11_src(1);
+    kp_src = cat(2, kp_y, kp_x);
+    N = length(kp_y);
 
-%*********************
-matrix(1:N, 1:N) = double(0);
-for n1 = 1:N
-    for n2 = 1:N
-        % scale and rotation info of image pair
-        p00_src = kp_src(n2, :) - kp_src(n1, :);
-        [dist_src, rot_src, ele] = cartesian2SphericalInDegrees(p00_src(2), p00_src(1), 0);
-        if dist_src > dist_min
-            % scale template points
-            scale_factor = dist_src / dist_tmplt;
-            pt_x_tm_act = pt_x_tm * scale_factor;
-            pt_y_tm_act = pt_y_tm * scale_factor;
-            pt_xyz_tm = [pt_x_tm_act'; pt_y_tm_act'; pt_z_tm']';
-            
-            % translate and rorate points
-            x = kp_src(n1, 2);
-            y = kp_src(n1, 1);
-            z = 0;
-            roll = 0;
-            pitch = 0;
-            yaw = (rot_src - rot_tmplt) * (pi/180);
-            xyz_rpy = [x, y, z, roll, pitch, yaw];
-            tf = getTfMatrix(xyz_rpy, 1);
-            for i = 1:length(pt_x_tm_act)
-                pt = cat(2, pt_xyz_tm(i, :), 1);
-                pt = pt * tf;
-                if pt(1) >= 1 && pt(1) <= w && pt(2) >= 1 && pt(2) <= h
-                    u = round(pt(1));
-                    v = round(pt(2));
-                    matrix(n1, n2) = matrix(n1, n2) + image_grad_flt(v, u);
-                end
-            end 
+    %*********************
+    matrix(1:N, 1:N) = double(0);
+    for n1 = 1:N
+        for n2 = 1:N
+            % scale and rotation info of image pair
+            p00_src = kp_src(n2, :) - kp_src(n1, :);
+            [dist_src, rot_src, ele] = cartesian2SphericalInDegrees(p00_src(2), p00_src(1), 0);
+            if dist_src > dist_min && dist_src < dist_max
+                % scale template points
+                scale_factor = dist_src / dist_tmplt;
+                pt_x_tm_act = pt_x_tm * scale_factor;
+                pt_y_tm_act = pt_y_tm * scale_factor;
+                pt_xyz_tm = [pt_x_tm_act'; pt_y_tm_act'; pt_z_tm']';
+
+                % translate and rorate points
+                x = kp_src(n1, 2);
+                y = kp_src(n1, 1);
+                z = 0;
+                roll = 0;
+                pitch = 0;
+                yaw = (rot_src - rot_tmplt) * (pi/180);
+                xyz_rpy = [x, y, z, roll, pitch, yaw];
+                tf = getTfMatrix(xyz_rpy, 1);
+                for i = 1:length(pt_x_tm_act)
+                    pt = cat(2, pt_xyz_tm(i, :), 1);
+                    pt = pt * tf;
+                    if pt(1) >= 1 && pt(1) <= w && pt(2) >= 1 && pt(2) <= h
+                        u = round(pt(1));
+                        v = round(pt(2));
+                        matrix(n1, n2) = matrix(n1, n2) + image_grad_flt(v, u);
+                    end
+                end 
+            end
         end
     end
-end
 
-[N1, N2] = find(matrix==max(max(matrix)));
-for n1 = N1:N1
-    for n2 = N2:N2
-        % scale and rotation info of image pair
-        p00_src = kp_src(n2, :) - kp_src(n1, :);
-        [dist_src, rot_src, ele] = cartesian2SphericalInDegrees(p00_src(2), p00_src(1), 0);
-        if dist_src > dist_min
-            % scale template points
-            scale_factor = dist_src / dist_tmplt;
-            pt_x_tm_act = pt_x_tm * scale_factor;
-            pt_y_tm_act = pt_y_tm * scale_factor;
-            pt_xyz_tm = [pt_x_tm_act'; pt_y_tm_act'; pt_z_tm']';
-            %pt_cloud_tm = pointCloud(pt_xyz_tm);
-            
-            % translate and rorate points
-            x = kp_src(n1, 2);
-            y = kp_src(n1, 1);
-            z = 0;
-            roll = 0;
-            pitch = 0;
-            yaw = (rot_src - rot_tmplt) * (pi/180);
-            xyz_rpy = [x, y, z, roll, pitch, yaw];
-            tf = getTfMatrix(xyz_rpy, 1);
-            image_match_plt(:, :, 1) = image_grad_plt;
-            image_match_plt(:, :, 2) = image_grad_plt;
-            image_match_plt(:, :, 3) = image_grad_plt;
-            for i = 1:length(pt_x_tm_act)
-                pt = cat(2, pt_xyz_tm(i, :), 1);
-                pt = pt * tf;
-                if pt(1) >= 1 && pt(1) <= w && pt(2) >= 1 && pt(2) <= h
-                    u = round(pt(1));
-                    v = round(pt(2));
-                    k = 1;
-                    image_match_plt = insertShape(image_match_plt, 'circle', [u, v, k], 'LineWidth', 1, 'Color', 'green');
-                    matrix(n1, n2) = matrix(n1, n2) + image_grad(v, u);
-                end
-            end 
-            k = 2;
-            u = kp_src(n1, 2);
-            v = kp_src(n1, 1);
-            image_match_plt = insertShape(image_match_plt, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'red');
-            u = kp_src(n2, 2);
-            v = kp_src(n2, 1);
-            image_match_plt = insertShape(image_match_plt, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'red');
-            u = p1_tmplt(1);
-            v = p1_tmplt(2);
-            image_match_plt = insertShape(image_match_plt, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'yellow');
-            u = p2_tmplt(1);
-            v = p2_tmplt(2);
-            image_match_plt = insertShape(image_match_plt, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'yellow');
-            u = p1_tmplt(1);
-            v = p1_tmplt(2);
-            image_discnt_plt = insertShape(image_discnt_plt, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'yellow');
-            u = p2_tmplt(1);
-            v = p2_tmplt(2);
-            image_discnt_plt = insertShape(image_discnt_plt, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'yellow');
-            figure
-            imshow(image_discnt_plt)
-            figure
-            imshow(image_match_plt)
+    [N1, N2] = find(matrix==max(max(matrix)));
+    for n1 = N1:N1
+        for n2 = N2:N2
+            % scale and rotation info of image pair
+            p00_src = kp_src(n2, :) - kp_src(n1, :);
+            [dist_src, rot_src, ele] = cartesian2SphericalInDegrees(p00_src(2), p00_src(1), 0);
+            if dist_src > dist_min && dist_src < dist_max
+                % scale template points
+                scale_factor = dist_src / dist_tmplt;
+                pt_x_tm_act = pt_x_tm * scale_factor;
+                pt_y_tm_act = pt_y_tm * scale_factor;
+                pt_xyz_tm = [pt_x_tm_act'; pt_y_tm_act'; pt_z_tm']';
+                %pt_cloud_tm = pointCloud(pt_xyz_tm);
+
+                % translate and rorate points
+                x = kp_src(n1, 2);
+                y = kp_src(n1, 1);
+                z = 0;
+                roll = 0;
+                pitch = 0;
+                yaw = (rot_src - rot_tmplt) * (pi/180);
+                xyz_rpy = [x, y, z, roll, pitch, yaw];
+                tf = getTfMatrix(xyz_rpy, 1);
+                image_match_plt(:, :, 1) = image_grad_plt;
+                image_match_plt(:, :, 2) = image_grad_plt;
+                image_match_plt(:, :, 3) = image_grad_plt;
+                for i = 1:length(pt_x_tm_act)
+                    pt = cat(2, pt_xyz_tm(i, :), 1);
+                    pt = pt * tf;
+                    if pt(1) >= 1 && pt(1) <= w && pt(2) >= 1 && pt(2) <= h
+                        u = round(pt(1));
+                        v = round(pt(2));
+                        k = 1;
+                        image_match_plt = insertShape(image_match_plt, 'circle', [u, v, k], 'LineWidth', 1, 'Color', 'green');
+                        matrix(n1, n2) = matrix(n1, n2) + image_grad(v, u);
+                    end
+                end 
+                k = 2;
+                u = kp_src(n1, 2);
+                v = kp_src(n1, 1);
+                image_match_plt = insertShape(image_match_plt, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'red');
+                u = kp_src(n2, 2);
+                v = kp_src(n2, 1);
+                image_match_plt = insertShape(image_match_plt, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'red');
+                u = p1_tmplt(1);
+                v = p1_tmplt(2);
+                image_match_plt = insertShape(image_match_plt, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'yellow');
+                u = p2_tmplt(1);
+                v = p2_tmplt(2);
+                image_match_plt = insertShape(image_match_plt, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'yellow');
+                u = p1_tmplt(1);
+                v = p1_tmplt(2);
+                image_discnt_plt = insertShape(image_discnt_plt, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'yellow');
+                u = p2_tmplt(1);
+                v = p2_tmplt(2);
+                image_discnt_plt = insertShape(image_discnt_plt, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'yellow');
+                figure
+                imshow(image_discnt_plt)
+                figure
+                imshow(image_match_plt)
+            end
         end
     end
 end
