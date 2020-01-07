@@ -2,7 +2,7 @@ clear, clc, close all
 
 %****************** global variables ******************%
 id_dataset = 1;
-id_sample = 260;
+id_sample = 800;
 id_pair = 1;
 sigma = 20;
 sigma_flt = 5;
@@ -10,6 +10,7 @@ sobel_fact = 0.5;
 base = 255;
 threshold_dw = 0.0;
 threshold_up = 70;
+area = 200;
 exec_flag = [true true true true];
 filenames_cell{1} = 'raw_data/sec_0101/';
 filenames_cell{2} = 'raw_data/sec_0105/';
@@ -61,21 +62,7 @@ end
 %********* TODO: encapsule this block in functions!! **********%
 % introduction of points manually
 if exec_flag(4)
-    p1_tmplt_array{5, 260} = [145 259; 447 157; 220 225];
-    p2_tmplt_array{5, 260} = [149 247; 446 174; 252 220];
-    p11_src_array{5, 260} = [90 217; 385 144; 141 210];
-    p12_src_array{5, 260} = [122 217; 443 144; 221 210];
-    p21_src_array{5, 260} = [90 250; 385 195; 141 267];
-    p1_tmplt_array{1, 260} = [137 179];
-    p2_tmplt_array{1, 260} = [111 166];
-    p11_src_array{1, 260} = [82 146];
-    p12_src_array{1, 260} = [178 146];
-    p21_src_array{1, 260} = [82 215];
-    p1_tmplt = p1_tmplt_array{id_dataset, id_sample}(id_pair, :);
-    p2_tmplt = p2_tmplt_array{id_dataset, id_sample}(id_pair, :);
-    p11_src = p11_src_array{id_dataset, id_sample}(id_pair, :);
-    p12_src = p12_src_array{id_dataset, id_sample}(id_pair, :);
-    p21_src = p21_src_array{id_dataset, id_sample}(id_pair, :);
+    [p1_tmplt, p2_tmplt, p11_src, p12_src, p21_src] = manuallyKeyPoints(id_dataset, id_sample, id_pair);
 
     % scale and rotation info of lidar pair
     p0_tmplt = p2_tmplt - p1_tmplt;
@@ -85,32 +72,32 @@ if exec_flag(4)
     dist_max = dist_tmplt * (3/2);
 
     % keypoints lidar in pc format centered around p1_tmplt
-    inix = p1_tmplt(1) - 100;
+    inix = p1_tmplt(1) - area;
     if inix < 1 
         inix = 1;
     end
-    endx = p1_tmplt(1) + 100;
+    endx = p1_tmplt(1) + area;
     if endx > w
         endx = w;
     end
-    iniy = p1_tmplt(2) - 100;
+    iniy = p1_tmplt(2) - area;
     if iniy < 1 
         iniy = 1;
     end
-    endy = p1_tmplt(2) + 100;
+    endy = p1_tmplt(2) + area;
     if endy > h
         endy = h;
     end
-    template_discnt = image_discnt(iniy:endy, inix:endx);
+    template_discnt = image_discnt;%(iniy:endy, inix:endx);
     [pt_y_tm, pt_x_tm] = find(template_discnt > 10); % cloud template
     pt_z_tm(1:length(pt_x_tm), 1) = double(0);
-    pt_x_tm = pt_x_tm - p1_tmplt(1) + inix;
-    pt_y_tm = pt_y_tm - p1_tmplt(2) + iniy;
+    pt_x_tm = pt_x_tm - p1_tmplt(1);% + inix;
+    pt_y_tm = pt_y_tm - p1_tmplt(2);% + iniy;
     pt_xyz_tm = [pt_x_tm'; pt_y_tm'; pt_z_tm']';
     pt_cloud_tm = pointCloud(pt_xyz_tm);
 
     % N keypoints image in array format
-    [kp_y, kp_x] = find(source > 100);
+    [kp_y, kp_x] = find(source > 50);
     kp_y = kp_y + p11_src(2);
     kp_x = kp_x + p11_src(1);
     kp_src = cat(2, kp_y, kp_x);
