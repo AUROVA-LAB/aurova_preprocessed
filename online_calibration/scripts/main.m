@@ -1,15 +1,15 @@
 clear, clc, close all
 
 %****************** global variables ******************%
-id_dataset = 1;
-id_sample = 800;
+id_dataset = 5;
+id_sample = 380;
 id_pair = 1;
 sigma = 20;
 sigma_flt = 5;
 sobel_fact = 0.5;
 base = 255;
 threshold_dw = 0.0;
-threshold_up = 70;
+threshold_up = 20;
 area = 200;
 exec_flag = [true true true true];
 filenames_cell{1} = 'raw_data/sec_0101/';
@@ -97,7 +97,7 @@ if exec_flag(4)
     pt_cloud_tm = pointCloud(pt_xyz_tm);
 
     % N keypoints image in array format
-    [kp_y, kp_x] = find(source > 50);
+    [kp_y, kp_x] = find(source > 10);
     kp_y = kp_y + p11_src(2);
     kp_x = kp_x + p11_src(1);
     kp_src = cat(2, kp_y, kp_x);
@@ -132,7 +132,7 @@ if exec_flag(4)
                     if pt(1) >= 1 && pt(1) <= w && pt(2) >= 1 && pt(2) <= h
                         u = round(pt(1));
                         v = round(pt(2));
-                        matrix(n1, n2) = matrix(n1, n2) + image_grad_flt(v, u);
+                        matrix(n1, n2) = matrix(n1, n2) + image_grad(v, u);
                     end
                 end 
             end
