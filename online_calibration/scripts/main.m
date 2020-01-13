@@ -2,17 +2,17 @@ clear, clc, close all
 
 %****************** global variables ******************%
 is_kitti = true;
-id_dataset = 1;
-id_sample = 10;
+id_dataset = 2;
+id_sample = 70;
 id_pair = 1;
 sigma = 20;
 sigma_flt = 5;
 sobel_fact = 0.5;
 base = 255;
-threshold_dw = 0.0;
+threshold_dw = 0.5;
 threshold_up = 20;
 area = 200;
-exec_flag = [true true false true false];
+exec_flag = [true true true true true];
 filenames_cell{1} = 'raw_data/sec_0101/'; % Aurova paths
 filenames_cell{2} = 'raw_data/sec_0105/';
 filenames_cell{3} = 'raw_data/sec_0107/';
@@ -20,6 +20,8 @@ filenames_cell{4} = 'raw_data/sec_0202/';
 filenames_cell{5} = 'raw_data/sec_0203/';
 calib_dir_cell{1} = 'raw_data/2011_09_26'; % Kitti paths
 base_dir_cell{1} = 'raw_data/2011_09_26/2011_09_26_drive_0018_sync';
+calib_dir_cell{2} = 'raw_data/2011_09_26'; 
+base_dir_cell{2} = 'raw_data/2011_09_26/2011_09_26_drive_0005_sync';
 userpath('/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/devkit/matlab');
 
 
@@ -48,10 +50,7 @@ end
 
 %************** filtering of scan lidar *******************%
 if exec_flag(3)
-    st_lidar_cfg = fillLidarCfg(scan_lidarframe);
-    scan_filtered = filterScanAzimuth(scan_lidarframe, st_lidar_cfg, threshold_dw, threshold_up, base);
-else
-    scan_filtered = scan_lidarframe;
+    scan_filtered = filterScanAzimuth(scan_lidarframe, is_kitti, threshold_dw, threshold_up, base);
 end
 
 %********** project 3D points into 2D pixel plane ********%
@@ -60,7 +59,7 @@ if exec_flag(4)
     image_discnt_plt(:, :, 1) = image_grad_plt;
     image_discnt_plt(:, :, 2) = image_grad_plt;
     image_discnt_plt(:, :, 3) = image_grad_plt;
-    [v_array, u_array] = find(image_discnt > 10);
+    [v_array, u_array] = find(image_discnt > 0);
     k_array(1:length(v_array), 1) = 1;
     image_discnt_plt = insertShape(image_discnt_plt, 'circle', [u_array, v_array, k_array], 'LineWidth', 1, 'Color', 'green');
 
@@ -100,7 +99,9 @@ if exec_flag(5)
         endy = h;
     end
     template_discnt = image_discnt;%(iniy:endy, inix:endx);
-    [pt_y_tm, pt_x_tm] = find(template_discnt > 10); % cloud template
+    [pt_y_tm, pt_x_tm] = find(template_discnt > 0); % cloud template
+    pt_z_tm_val = template_discnt(template_discnt > 0);
+    pt_z_tm_val = double(pt_z_tm_val) / base;
     pt_z_tm(1:length(pt_x_tm), 1) = double(0);
     pt_x_tm = pt_x_tm - p1_tmplt(1);% + inix;
     pt_y_tm = pt_y_tm - p1_tmplt(2);% + iniy;
@@ -143,7 +144,7 @@ if exec_flag(5)
                     if pt(1) >= 1 && pt(1) <= w && pt(2) >= 1 && pt(2) <= h
                         u = round(pt(1));
                         v = round(pt(2));
-                        matrix(n1, n2) = matrix(n1, n2) + image_grad(v, u);
+                        matrix(n1, n2) = matrix(n1, n2) + image_grad(v, u) * pt_z_tm_val(i);
                     end
                 end 
             end
