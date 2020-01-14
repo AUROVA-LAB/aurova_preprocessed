@@ -22,8 +22,8 @@ calib_dir_cell{1} = 'raw_data/2011_09_26'; % Kitti paths
 base_dir_cell{1} = 'raw_data/2011_09_26/2011_09_26_drive_0018_sync';
 calib_dir_cell{2} = 'raw_data/2011_09_26'; 
 base_dir_cell{2} = 'raw_data/2011_09_26/2011_09_26_drive_0005_sync';
-userpath('/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/devkit/matlab');
-
+%userpath('/home/mice85/aurova-lab/aurova_ws/src/aurova_preprocessed/online_calibration/scripts/devkit/matlab');
+userpath('C:\Users\Miguel Ángel\Documents\GitHub\aurova_preprocessed\online_calibration\scripts\devkit\matlab');
 
 %************* read and store raw data ****************%
 % TODO: return pc, images, etc, instead to cells
@@ -116,6 +116,7 @@ if exec_flag(5)
     N = length(kp_y);
 
     %*********************
+    t = tic;
     matrix(1:N, 1:N) = double(0);
     for n1 = 1:N
         for n2 = 1:N
@@ -150,6 +151,7 @@ if exec_flag(5)
             end
         end
     end
+    time = toc(t)
 
     [N1, N2] = find(matrix==max(max(matrix)));
     for n1 = N1:N1
