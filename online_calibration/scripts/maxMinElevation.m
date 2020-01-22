@@ -10,7 +10,7 @@ for n = 1:scan.Count
     y = scan.Location(n, 2);
     z = scan.Location(n, 3);
     
-    [range, azimuth, elevation] = cartesian2SphericalInDegrees(x, y, z);
+    [~, azimuth, elevation] = cartesian2SphericalInDegrees(x, y, z);
     
     if (elevation > max_elevation)
          max_elevation = elevation;

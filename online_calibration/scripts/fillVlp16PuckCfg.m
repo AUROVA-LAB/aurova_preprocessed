@@ -1,4 +1,4 @@
-function st_lidar_cfg = fillLidarCfg(scan)
+function st_lidar_cfg = fillVlp16PuckCfg(scan)
 
 [max_elevation, min_elevation, max_azimuth, min_azimuth] = maxMinElevation(scan);
 

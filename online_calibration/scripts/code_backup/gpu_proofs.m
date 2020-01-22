@@ -38,7 +38,7 @@ time_orig = toc(t)
 time_vec = toc(t) - time_orig
 
 ii = gpuArray(1:N*N);
-[i, j] = arrayfun(@gpuProofs2, ii, N);
+[i, j] = arrayfun(@gpuProofs, ii, N);
 i(1) = 1;
 
 time_gpu = toc(t) - time_vec - time_orig
