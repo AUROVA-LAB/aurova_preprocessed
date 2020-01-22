@@ -1,4 +1,4 @@
-function [data, params] = readFileData(experiments, params)
+function [data, params] = readFileData(params, experiments)
 
 data = [];
 

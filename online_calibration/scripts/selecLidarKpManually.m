@@ -1,4 +1,14 @@
-function [p1_tmplt, p2_tmplt, p11_src, p12_src, p21_src] = manuallyKeyPoints(id_dataset, id_sample, id_pair)
+function descriptor = selectKeyPointsManually(experiments)
+
+descriptor = [];
+descriptor.kp = [];
+descriptor.pair = [];
+descriptor.distance = 0;
+descriptor.rotation = 0;
+descriptor.roi = [];
+descriptor.roi.p11 = [];
+descriptor.roi.p12 = [];
+descriptor.roi.p21 = [];
 
 
 %********************* from ROS *********************%
@@ -74,11 +84,12 @@ p11_src_array{2, 70} = [953 180];
 p12_src_array{2, 70} = [973 180];
 p21_src_array{2, 70} = [953 204];
 
-p1_tmplt = p1_tmplt_array{id_dataset, id_sample}(id_pair, :);
-p2_tmplt = p2_tmplt_array{id_dataset, id_sample}(id_pair, :);
-p11_src = p11_src_array{id_dataset, id_sample}(id_pair, :);
-p12_src = p12_src_array{id_dataset, id_sample}(id_pair, :);
-p21_src = p21_src_array{id_dataset, id_sample}(id_pair, :);
-
+descriptor.kp = p1_tmplt_array{experiments.id_dataset, experiments.id_sample}(experiments.id_pair, :);
+descriptor.pair = p2_tmplt_array{experiments.id_dataset, experiments.id_sample}(experiments.id_pair, :);
+descriptor.roi.p11 = p11_src_array{experiments.id_dataset, experiments.id_sample}(experiments.id_pair, :);
+descriptor.roi.p12 = p12_src_array{experiments.id_dataset, experiments.id_sample}(experiments.id_pair, :);
+descriptor.roi.p21 = p21_src_array{experiments.id_dataset, experiments.id_sample}(experiments.id_pair, :);
+dist_xy = descriptor.pair - descriptor.kp;
+[descriptor.distance, descriptor.rotation, ~] = cartesian2SphericalInDegrees(dist_xy(1), dist_xy(2), 0);
 end
 
