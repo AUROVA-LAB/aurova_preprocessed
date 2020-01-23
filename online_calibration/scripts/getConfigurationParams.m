@@ -2,14 +2,22 @@ function [params, experiments] = getConfigurationParams()
 
 params.sigma = 20;
 params.base = 255;
+
 params.threshold_dw = 0.5;
 params.threshold_up = 20;
 params.threshold_dsc = 20;
 params.threshold_sbl = 10;
+
 params.dist_factor = 2/3;
+params.max_distance = 20.0;
+params.min_intensity = 200;
+params.k = 20;
+
 params.lidar_model = 0; 
 params.id_vlp16 = 16;
 params.id_kitti64 = 64;
+
+
 
 experiments.is_kitti = true;
 experiments.id_dataset = 2;
