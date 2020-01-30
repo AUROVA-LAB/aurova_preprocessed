@@ -9,6 +9,9 @@ params.threshold_dsc = 20;
 params.threshold_sbl = 10;
 
 params.dist_factor = 2/3;
+params.max_rho = 20;
+params.min_rho = 10;
+params.area = 100;
 params.max_distance = 20.0;
 params.min_intensity = 200;
 params.k = 20;

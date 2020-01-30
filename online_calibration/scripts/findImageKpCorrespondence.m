@@ -21,6 +21,7 @@ for j = 1:num_kp
 
     % generate sobel-KEYPOINTs
     threshold = params.threshold_sbl;
+    clear source_msk;
     source_msk = source(descriptor.roi.p11(j, 2):descriptor.roi.p21(j, 2), ...
                         descriptor.roi.p11(j, 1):descriptor.roi.p12(j, 1));
     [kp_y, kp_x] = find(source_msk > threshold);
@@ -29,6 +30,7 @@ for j = 1:num_kp
 
     % find sobel-KEYPOINTs that maximize cost function
     N = length(kp_y);
+    clear vector;
     vector(1:N*N) = double(0);
     dist_tmplt = descriptor.distance(j);
     rot_tmplt = descriptor.rotation(j);

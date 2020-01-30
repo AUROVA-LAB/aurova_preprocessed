@@ -17,38 +17,76 @@ observations = cat(2, i_x, i_y);
 i_k = kmeans(observations, params.k);
 
 % first aproximation: get random values with min-max distance
-
-%**************************************
-%**************************************
-%debug
+% 1) get random point in a cluster (save in struct)
+% 2) get first point in max-min range (save in struct)
+% 3) save search area in struct;
 [m, n] = size(data_prep.img_depth);
-k = length(i_k);
-img_cluster(1:m, 1:n) = 0;
-for i = 1:k
-    img_cluster(i_y(i), i_x(i)) = (i_k(i) / params.k) * params.base;
-end
-img_cluster = ind2rgb(uint8(img_cluster), jet(params.base+1));
-img_cluster(:, :, 1) = img_cluster(:, :, 1) .* img_candidates;
-img_cluster(:, :, 2) = img_cluster(:, :, 2) .* img_candidates;
-img_cluster(:, :, 3) = img_cluster(:, :, 3) .* img_candidates;
-
-figure
-imshow(img_nearest_pt);
-figure
-imshow(img_strong_edges);
-figure
-imshow(img_cluster);
-%**************************************
-%**************************************
-
 descriptor = [];
 descriptor.kp = [];
 descriptor.pair = [];
-descriptor.distance = 0;
-descriptor.rotation = 0;
+descriptor.distance = [];
+descriptor.rotation = [];
 descriptor.roi = [];
 descriptor.roi.p11 = [];
 descriptor.roi.p12 = [];
 descriptor.roi.p21 = [];
+for i = 1:params.k
+    pair_ok = false;
+    ii = find(i_k == i);
+    num = length(ii);
+    kp = [i_x(ii(1)) i_y(ii(1))];
+    j = 1;
+    while j <= num
+        [dist, rot, ~] = cartesian2SphericalInDegrees(i_x(ii(j)) - i_x(ii(1)), i_y(ii(j)) - i_y(ii(1)), 0);
+        if dist >= params.min_rho && dist <= params.max_rho
+            pair = [i_x(ii(j)) i_y(ii(j))];
+            descriptor.pair = cat(1, descriptor.pair, pair);
+            descriptor.distance = cat(1, descriptor.distance, dist);
+            descriptor.rotation = cat(1, descriptor.rotation, rot);
+            j = num;
+            pair_ok = true;
+        end
+        j = j + 1;
+    end
+    if pair_ok
+        descriptor.kp = cat(1, descriptor.kp, kp);
+        
+        min_x = min([kp(1) pair(1)]);
+        min_y = min([kp(2) pair(2)]);
+        min_x = limitValue(min_x - params.area/2, 1, n);
+        min_y = limitValue(min_y - params.area/2, 1, m);
+        max_x = max([kp(1) pair(1)]);
+        max_y = max([kp(2) pair(2)]);
+        max_x = limitValue(max_x + params.area/2, 1, n);
+        max_y = limitValue(max_y + params.area/2, 1, m);
+        
+        descriptor.roi.p11 = cat(1, descriptor.roi.p11, [min_x min_y]);
+        descriptor.roi.p12 = cat(1, descriptor.roi.p12, [max_x min_y]);
+        descriptor.roi.p21 = cat(1, descriptor.roi.p21, [min_x max_y]);
+    end
+end
+
+
+%**************************************
+%**************************************
+%debug
+% k = length(i_k);
+% img_cluster(1:m, 1:n) = 0;
+% for i = 1:k
+%     img_cluster(i_y(i), i_x(i)) = (i_k(i) / params.k) * params.base;
+% end
+% img_cluster = ind2rgb(uint8(img_cluster), jet(params.base+1));
+% img_cluster(:, :, 1) = img_cluster(:, :, 1) .* img_candidates; %delete background.
+% img_cluster(:, :, 2) = img_cluster(:, :, 2) .* img_candidates;
+% img_cluster(:, :, 3) = img_cluster(:, :, 3) .* img_candidates;
+% 
+% figure
+% imshow(img_nearest_pt);
+% figure
+% imshow(img_strong_edges);
+% figure
+% imshow(img_cluster);
+%**************************************
+%**************************************
 
 end
