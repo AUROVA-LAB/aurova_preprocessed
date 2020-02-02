@@ -1,7 +1,6 @@
-function plot_info = lidarImageCorregistration(data_prep, params, experiments)
+function plot_info = lidarImageCorregistration(data_prep, params)
 
 % select pair's and roi's from discontinuities
-% descriptor = selecLidarKpManually(experiments);
 descriptor = selecLidarKeyPoints(data_prep, params);
 
 % calculation corregister asociation in pixels
