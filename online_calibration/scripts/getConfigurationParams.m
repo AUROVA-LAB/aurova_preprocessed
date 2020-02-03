@@ -9,12 +9,14 @@ params.threshold_dsc = 20;
 params.threshold_sbl = 10;
 
 params.dist_factor = 2/3;
+params.rot_max = 45;
 params.max_rho = 20;
 params.min_rho = 10;
-params.area = 80;
+params.area = 60;
 params.max_distance = 20.0;
 params.min_intensity = 200;
-params.k = 20;
+params.subsample_factor = 2;
+params.k = 10;
 
 params.lidar_model = 0; 
 params.id_vlp16 = 16;

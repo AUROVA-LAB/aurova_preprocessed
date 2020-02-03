@@ -21,9 +21,13 @@ for j = 1:num_kp
 
     % generate sobel-KEYPOINTs
     threshold = params.threshold_sbl;
-    clear source_msk;
+    clear source_msk subsample_msk;
     source_msk = source(descriptor.roi.p11(j, 2):descriptor.roi.p21(j, 2), ...
                         descriptor.roi.p11(j, 1):descriptor.roi.p12(j, 1));
+%     [mm, nn] = size(source_msk);
+%     subsample_msk(1:mm, 1:nn) = 0;
+%     subsample_msk(1:params.subsample_factor:mm, 1:params.subsample_factor:nn) = 1; 
+%     source_msk = source_msk .* subsample_msk;
     [kp_y, kp_x] = find(source_msk > threshold);
     kp_y = kp_y + descriptor.roi.p11(j, 2); %translate to image coord.
     kp_x = kp_x + descriptor.roi.p11(j, 1);
@@ -38,13 +42,18 @@ for j = 1:num_kp
     h = params.camera_params.image_size(1);
     dist_min = dist_tmplt * params.dist_factor;
     dist_max = dist_tmplt / params.dist_factor;
+    rot_max = params.rot_max;  
     disp('*** init pair search ***')
     t = tic;
     parfor ii = 1:N*N 
         id_kp = floor((ii-1) / N) + 1;
         id_pair = mod(ii-1, N) + 1;
         [dist_src, rot_src, ~] = cartesian2SphericalInDegrees(kp_x(id_pair) - kp_x(id_kp), kp_y(id_pair) - kp_y(id_kp), 0);
-        if dist_src > dist_min && dist_src < dist_max
+        rot_abs = abs(rot_src - rot_tmplt);
+        if rot_abs > 180
+            rot_abs = abs(rot_abs - 360);
+        end
+        if dist_src > dist_min && dist_src < dist_max && rot_abs < rot_max
 
             % scale TEMPLATE points to SOURCE scale
             scale_factor = dist_src / dist_tmplt;
