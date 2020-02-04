@@ -5,6 +5,8 @@ plot_info = [];
 [num_kp, ~] = size(descriptor.kp);
 plot_info.kp_src(1:num_kp, 1:2) = 0;
 plot_info.kp_tmp(1:num_kp, 1:2) = 0;
+plot_info.pair_src(1:num_kp, 1:2) = 0;
+plot_info.pair_tmp(1:num_kp, 1:2) = 0;
 
 for j = 1:num_kp
 
@@ -24,10 +26,6 @@ for j = 1:num_kp
     clear source_msk subsample_msk;
     source_msk = source(descriptor.roi.p11(j, 2):descriptor.roi.p21(j, 2), ...
                         descriptor.roi.p11(j, 1):descriptor.roi.p12(j, 1));
-%     [mm, nn] = size(source_msk);
-%     subsample_msk(1:mm, 1:nn) = 0;
-%     subsample_msk(1:params.subsample_factor:mm, 1:params.subsample_factor:nn) = 1; 
-%     source_msk = source_msk .* subsample_msk;
     [kp_y, kp_x] = find(source_msk > threshold);
     kp_y = kp_y + descriptor.roi.p11(j, 2); %translate to image coord.
     kp_x = kp_x + descriptor.roi.p11(j, 1);
@@ -81,10 +79,15 @@ for j = 1:num_kp
     %maximun in cost function
     ii = find(vector==max(max(vector)));
     id_kp = floor((ii-1) / N) + 1;
+    id_pair = mod(ii-1, N) + 1;
     plot_info.kp_src(j, 1) = kp_x(id_kp);
     plot_info.kp_src(j, 2) = kp_y(id_kp);
     plot_info.kp_tmp(j, 1) = descriptor.kp(j, 1);
     plot_info.kp_tmp(j, 2) = descriptor.kp(j, 2);
+    plot_info.pair_src(j, 1) = kp_x(id_pair);
+    plot_info.pair_src(j, 2) = kp_y(id_pair);
+    plot_info.pair_tmp(j, 1) = descriptor.pair(j, 1);
+    plot_info.pair_tmp(j, 2) = descriptor.pair(j, 2);
 
 end
 

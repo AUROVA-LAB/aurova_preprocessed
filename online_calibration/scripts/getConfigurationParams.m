@@ -8,11 +8,11 @@ params.threshold_up = 20;
 params.threshold_dsc = 20;
 params.threshold_sbl = 10;
 
-params.dist_factor = 2/3;
-params.rot_max = 45;
+params.dist_factor = 0.75;
+params.rot_max = 35;
 params.max_rho = 20;
 params.min_rho = 10;
-params.area = 60;
+params.area = 80;
 params.max_distance = 20.0;
 params.min_intensity = 200;
 params.subsample_factor = 2;
