@@ -17,6 +17,13 @@ for j = 1:num_kp
     z_tmp = double(z_tmp) / params.base;
     x_tmp = x_tmp - descriptor.kp(j, 1); % tr to kp reference
     y_tmp = y_tmp - descriptor.kp(j, 2);
+    parfor jj = 1:length(y_tmp)
+        [distance, ~, ~] = cartesian2SphericalInDegrees(x_tmp(jj), y_tmp(jj), 0);
+        z_tmp(jj) = params.distance_w / distance;
+        if (z_tmp(jj) > 1)
+            z_tmp(jj) = 1;
+        end
+    end
 
     % generate SOURCE image data 
     source = data_prep.img_sobel;

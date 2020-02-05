@@ -25,7 +25,8 @@ if experiments.is_kitti
     % load transform cam -> lidar
     data.tf = affine3d;
     data.tf.T = loadCalibrationRigid(fullfile(calib_dir,'calib_velo_to_cam.txt'))';
-
+    data.tf = generateMisscalibration(data.tf);
+    
     % load and compute projection matrix lidar->image plane
     calib = loadCalibrationCamToCam(fullfile(calib_dir,'calib_cam_to_cam.txt'));
     R_cam_to_rect = eye(4);

@@ -26,6 +26,6 @@ for j = 1:M
         [tf, data_prep, plot_info] = extTargetlessCalibration(data, params); %TODO: remove experiments variable
 
         disp('*** plot results ***')
-        results = plotResults(data_prep, plot_info, params, experiments, results);
+        results = plotResults(data, data_prep, plot_info, params, experiments, results);
     end
 end

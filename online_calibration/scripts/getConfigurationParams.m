@@ -13,6 +13,7 @@ params.rot_max = 35;
 params.max_rho = 20;
 params.min_rho = 10;
 params.area = 80;
+params.distance_w = 100;
 params.max_distance = 20.0;
 params.min_intensity = 200;
 params.subsample_factor = 2;
