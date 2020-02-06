@@ -60,6 +60,15 @@ filename = strcat(experiments.fileout, num2str(experiments.id_dataset,'_%d'));
 filename = strcat(filename, num2str(experiments.id_sample,'_%d_3.jpg'));
 imwrite(final_plot3, filename);
 
+% plot image
+close all
+figure
+imshow(final_plot)
+figure
+imshow(final_plot2)
+figure
+imshow(final_plot3)
+
 % *************************************************** %
 % ************ STATISTICS (EXPERIMENTS) ************* %
 % for i = 1:n

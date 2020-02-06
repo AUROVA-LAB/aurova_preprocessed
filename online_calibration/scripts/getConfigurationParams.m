@@ -23,14 +23,12 @@ params.lidar_model = 0;
 params.id_vlp16 = 16;
 params.id_kitti64 = 64;
 
-
-
 experiments.is_kitti = true;
 experiments.id_dataset = 2;
 experiments.id_sample = 100;
 experiments.id_pair = 1;
 experiments.kitti_cam_id = 2;
-experiments.fileout = 'results/frame';
+experiments.fileout = 'results/20200206/frame';
 experiments.filenames_cell{1} = 'raw_data/sec_0101/'; % Aurova paths
 experiments.filenames_cell{2} = 'raw_data/sec_0105/';
 experiments.filenames_cell{3} = 'raw_data/sec_0107/';
