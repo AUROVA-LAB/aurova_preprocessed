@@ -19,10 +19,11 @@ for j = 1:num_kp
     y_tmp = y_tmp - descriptor.kp(j, 2);
     parfor jj = 1:length(y_tmp)
         [distance, ~, ~] = cartesian2SphericalInDegrees(x_tmp(jj), y_tmp(jj), 0);
-        z_tmp(jj) = params.distance_w / distance;
-        if (z_tmp(jj) > 1)
-            z_tmp(jj) = 1;
+        distance_w = params.distance_w / distance;
+        if (distance_w > 1)
+            distance_w = 1;
         end
+        z_tmp(jj) = z_tmp(jj) * distance_w;
     end
 
     % generate SOURCE image data 
@@ -67,16 +68,19 @@ for j = 1:num_kp
 
             % translate and rorate TEMPLATE points to SOURCE pose
             yaw = (rot_src - rot_tmplt) * (pi/180);
-            tr_x_tmp = x_tmp_act*cos(yaw) + y_tmp_act*sin(yaw) + kp_x(id_kp);
-            tr_y_tmp = y_tmp_act*cos(yaw) - x_tmp_act*sin(yaw) + kp_y(id_kp);
+            tr_x_tmp = round(x_tmp_act*cos(yaw) + y_tmp_act*sin(yaw) + kp_x(id_kp));
+            tr_y_tmp = round(y_tmp_act*cos(yaw) - x_tmp_act*sin(yaw) + kp_y(id_kp));
 
             % evaluate COST FUNCTION in pair id_kp id_pair using TEMPLATE and SOURCE
+            %tr_x_tmp2 = tr_x_tmp(tr_x_tmp >= 1 & tr_x_tmp <= w & tr_y_tmp >= 1 & tr_y_tmp <= h);
+            %tr_y_tmp2 = tr_y_tmp(tr_x_tmp >= 1 & tr_x_tmp <= w & tr_y_tmp >= 1 & tr_y_tmp <= h);
+            %z_tmp2 = z_tmp(tr_x_tmp >= 1 & tr_x_tmp <= w & tr_y_tmp >= 1 & tr_y_tmp <= h);
+            %index = sub2ind([h w], tr_y_tmp2, tr_x_tmp2);
+            %vector(ii) = source(index)' * z_tmp2;
             for i = 1:length(x_tmp_act)
                 if tr_x_tmp(i) >= 1 && tr_x_tmp(i) <= w && ...
                    tr_y_tmp(i) >= 1 && tr_y_tmp(i) <= h
-                    u = round(tr_x_tmp(i));
-                    v = round(tr_y_tmp(i));
-                    vector(ii) = vector(ii) + source(v, u) * z_tmp(i);
+                    vector(ii) = vector(ii) + source(tr_y_tmp(i), tr_x_tmp(i)) * z_tmp(i);
                 end
             end 
         end
