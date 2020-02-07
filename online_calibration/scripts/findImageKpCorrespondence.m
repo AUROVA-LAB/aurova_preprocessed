@@ -1,6 +1,5 @@
 function plot_info = findImageKpCorrespondence(data_prep, descriptor, params)
 
-
 plot_info = [];
 [num_kp, ~] = size(descriptor.kp);
 plot_info.kp_src(1:num_kp, 1:2) = 0;
@@ -17,7 +16,8 @@ for j = 1:num_kp
     z_tmp = double(z_tmp) / params.base;
     x_tmp = x_tmp - descriptor.kp(j, 1); % tr to kp reference
     y_tmp = y_tmp - descriptor.kp(j, 2);
-    parfor jj = 1:length(y_tmp)
+    M = length(y_tmp);
+    parfor jj = 1:M
         [distance, ~, ~] = cartesian2SphericalInDegrees(x_tmp(jj), y_tmp(jj), 0);
         distance_w = params.distance_w / distance;
         if (distance_w > 1)
@@ -37,11 +37,11 @@ for j = 1:num_kp
     [kp_y, kp_x] = find(source_msk > threshold);
     kp_y = kp_y + descriptor.roi.p11(j, 2); %translate to image coord.
     kp_x = kp_x + descriptor.roi.p11(j, 1);
+    N = length(kp_y);
 
     % find sobel-KEYPOINTs that maximize cost function
-    N = length(kp_y);
     clear vector;
-    vector(1:N*N) = double(0);
+    vector = zeros(1, N*N);
     dist_tmplt = descriptor.distance(j);
     rot_tmplt = descriptor.rotation(j);
     w = params.camera_params.image_size(2);
@@ -51,7 +51,7 @@ for j = 1:num_kp
     rot_max = params.rot_max;  
     disp('*** init pair search ***')
     t = tic;
-    parfor ii = 1:N*N 
+    for ii = 1:N*N 
         id_kp = floor((ii-1) / N) + 1;
         id_pair = mod(ii-1, N) + 1;
         [dist_src, rot_src, ~] = cartesian2SphericalInDegrees(kp_x(id_pair) - kp_x(id_kp), kp_y(id_pair) - kp_y(id_kp), 0);
