@@ -1,35 +1,7 @@
-function [i, j] = gpuProofs(ii, N)
+function [a, b] = gpuProofs(kp_x, kp_y, pair_x, pair_y, tmp_x, tmp_y, escalar1, escalar2)
 
-i = floor((ii-1) / N) + 1;
-j = mod(ii-1, N) + 1;
-c =cos(i);
-
-for n = 1:3000
-    a = sqrt(i);
-    b = atan2(i, j);
-    a = sqrt(i);
-    b = atan2(i, j);
-    a = sqrt(i);
-    b = atan2(i, j);
-    a = sqrt(i);
-    b = atan2(i, j);
-    a = sqrt(i);
-    b = atan2(i, j);
-    a = sqrt(i);
-    b = atan2(i, j);
-    a = sqrt(i);
-    b = atan2(i, j);
-    a = sqrt(i);
-    b = atan2(i, j);
-    a = sqrt(i);
-    b = atan2(i, j);
-    a = sqrt(i);
-    b = atan2(i, j);
-    a = sqrt(i);
-    b = atan2(i, j);
-    a = sqrt(i);
-    b = atan2(i, j);
-end
+a = (kp_x - pair_x) .* tmp_x * escalar1;
+b = (kp_y - pair_y) .* tmp_y * escalar2;
 
 end
 

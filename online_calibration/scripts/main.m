@@ -13,6 +13,7 @@ results.error_15 = 0;
 results.error_x = 0;
 results.error_signal = [];
 
+t = tic;
 for j = 1:M
     for i = N/2:N
         
@@ -29,3 +30,4 @@ for j = 1:M
         results = plotResults(data, data_prep, plot_info, params, experiments, results);
     end
 end
+disp(toc(t))

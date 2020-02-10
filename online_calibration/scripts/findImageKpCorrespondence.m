@@ -17,7 +17,7 @@ for j = 1:num_kp
     x_tmp = x_tmp - descriptor.kp(j, 1); % tr to kp reference
     y_tmp = y_tmp - descriptor.kp(j, 2);
     M = length(y_tmp);
-    parfor jj = 1:M
+    parfor jj = 1:M %distance weight calculation
         [distance, ~, ~] = cartesian2SphericalInDegrees(x_tmp(jj), y_tmp(jj), 0);
         distance_w = params.distance_w / distance;
         if (distance_w > 1)
@@ -27,7 +27,8 @@ for j = 1:num_kp
     end
 
     % generate SOURCE image data 
-    source = data_prep.img_sobel;
+    source = data_prep.img_sobel_dw;
+    objective = data_prep.img_sobel;
 
     % generate sobel-KEYPOINTs
     threshold = params.threshold_sbl;
@@ -38,23 +39,41 @@ for j = 1:num_kp
     kp_y = kp_y + descriptor.roi.p11(j, 2); %translate to image coord.
     kp_x = kp_x + descriptor.roi.p11(j, 1);
     N = length(kp_y);
+    
+    % generate sobel-PAIRs
+    threshold = params.threshold_sbl;
+    clear source_msk;
+    source_msk = source(descriptor.roip.p11(j, 2):descriptor.roip.p21(j, 2), ...
+                        descriptor.roip.p11(j, 1):descriptor.roip.p12(j, 1));
+    [pair_y, pair_x] = find(source_msk > threshold);
+    pair_y = pair_y + descriptor.roip.p11(j, 2); %translate to image coord.
+    pair_x = pair_x + descriptor.roip.p11(j, 1);
+    N2 = length(pair_y);
+    
+%     % GPU preparation
+%     x_tmp = gpuArray(repmat(x_tmp, N2, 1));
+%     y_tmp = gpuArray(repmat(y_tmp, N2, 1));
+%     pair_y = repmat(pair_y', M, 1);
+%     pair_y = gpuArray(pair_y(:));
+%     pair_x = repmat(pair_x', M, 1);
+%     pair_x = gpuArray(pair_x(:));
 
     % find sobel-KEYPOINTs that maximize cost function
     clear vector;
-    vector = zeros(1, N*N);
+    vector = zeros(1, N*N2);
     dist_tmplt = descriptor.distance(j);
     rot_tmplt = descriptor.rotation(j);
     w = params.camera_params.image_size(2);
     h = params.camera_params.image_size(1);
     dist_min = dist_tmplt * params.dist_factor;
-    dist_max = dist_tmplt / params.dist_factor;
+    dist_max = dist_tmplt +  dist_tmplt * (1 - params.dist_factor);
     rot_max = params.rot_max;  
     disp('*** init pair search ***')
     t = tic;
-    for ii = 1:N*N 
-        id_kp = floor((ii-1) / N) + 1;
-        id_pair = mod(ii-1, N) + 1;
-        [dist_src, rot_src, ~] = cartesian2SphericalInDegrees(kp_x(id_pair) - kp_x(id_kp), kp_y(id_pair) - kp_y(id_kp), 0);
+    parfor ii = 1:N*N2 
+        id_kp = floor((ii-1) / N2) + 1;
+        id_pair = mod(ii-1, N2) + 1;
+        [dist_src, rot_src, ~] = cartesian2SphericalInDegrees(pair_x(id_pair) - kp_x(id_kp), pair_y(id_pair) - kp_y(id_kp), 0);
         rot_abs = abs(rot_src - rot_tmplt);
         if rot_abs > 180
             rot_abs = abs(rot_abs - 360);
@@ -80,7 +99,7 @@ for j = 1:num_kp
             for i = 1:length(x_tmp_act)
                 if tr_x_tmp(i) >= 1 && tr_x_tmp(i) <= w && ...
                    tr_y_tmp(i) >= 1 && tr_y_tmp(i) <= h
-                    vector(ii) = vector(ii) + source(tr_y_tmp(i), tr_x_tmp(i)) * z_tmp(i);
+                    vector(ii) = vector(ii) + objective(tr_y_tmp(i), tr_x_tmp(i)) * z_tmp(i);
                 end
             end 
         end
@@ -89,14 +108,14 @@ for j = 1:num_kp
 
     %maximun in cost function
     ii = find(vector==max(max(vector)));
-    id_kp = floor((ii-1) / N) + 1;
-    id_pair = mod(ii-1, N) + 1;
+    id_kp = floor((ii-1) / N2) + 1;
+    id_pair = mod(ii-1, N2) + 1;
     plot_info.kp_src(j, 1) = kp_x(id_kp);
     plot_info.kp_src(j, 2) = kp_y(id_kp);
     plot_info.kp_tmp(j, 1) = descriptor.kp(j, 1);
     plot_info.kp_tmp(j, 2) = descriptor.kp(j, 2);
-    plot_info.pair_src(j, 1) = kp_x(id_pair);
-    plot_info.pair_src(j, 2) = kp_y(id_pair);
+    plot_info.pair_src(j, 1) = pair_x(id_pair);
+    plot_info.pair_src(j, 2) = pair_y(id_pair);
     plot_info.pair_tmp(j, 1) = descriptor.pair(j, 1);
     plot_info.pair_tmp(j, 2) = descriptor.pair(j, 2);
 

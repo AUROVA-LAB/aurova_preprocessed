@@ -1,44 +1,48 @@
 clear, clc, close all
 
-N = 400;
-source_x = 1:N;
-source_y = 1:N;
-source = cat(2, source_x', source_y');
-%source = gpuArray(source);
-i(1:N*N) = 0;
-j(1:N*N) = 0;
+M = 1403;
+N = 1673;
+N2 = 1665;
+
+tmp_x(1:M) = 1;
+tmp_y(1:M) = 2;
+kp_x(1:N) = 3;
+kp_y(1:N) = 4;
+pair_x(1:N2) = 5;
+pair_y(1:N2) = 6;
 
 t = tic;
 
-% for u = 1:N
-%     for v = 1:N
-%         ii = (u-1)*v + v;
-%         i(ii) = floor((ii-1) / N) + 1;
-%         j(ii) = mod(ii-1, N) + 1;
-%         source_x_1 = source_x(u);
-%         source_x_2 = source_x(v);
-%         source_y_1 = source_y(u);
-%         source_y_2 = source_y(v);
-%         [src0_x, src0_y] = gpuProofs(source_x_1);
+% for ii = 1:N*N2
+%     id_kp = floor((ii-1) / N2) + 1;
+%     id_pair = mod(ii-1, N2) + 1;
+%     for jj = 1:M
+%         [a, b] = gpuProofs(kp_x(id_kp), kp_y(id_kp), ...
+%                            pair_x(id_pair), pair_y(id_pair), ...
+%                            tmp_x(jj), tmp_y(jj));
 %     end
 % end
 
 time_orig = toc(t)
 
-% parfor ii = 1:N*N
-%     i(ii) = floor((ii-1) / N) + 1;
-%     j(ii) = mod(ii-1, N) + 1;
-%     source_x_1 = source_x(i(ii));
-%     source_x_2 = source_x(j(ii));
-%     source_y_1 = source_y(i(ii));
-%     source_y_2 = source_y(j(ii));
-%     [src0_x, src0_y] = gpuProofs(source_x_1, source_x_2, source_y_1, source_y_2);
-% end
+tmp_x(1:M*N2) = 1;
+tmp_y(1:M*N2) = 2;
+pair_x(1:M*N2) = 5;
+pair_y(1:M*N2) = 6;
+tmp_x = gpuArray(tmp_x);
+tmp_y = gpuArray(tmp_y);
+pair_x = gpuArray(pair_x);
+pair_y = gpuArray(pair_y);
 
-time_vec = toc(t) - time_orig
+escalar1 = 5;
+escalar2 = 6;
 
-ii = gpuArray(1:N*N);
-[i, j] = arrayfun(@gpuProofs, ii, N);
-i(1) = 1;
+t = tic;
 
-time_gpu = toc(t) - time_vec - time_orig
+for ii = 1:N
+    [a, b] = gpuProofs(kp_x(ii), kp_y(ii), ...
+                       pair_x, pair_y, ...
+                       tmp_x, tmp_y, escalar1, escalar2);
+end
+
+time_gpu = toc(t)

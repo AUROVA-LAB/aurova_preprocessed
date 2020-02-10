@@ -9,14 +9,14 @@ params.threshold_dsc = 0;
 params.threshold_sbl = 0;
 
 params.dist_factor = 0.75;
-params.rot_max = 35;
-params.max_rho = 20;
-params.min_rho = 10;
+params.rot_max = 40;
+params.max_rho = 60;
+params.min_rho = 40;
 params.area = 100;
 params.distance_w = 100;
 params.max_distance = 20.0;
 params.min_intensity = 200;
-params.k = 10;
+params.k = 6;
 
 params.lidar_model = 0; 
 params.id_vlp16 = 16;
@@ -27,7 +27,7 @@ experiments.id_dataset = 2;
 experiments.id_sample = 100;
 experiments.id_pair = 1;
 experiments.kitti_cam_id = 2;
-experiments.fileout = 'results/20200207/frame';
+experiments.fileout = 'results/20200210/frame';
 experiments.filenames_cell{1} = 'raw_data/sec_0101/'; % Aurova paths
 experiments.filenames_cell{2} = 'raw_data/sec_0105/';
 experiments.filenames_cell{3} = 'raw_data/sec_0107/';

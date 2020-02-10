@@ -30,6 +30,10 @@ descriptor.roi = [];
 descriptor.roi.p11 = [];
 descriptor.roi.p12 = [];
 descriptor.roi.p21 = [];
+descriptor.roip = [];
+descriptor.roip.p11 = [];
+descriptor.roip.p12 = [];
+descriptor.roip.p21 = [];
 for i = 1:params.k
     pair_ok = false;
     ii = find(i_k == i);
@@ -51,18 +55,21 @@ for i = 1:params.k
     if pair_ok
         descriptor.kp = cat(1, descriptor.kp, kp);
         
-        min_x = min([kp(1) pair(1)]);
-        min_y = min([kp(2) pair(2)]);
-        min_x = limitValue(min_x - params.area/2, 1, n);
-        min_y = limitValue(min_y - params.area/2, 1, m);
-        max_x = max([kp(1) pair(1)]);
-        max_y = max([kp(2) pair(2)]);
-        max_x = limitValue(max_x + params.area/2, 1, n);
-        max_y = limitValue(max_y + params.area/2, 1, m);
-        
+        min_x = limitValue(kp(1) - params.area/2, 1, n);
+        min_y = limitValue(kp(2) - params.area/2, 1, m);
+        max_x = limitValue(kp(1) + params.area/2, 1, n);
+        max_y = limitValue(kp(2) + params.area/2, 1, m);
         descriptor.roi.p11 = cat(1, descriptor.roi.p11, [min_x min_y]);
         descriptor.roi.p12 = cat(1, descriptor.roi.p12, [max_x min_y]);
         descriptor.roi.p21 = cat(1, descriptor.roi.p21, [min_x max_y]);
+        
+        min_x = limitValue(pair(1) - params.area/2, 1, n);
+        min_y = limitValue(pair(2) - params.area/2, 1, m);
+        max_x = limitValue(pair(1) + params.area/2, 1, n);
+        max_y = limitValue(pair(2) + params.area/2, 1, m);
+        descriptor.roip.p11 = cat(1, descriptor.roip.p11, [min_x min_y]);
+        descriptor.roip.p12 = cat(1, descriptor.roip.p12, [max_x min_y]);
+        descriptor.roip.p21 = cat(1, descriptor.roip.p21, [min_x max_y]);
     end
 end
 
