@@ -6,20 +6,12 @@ disp('*** init program: load parameters ***');
 M = experiments.id_dataset;
 N = experiments.id_sample;
 results = [];
-results.error_3 = 0;
-results.error_5 = 0;
-results.error_8 = 0;
-results.error_15 = 0;
-results.error_x = 0;
-results.error_signal = [];
 
 t = tic;
-for j = 1:M
-    for i = N/2:N
-        
+for j = M:M
+    for i = 1:N        
         experiments.id_dataset = j;
-        experiments.id_sample = i;
-        
+        experiments.id_sample = i;        
         disp('*** reading data (only Matlab functions) ***')
         [data, params] = readFileData(params, experiments);
 

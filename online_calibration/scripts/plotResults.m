@@ -1,5 +1,6 @@
 function results = plotResults(data, data_prep, plot_info, params, experiments, results)
 
+[h, w] = size(data.image);
 sobel_plot(:, :, 1) = rgb2gray(data.image);
 sobel_plot(:, :, 2) = rgb2gray(data.image);
 sobel_plot(:, :, 3) = rgb2gray(data.image);
@@ -17,22 +18,26 @@ depth_plot = uint8(depth_plot * params.base);
 depth_plot2 = depth_plot;
 depth_plot2(:, :, :) = 0;
 [v, u] = find(data_prep.img_discnt > params.threshold_dsc);
-nn = length(v);
-kl(1:nn, 1) = 0;
-depth_plot2 = insertShape(depth_plot2, 'circle', [u, v, kl], 'LineWidth', 2, 'Color', 'white');
+index = sub2ind([h w], v, u);
+color2 = repmat(data_prep.img_discnt(index), 1, 3);
+n = length(v);
+kl(1:n, 1) = 0;
+depth_plot2 = insertShape(depth_plot2, 'circle', [u, v, kl], 'LineWidth', 2, 'Color', color2);
+color3 = color2;
+color3(:, 1) = 0;
+color3(:, 3) = 0;
 
 final_plot = cat(1, sobel_plot, depth_plot);
 final_plot2 = cat(1, sobel_plot2, depth_plot2);
 final_plot3 = sobel_plot2;
 
-[n, ~] = size(plot_info.kp_tmp);
-[mm, ~] = size(sobel_plot);
-k(1:n*2, 1) = 3;
+[m, ~] = size(plot_info.kp_tmp);
+k(1:m*2, 1) = 3;
 
 u_tmp = plot_info.kp_tmp(:, 1);
-v_tmp = plot_info.kp_tmp(:, 2) + mm;
+v_tmp = plot_info.kp_tmp(:, 2) + h;
 u_tmp = cat(1, u_tmp, plot_info.pair_tmp(:, 1));
-v_tmp = cat(1, v_tmp, plot_info.pair_tmp(:, 2) + mm);
+v_tmp = cat(1, v_tmp, plot_info.pair_tmp(:, 2) + h);
 u_src = plot_info.kp_src(:, 1);
 v_src = plot_info.kp_src(:, 2);
 u_src = cat(1, u_src, plot_info.pair_src(:, 1));
@@ -44,9 +49,9 @@ final_plot = insertShape(final_plot, 'circle', [u_src, v_src, k], 'LineWidth', 3
 final_plot2 = insertShape(final_plot2, 'line', [u_tmp v_tmp u_src v_src], 'LineWidth', 1, 'Color', 'green');
 final_plot2 = insertShape(final_plot2, 'circle', [u_tmp, v_tmp, k], 'LineWidth', 3, 'Color', 'yellow');
 final_plot2 = insertShape(final_plot2, 'circle', [u_src, v_src, k], 'LineWidth', 3, 'Color', 'red');
-final_plot3 = insertShape(final_plot3, 'circle', [u, v, kl], 'LineWidth', 2, 'Color', 'green');
-final_plot3 = insertShape(final_plot3, 'line', [u_tmp v_tmp-mm u_src v_src], 'LineWidth', 1, 'Color', 'yellow');
-final_plot3 = insertShape(final_plot3, 'circle', [u_tmp, v_tmp-mm, k], 'LineWidth', 3, 'Color', 'yellow');
+final_plot3 = insertShape(final_plot3, 'circle', [u, v, kl], 'LineWidth', 2, 'Color', color3);
+final_plot3 = insertShape(final_plot3, 'line', [u_tmp v_tmp-h u_src v_src], 'LineWidth', 1, 'Color', 'yellow');
+final_plot3 = insertShape(final_plot3, 'circle', [u_tmp, v_tmp-h, k], 'LineWidth', 3, 'Color', 'yellow');
 final_plot3 = insertShape(final_plot3, 'circle', [u_src, v_src, k], 'LineWidth', 3, 'Color', 'red');
 
 % save image
