@@ -2,7 +2,7 @@ function [data, params] = readFileData(params, experiments)
 
 data = [];
 
-if experiments.is_kitti
+if experiments.is_kitti(experiments.id_dataset)
     
     % selection of camera and paths
     camera = experiments.kitti_cam_id;

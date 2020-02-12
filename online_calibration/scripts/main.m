@@ -8,7 +8,7 @@ N = experiments.id_sample;
 results = [];
 
 t = tic;
-for j = M:M
+for j = 1:M
     for i = 1:N        
         experiments.id_dataset = j;
         experiments.id_sample = i;        
