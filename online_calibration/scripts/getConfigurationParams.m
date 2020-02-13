@@ -8,8 +8,8 @@ params.threshold_up = 10;
 params.threshold_dsc = 0;
 params.threshold_sbl = 0;
 
-params.dist_factor = 0.7;
-params.rot_max = 45;
+params.dist_factor = 0.8;
+params.rot_max = 30;
 params.area = 100;
 params.distance_w = 100;
 params.max_distance = 40.0;

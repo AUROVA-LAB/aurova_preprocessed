@@ -3,12 +3,12 @@ clear, clc, close all
 disp('*** init program: load parameters ***');
 [params, experiments] = getConfigurationParams();
 
-M = experiments.id_dataset;
-N = experiments.id_sample;
+M = experiments.num_datasets;
 results = [];
 
 t = tic;
 for j = 1:M
+    N = experiments.num_samples(j);
     for i = 1:N        
         experiments.id_dataset = j;
         experiments.id_sample = i;        
