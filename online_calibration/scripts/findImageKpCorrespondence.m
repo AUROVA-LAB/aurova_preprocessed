@@ -14,16 +14,19 @@ for j = 1:num_kp
     [y_tmp, x_tmp] = find(data_prep.img_discnt > threshold); % cloud template
     z_tmp = data_prep.img_discnt(data_prep.img_discnt > threshold);
     z_tmp = double(z_tmp) / params.base;
+    x_tmp2 = x_tmp - descriptor.pair(j, 1); % tr to pair reference
+    y_tmp2 = y_tmp - descriptor.pair(j, 2);
     x_tmp = x_tmp - descriptor.kp(j, 1); % tr to kp reference
     y_tmp = y_tmp - descriptor.kp(j, 2);
     M = length(y_tmp);
     parfor jj = 1:M %distance weight calculation
         [distance, ~, ~] = cartesian2SphericalInDegrees(x_tmp(jj), y_tmp(jj), 0);
-        distance_w = params.distance_w / distance;
-        if (distance_w > 1)
-            distance_w = 1;
+        [distance2, ~, ~] = cartesian2SphericalInDegrees(x_tmp2(jj), y_tmp2(jj), 0);
+        if distance <= params.distance_w || distance2 <= params.distance_w
+            z_tmp(jj) = z_tmp(jj) * 2;
+        else
+            z_tmp(jj) = z_tmp(jj) / 2;
         end
-        z_tmp(jj) = z_tmp(jj) * distance_w;
     end
 
     % generate SOURCE image data 

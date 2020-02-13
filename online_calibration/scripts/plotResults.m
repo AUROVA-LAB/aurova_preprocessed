@@ -1,9 +1,15 @@
 function results = plotResults(data, data_prep, plot_info, params, experiments, results)
 
-[h, w] = size(data.image);
-sobel_plot(:, :, 1) = rgb2gray(data.image);
-sobel_plot(:, :, 2) = rgb2gray(data.image);
-sobel_plot(:, :, 3) = rgb2gray(data.image);
+[h, w, c] = size(data.image);
+if c == 2
+    sobel_plot(:, :, 1) = rgb2gray(data.image);
+    sobel_plot(:, :, 2) = rgb2gray(data.image);
+    sobel_plot(:, :, 3) = rgb2gray(data.image);
+else
+    sobel_plot(:, :, 1) = data.image;
+    sobel_plot(:, :, 2) = data.image;
+    sobel_plot(:, :, 3) = data.image;
+end
 sobel_nrm = data_prep.img_sobel / max(max(data_prep.img_sobel));
 sobel_nrm = uint8(sobel_nrm * params.base);
 sobel_plot2(:, :, 1) = sobel_nrm;
@@ -43,9 +49,11 @@ v_src = plot_info.kp_src(:, 2);
 u_src = cat(1, u_src, plot_info.pair_src(:, 1));
 v_src = cat(1, v_src, plot_info.pair_src(:, 2));
 
+final_plot = insertShape(final_plot, 'line', [plot_info.kp_src(:, 1) plot_info.kp_src(:, 2) plot_info.pair_src(:, 1) plot_info.pair_src(:, 2)], 'LineWidth', 1, 'Color', 'blue');
 final_plot = insertShape(final_plot, 'line', [u_tmp v_tmp u_src v_src], 'LineWidth', 1, 'Color', 'green');
 final_plot = insertShape(final_plot, 'circle', [u_tmp, v_tmp, k], 'LineWidth', 3, 'Color', 'yellow');
 final_plot = insertShape(final_plot, 'circle', [u_src, v_src, k], 'LineWidth', 3, 'Color', 'red');
+final_plot2 = insertShape(final_plot2, 'line', [plot_info.kp_src(:, 1) plot_info.kp_src(:, 2) plot_info.pair_src(:, 1) plot_info.pair_src(:, 2)], 'LineWidth', 1, 'Color', 'blue');
 final_plot2 = insertShape(final_plot2, 'line', [u_tmp v_tmp u_src v_src], 'LineWidth', 1, 'Color', 'green');
 final_plot2 = insertShape(final_plot2, 'circle', [u_tmp, v_tmp, k], 'LineWidth', 3, 'Color', 'yellow');
 final_plot2 = insertShape(final_plot2, 'circle', [u_src, v_src, k], 'LineWidth', 3, 'Color', 'red');
@@ -65,14 +73,14 @@ filename = strcat(experiments.fileout, num2str(experiments.id_dataset,'_%d'));
 filename = strcat(filename, num2str(experiments.id_sample,'_%d_3.jpg'));
 imwrite(final_plot3, filename);
 
-% plot image
-close all
-figure
-imshow(final_plot)
-figure
-imshow(final_plot2)
-figure
-imshow(final_plot3)
+% % plot image
+% close all
+% figure
+% imshow(final_plot)
+% figure
+% imshow(final_plot2)
+% figure
+% imshow(final_plot3)
 
 % *************************************************** %
 % ************ STATISTICS (EXPERIMENTS) ************* %
