@@ -1,4 +1,4 @@
-function data_prep = prerpocessData(data, params)
+function data_prep = preprocessData(data, params)
 
 data_prep = [];
 
@@ -21,8 +21,9 @@ data_prep.img_sobel_dw = img_sobel .* mask;
 
 % preprocess lidar data
 scan_filtered = filterScanAzimuth(data.scan, params);
-[image_depth, image_discnt] = imageDepthFromLidar(scan_filtered, data, params);
+[image_depth, image_discnt, image_world] = imageDepthFromLidar(scan_filtered, data, params);
 data_prep.img_depth = image_depth;
 data_prep.img_discnt = image_discnt;
+data_prep.image_world = image_world;
     
 end

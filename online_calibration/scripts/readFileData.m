@@ -25,7 +25,7 @@ if experiments.is_kitti(experiments.id_dataset)
     % load transform cam -> lidar
     data.tf = affine3d;
     data.tf.T = loadCalibrationRigid(fullfile(calib_dir,'calib_velo_to_cam.txt'))';
-    data.tf = generateMisscalibration(data.tf);
+    data.tf_miss = experiments.tf_miss;
     
     % load and compute projection matrix lidar->image plane
     calib = loadCalibrationCamToCam(fullfile(calib_dir,'calib_cam_to_cam.txt'));
@@ -34,6 +34,7 @@ if experiments.is_kitti(experiments.id_dataset)
     K_rect = calib.P_rect{camera+1} * R_cam_to_rect;
 
     % camera parameters
+    params.calib_aux = calib;
     params.camera_params = [];
     [m, n, ~] = size(data.image); 
     params.camera_params.image_size = [m n];

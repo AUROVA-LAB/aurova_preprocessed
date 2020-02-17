@@ -1,12 +1,12 @@
-function [tf, data_prep, plot_info] = extTargetlessCalibration(data, params)
+function [data, data_prep, matches] = extTargetlessCalibration(data, params)
 
-data_prep = prerpocessData(data, params);
+% PART I
+data_prep = preprocessData(data, params);
 
-plot_info = lidarImageCorregistration(data_prep, params);
+% PART II
+matches = lidarImageCorregistration(data_prep, params);
 
-% tf = errorMinimization (tf, errors);
-
-% bypass for compilation
-tf = data_prep;
+% PART III
+data = errorCorrection (data, matches, params);
 
 end

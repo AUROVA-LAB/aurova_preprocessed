@@ -1,4 +1,4 @@
-function results = plotResults(data, data_prep, plot_info, params, experiments, results)
+function plotResults(data, data_prep, matches, params, experiments)
 
 [h, w, c] = size(data.image);
 if c == 2
@@ -37,23 +37,23 @@ final_plot = cat(1, sobel_plot, depth_plot);
 final_plot2 = cat(1, sobel_plot2, depth_plot2);
 final_plot3 = sobel_plot2;
 
-[m, ~] = size(plot_info.kp_tmp);
+[m, ~] = size(matches.kp_tmp);
 k(1:m*2, 1) = 3;
 
-u_tmp = plot_info.kp_tmp(:, 1);
-v_tmp = plot_info.kp_tmp(:, 2) + h;
-u_tmp = cat(1, u_tmp, plot_info.pair_tmp(:, 1));
-v_tmp = cat(1, v_tmp, plot_info.pair_tmp(:, 2) + h);
-u_src = plot_info.kp_src(:, 1);
-v_src = plot_info.kp_src(:, 2);
-u_src = cat(1, u_src, plot_info.pair_src(:, 1));
-v_src = cat(1, v_src, plot_info.pair_src(:, 2));
+u_tmp = matches.kp_tmp(:, 1);
+v_tmp = matches.kp_tmp(:, 2) + h;
+u_tmp = cat(1, u_tmp, matches.pair_tmp(:, 1));
+v_tmp = cat(1, v_tmp, matches.pair_tmp(:, 2) + h);
+u_src = matches.kp_src(:, 1);
+v_src = matches.kp_src(:, 2);
+u_src = cat(1, u_src, matches.pair_src(:, 1));
+v_src = cat(1, v_src, matches.pair_src(:, 2));
 
-final_plot = insertShape(final_plot, 'line', [plot_info.kp_src(:, 1) plot_info.kp_src(:, 2) plot_info.pair_src(:, 1) plot_info.pair_src(:, 2)], 'LineWidth', 1, 'Color', 'blue');
+final_plot = insertShape(final_plot, 'line', [matches.kp_src(:, 1) matches.kp_src(:, 2) matches.pair_src(:, 1) matches.pair_src(:, 2)], 'LineWidth', 1, 'Color', 'blue');
 final_plot = insertShape(final_plot, 'line', [u_tmp v_tmp u_src v_src], 'LineWidth', 1, 'Color', 'green');
 final_plot = insertShape(final_plot, 'circle', [u_tmp, v_tmp, k], 'LineWidth', 3, 'Color', 'yellow');
 final_plot = insertShape(final_plot, 'circle', [u_src, v_src, k], 'LineWidth', 3, 'Color', 'red');
-final_plot2 = insertShape(final_plot2, 'line', [plot_info.kp_src(:, 1) plot_info.kp_src(:, 2) plot_info.pair_src(:, 1) plot_info.pair_src(:, 2)], 'LineWidth', 1, 'Color', 'blue');
+final_plot2 = insertShape(final_plot2, 'line', [matches.kp_src(:, 1) matches.kp_src(:, 2) matches.pair_src(:, 1) matches.pair_src(:, 2)], 'LineWidth', 1, 'Color', 'blue');
 final_plot2 = insertShape(final_plot2, 'line', [u_tmp v_tmp u_src v_src], 'LineWidth', 1, 'Color', 'green');
 final_plot2 = insertShape(final_plot2, 'circle', [u_tmp, v_tmp, k], 'LineWidth', 3, 'Color', 'yellow');
 final_plot2 = insertShape(final_plot2, 'circle', [u_src, v_src, k], 'LineWidth', 3, 'Color', 'red');
@@ -85,8 +85,8 @@ imwrite(final_plot3, filename);
 % *************************************************** %
 % ************ STATISTICS (EXPERIMENTS) ************* %
 % for i = 1:n
-%     x = plot_info.kp_tmp(i, 1) - plot_info.kp_src(i, 1);
-%     y = plot_info.kp_tmp(i, 2) - plot_info.kp_src(i, 2);
+%     x = matches.kp_tmp(i, 1) - matches.kp_src(i, 1);
+%     y = matches.kp_tmp(i, 2) - matches.kp_src(i, 2);
 %     [error, ~, ~] = cartesian2SphericalInDegrees(x, y, 0);
 %     results.error_signal = cat(1, results.error_signal, error);
 %     if error <= 3
@@ -101,8 +101,8 @@ imwrite(final_plot3, filename);
 %         results.error_x = results.error_x + 1;
 %     end
 %     
-%     x = plot_info.pair_tmp(i, 1) - plot_info.pair_src(i, 1);
-%     y = plot_info.pair_tmp(i, 2) - plot_info.pair_src(i, 2);
+%     x = matches.pair_tmp(i, 1) - matches.pair_src(i, 1);
+%     y = matches.pair_tmp(i, 2) - matches.pair_src(i, 2);
 %     [error, ~, ~] = cartesian2SphericalInDegrees(x, y, 0);
 %     results.error_signal = cat(1, results.error_signal, error);
 %     if error <= 3

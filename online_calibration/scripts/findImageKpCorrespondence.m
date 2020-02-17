@@ -1,11 +1,11 @@
-function plot_info = findImageKpCorrespondence(data_prep, descriptor, params)
+function matches = findImageKpCorrespondence(data_prep, descriptors, params)
 
-plot_info = [];
-[num_kp, ~] = size(descriptor.kp);
-plot_info.kp_src(1:num_kp, 1:2) = 0;
-plot_info.kp_tmp(1:num_kp, 1:2) = 0;
-plot_info.pair_src(1:num_kp, 1:2) = 0;
-plot_info.pair_tmp(1:num_kp, 1:2) = 0;
+matches = [];
+[num_kp, ~] = size(descriptors.kp);
+matches.kp_src(1:num_kp, 1:2) = 0;
+matches.kp_tmp(1:num_kp, 1:2) = 0;
+matches.pair_src(1:num_kp, 1:2) = 0;
+matches.pair_tmp(1:num_kp, 1:2) = 0;
 
 for j = 1:num_kp
 
@@ -14,10 +14,10 @@ for j = 1:num_kp
     [y_tmp, x_tmp] = find(data_prep.img_discnt > threshold); % cloud template
     z_tmp = data_prep.img_discnt(data_prep.img_discnt > threshold);
     z_tmp = double(z_tmp) / params.base;
-    x_tmp2 = x_tmp - descriptor.pair(j, 1); % tr to pair reference
-    y_tmp2 = y_tmp - descriptor.pair(j, 2);
-    x_tmp = x_tmp - descriptor.kp(j, 1); % tr to kp reference
-    y_tmp = y_tmp - descriptor.kp(j, 2);
+    x_tmp2 = x_tmp - descriptors.pair(j, 1); % tr to pair reference
+    y_tmp2 = y_tmp - descriptors.pair(j, 2);
+    x_tmp = x_tmp - descriptors.kp(j, 1); % tr to kp reference
+    y_tmp = y_tmp - descriptors.kp(j, 2);
     M = length(y_tmp);
     parfor jj = 1:M %distance weight calculation
         [distance, ~, ~] = cartesian2SphericalInDegrees(x_tmp(jj), y_tmp(jj), 0);
@@ -36,21 +36,21 @@ for j = 1:num_kp
     % generate sobel-KEYPOINTs
     threshold = params.threshold_sbl;
     clear source_msk;
-    source_msk = source(descriptor.roi.p11(j, 2):descriptor.roi.p21(j, 2), ...
-                        descriptor.roi.p11(j, 1):descriptor.roi.p12(j, 1));
+    source_msk = source(descriptors.roi.p11(j, 2):descriptors.roi.p21(j, 2), ...
+                        descriptors.roi.p11(j, 1):descriptors.roi.p12(j, 1));
     [kp_y, kp_x] = find(source_msk > threshold);
-    kp_y = kp_y + descriptor.roi.p11(j, 2); %translate to image coord.
-    kp_x = kp_x + descriptor.roi.p11(j, 1);
+    kp_y = kp_y + descriptors.roi.p11(j, 2); %translate to image coord.
+    kp_x = kp_x + descriptors.roi.p11(j, 1);
     N = length(kp_y);
     
     % generate sobel-PAIRs
     threshold = params.threshold_sbl;
     clear source_msk;
-    source_msk = source(descriptor.roip.p11(j, 2):descriptor.roip.p21(j, 2), ...
-                        descriptor.roip.p11(j, 1):descriptor.roip.p12(j, 1));
+    source_msk = source(descriptors.roip.p11(j, 2):descriptors.roip.p21(j, 2), ...
+                        descriptors.roip.p11(j, 1):descriptors.roip.p12(j, 1));
     [pair_y, pair_x] = find(source_msk > threshold);
-    pair_y = pair_y + descriptor.roip.p11(j, 2); %translate to image coord.
-    pair_x = pair_x + descriptor.roip.p11(j, 1);
+    pair_y = pair_y + descriptors.roip.p11(j, 2); %translate to image coord.
+    pair_x = pair_x + descriptors.roip.p11(j, 1);
     N2 = length(pair_y);
     
 %     % GPU preparation
@@ -64,8 +64,8 @@ for j = 1:num_kp
     % find sobel-KEYPOINTs that maximize cost function
     clear vector;
     vector = zeros(1, N*N2);
-    dist_tmplt = descriptor.distance(j);
-    rot_tmplt = descriptor.rotation(j);
+    dist_tmplt = descriptors.distance(j);
+    rot_tmplt = descriptors.rotation(j);
     w = params.camera_params.image_size(2);
     h = params.camera_params.image_size(1);
     dist_min = dist_tmplt * params.dist_factor;
@@ -113,14 +113,14 @@ for j = 1:num_kp
     ii = find(vector==max(max(vector)));
     id_kp = floor((ii-1) / N2) + 1;
     id_pair = mod(ii-1, N2) + 1;
-    plot_info.kp_src(j, 1) = kp_x(id_kp);
-    plot_info.kp_src(j, 2) = kp_y(id_kp);
-    plot_info.kp_tmp(j, 1) = descriptor.kp(j, 1);
-    plot_info.kp_tmp(j, 2) = descriptor.kp(j, 2);
-    plot_info.pair_src(j, 1) = pair_x(id_pair);
-    plot_info.pair_src(j, 2) = pair_y(id_pair);
-    plot_info.pair_tmp(j, 1) = descriptor.pair(j, 1);
-    plot_info.pair_tmp(j, 2) = descriptor.pair(j, 2);
+    matches.kp_src(j, 1) = kp_x(id_kp);
+    matches.kp_src(j, 2) = kp_y(id_kp);
+    matches.kp_tmp(j, 1) = descriptors.kp(j, 1);
+    matches.kp_tmp(j, 2) = descriptors.kp(j, 2);
+    matches.pair_src(j, 1) = pair_x(id_pair);
+    matches.pair_src(j, 2) = pair_y(id_pair);
+    matches.pair_tmp(j, 1) = descriptors.pair(j, 1);
+    matches.pair_tmp(j, 2) = descriptors.pair(j, 2);
 
 end
 
