@@ -7,6 +7,6 @@ data_prep = preprocessData(data, params);
 matches = lidarImageCorregistration(data_prep, params);
 
 % PART III
-data = errorCorrection (data, matches, params);
+data = errorCorrection (data, data_prep, matches, params);
 
 end

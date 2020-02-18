@@ -42,10 +42,11 @@ if params.k > 1
         distance_min = n * 2;
         i = count(1);
         ii = find(i_k == i);
-        kp = [round(median(i_x(ii))) round(median(i_y(ii)))];
+        %kp = [round(median(i_x(ii))) round(median(i_y(ii)))];
+        kp = [i_x(ii(1)) i_y(ii(1))];
         for j = count(2:end)
             ii = find(i_k == j);
-            pair = [round(median(i_x(ii))) round(median(i_y(ii)))];
+            pair = [i_x(ii(1)) i_y(ii(1))];
             [distance, ~, ~] = cartesian2SphericalInDegrees(pair(1) - kp(1), pair(2) - kp(2), 0);
             if distance < distance_min
                 distance_min = distance;
@@ -53,7 +54,7 @@ if params.k > 1
             end
         end
         ii = find(i_k == jj);
-        pair = [round(median(i_x(ii))) round(median(i_y(ii)))];
+        pair = [i_x(ii(1)) i_y(ii(1))];
 
         % fill data structure
         descriptors.kp = cat(1, descriptors.kp, kp);
