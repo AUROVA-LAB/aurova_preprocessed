@@ -1,7 +1,7 @@
 function plotResults(data, data_prep, matches, params, experiments)
 
 [h, w, c] = size(data.image);
-if c == 2
+if c == 3
     sobel_plot(:, :, 1) = rgb2gray(data.image);
     sobel_plot(:, :, 2) = rgb2gray(data.image);
     sobel_plot(:, :, 3) = rgb2gray(data.image);

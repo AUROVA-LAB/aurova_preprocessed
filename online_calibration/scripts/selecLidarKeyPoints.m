@@ -1,21 +1,5 @@
 function descriptors = selecLidarKeyPoints(data_prep, params)
 
-% filter depth image in some range
-min_pixel = mapDistanceToUint(params.max_distance, params.sigma, params.base);
-img_nearest_pt = data_prep.img_depth > min_pixel;
-
-% selec points with certain edge intensity value
-min_intensity = params.min_intensity;
-img_strong_edges = data_prep.img_discnt > min_intensity;
-
-% select final candidates for KP
-img_candidates = logical(img_nearest_pt .* img_strong_edges);
-[i_y, i_x] = find(logical(img_candidates));
-observations = cat(2, i_x, i_y);
-
-% clustering points in K areas
-i_k = kmeans(observations, params.k);
-
 % crete descriptors struct
 descriptors = [];
 descriptors.kp = [];
@@ -30,88 +14,76 @@ descriptors.roip = [];
 descriptors.roip.p11 = [];
 descriptors.roip.p12 = [];
 descriptors.roip.p21 = [];
-% get center of clusters as keypoints and pairs
-[m, n] = size(data_prep.img_depth);
 
-len = params.k;
-count = 1:len;
-jj = 0;
-while len > 0
-    distance_min = n * 2;
-    i = count(1);
-    ii = find(i_k == i);
-    kp = [round(median(i_x(ii))) round(median(i_y(ii)))];
-    for j = count(2:end)
-        ii = find(i_k == j);
-        pair = [round(median(i_x(ii))) round(median(i_y(ii)))];
-        [distance, ~, ~] = cartesian2SphericalInDegrees(pair(1) - kp(1), pair(2) - kp(2), 0);
-        if distance < distance_min
-            distance_min = distance;
-            jj = j;
+if params.k > 1
+    
+    % filter depth image in some range
+    min_pixel = mapDistanceToUint(params.max_distance, params.sigma, params.base);
+    img_nearest_pt = data_prep.img_depth > min_pixel;
+
+    % selec points with certain edge intensity value
+    min_intensity = params.min_intensity;
+    img_strong_edges = data_prep.img_discnt > min_intensity;
+
+    % select final candidates for KP
+    img_candidates = logical(img_nearest_pt .* img_strong_edges);
+    [i_y, i_x] = find(logical(img_candidates));
+    observations = cat(2, i_x, i_y);
+
+    % clustering points in K areas
+    i_k = kmeans(observations, params.k);
+
+    % get center of clusters as keypoints and pairs
+    [m, n] = size(data_prep.img_depth);
+    len = params.k;
+    count = 1:len;
+    jj = 0;
+    while len > 0
+        distance_min = n * 2;
+        i = count(1);
+        ii = find(i_k == i);
+        kp = [round(median(i_x(ii))) round(median(i_y(ii)))];
+        for j = count(2:end)
+            ii = find(i_k == j);
+            pair = [round(median(i_x(ii))) round(median(i_y(ii)))];
+            [distance, ~, ~] = cartesian2SphericalInDegrees(pair(1) - kp(1), pair(2) - kp(2), 0);
+            if distance < distance_min
+                distance_min = distance;
+                jj = j;
+            end
         end
+        ii = find(i_k == jj);
+        pair = [round(median(i_x(ii))) round(median(i_y(ii)))];
+
+        % fill data structure
+        descriptors.kp = cat(1, descriptors.kp, kp);
+        min_x = limitValue(kp(1) - params.area/2, 1, n);
+        min_y = limitValue(kp(2) - params.area/2, 1, m);
+        max_x = limitValue(kp(1) + params.area/2, 1, n);
+        max_y = limitValue(kp(2) + params.area/2, 1, m);
+        descriptors.roi.p11 = cat(1, descriptors.roi.p11, [min_x min_y]);
+        descriptors.roi.p12 = cat(1, descriptors.roi.p12, [max_x min_y]);
+        descriptors.roi.p21 = cat(1, descriptors.roi.p21, [min_x max_y]);
+
+        descriptors.pair = cat(1, descriptors.pair, pair);
+        min_x = limitValue(pair(1) - params.area/2, 1, n);
+        min_y = limitValue(pair(2) - params.area/2, 1, m);
+        max_x = limitValue(pair(1) + params.area/2, 1, n);
+        max_y = limitValue(pair(2) + params.area/2, 1, m);
+        descriptors.roip.p11 = cat(1, descriptors.roip.p11, [min_x min_y]);
+        descriptors.roip.p12 = cat(1, descriptors.roip.p12, [max_x min_y]);
+        descriptors.roip.p21 = cat(1, descriptors.roip.p21, [min_x max_y]);
+
+        [dist, rot, ~] = cartesian2SphericalInDegrees(pair(1) - kp(1), pair(2) - kp(2), 0);
+        descriptors.distance = cat(1, descriptors.distance, dist);
+        descriptors.rotation = cat(1, descriptors.rotation, rot);
+
+        % actualization for next iteration
+        count(1) = [];
+        count(count == jj)  = [];
+        len = length(count);
     end
-    ii = find(i_k == jj);
-    pair = [round(median(i_x(ii))) round(median(i_y(ii)))];
-    
-    % fill data structure
-    descriptors.kp = cat(1, descriptors.kp, kp);
-    min_x = limitValue(kp(1) - params.area/2, 1, n);
-    min_y = limitValue(kp(2) - params.area/2, 1, m);
-    max_x = limitValue(kp(1) + params.area/2, 1, n);
-    max_y = limitValue(kp(2) + params.area/2, 1, m);
-    descriptors.roi.p11 = cat(1, descriptors.roi.p11, [min_x min_y]);
-    descriptors.roi.p12 = cat(1, descriptors.roi.p12, [max_x min_y]);
-    descriptors.roi.p21 = cat(1, descriptors.roi.p21, [min_x max_y]);
-
-    descriptors.pair = cat(1, descriptors.pair, pair);
-    min_x = limitValue(pair(1) - params.area/2, 1, n);
-    min_y = limitValue(pair(2) - params.area/2, 1, m);
-    max_x = limitValue(pair(1) + params.area/2, 1, n);
-    max_y = limitValue(pair(2) + params.area/2, 1, m);
-    descriptors.roip.p11 = cat(1, descriptors.roip.p11, [min_x min_y]);
-    descriptors.roip.p12 = cat(1, descriptors.roip.p12, [max_x min_y]);
-    descriptors.roip.p21 = cat(1, descriptors.roip.p21, [min_x max_y]);
-    
-    [dist, rot, ~] = cartesian2SphericalInDegrees(pair(1) - kp(1), pair(2) - kp(2), 0);
-    descriptors.distance = cat(1, descriptors.distance, dist);
-    descriptors.rotation = cat(1, descriptors.rotation, rot);
-    
-    % actualization for next iteration
-    count(1) = [];
-    count(count == jj)  = [];
-    len = length(count);
 end
-
-% for i = 1:2:params.k
-%     
-%     ii = find(i_k == i);
-%     kp = [round(median(i_x(ii))) round(median(i_y(ii)))];
-%     ii = find(i_k == i + 1);
-%     pair = [round(median(i_x(ii))) round(median(i_y(ii)))];
-%     
-%     descriptors.kp = cat(1, descriptors.kp, kp);
-%     min_x = limitValue(kp(1) - params.area/2, 1, n);
-%     min_y = limitValue(kp(2) - params.area/2, 1, m);
-%     max_x = limitValue(kp(1) + params.area/2, 1, n);
-%     max_y = limitValue(kp(2) + params.area/2, 1, m);
-%     descriptors.roi.p11 = cat(1, descriptors.roi.p11, [min_x min_y]);
-%     descriptors.roi.p12 = cat(1, descriptors.roi.p12, [max_x min_y]);
-%     descriptors.roi.p21 = cat(1, descriptors.roi.p21, [min_x max_y]);
-% 
-%     descriptors.pair = cat(1, descriptors.pair, pair);
-%     min_x = limitValue(pair(1) - params.area/2, 1, n);
-%     min_y = limitValue(pair(2) - params.area/2, 1, m);
-%     max_x = limitValue(pair(1) + params.area/2, 1, n);
-%     max_y = limitValue(pair(2) + params.area/2, 1, m);
-%     descriptors.roip.p11 = cat(1, descriptors.roip.p11, [min_x min_y]);
-%     descriptors.roip.p12 = cat(1, descriptors.roip.p12, [max_x min_y]);
-%     descriptors.roip.p21 = cat(1, descriptors.roip.p21, [min_x max_y]);
-%     
-%     [dist, rot, ~] = cartesian2SphericalInDegrees(pair(1) - kp(1), pair(2) - kp(2), 0);
-%     descriptors.distance = cat(1, descriptors.distance, dist);
-%     descriptors.rotation = cat(1, descriptors.rotation, rot);
-%     
-% end
 
 
 %**************************************

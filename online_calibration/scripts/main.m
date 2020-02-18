@@ -6,7 +6,7 @@ disp('*** init program: load parameters (only Matlab functions) ***');
 M = experiments.num_datasets;
 
 t = tic;
-for j = [5 8 9]
+for j = 9
     N = experiments.num_samples(j);
     experiments.tf_miss = generateMisscalibration();
     for i = 10       

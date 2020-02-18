@@ -22,23 +22,29 @@ if experiments.is_kitti(experiments.id_dataset)
     intensity(1:n) = 0;
     data.scan.Intensity = intensity';
     
-    % load transform cam -> lidar
-    data.tf = affine3d;
-    data.tf.T = loadCalibrationRigid(fullfile(calib_dir,'calib_velo_to_cam.txt'))';
-    data.tf_miss = experiments.tf_miss;
     
-    % load and compute projection matrix lidar->image plane
+    % load each camera calibration parameters 
     calib = loadCalibrationCamToCam(fullfile(calib_dir,'calib_cam_to_cam.txt'));
-    R_cam_to_rect = eye(4);
-    R_cam_to_rect(1:3,1:3) = calib.R_rect{1};
-    K_rect = calib.P_rect{camera+1} * R_cam_to_rect;
+    
+    % load transform lidar -> camera_xx
+    data.tf = affine3d;
+    tf_velo = loadCalibrationRigid(fullfile(calib_dir,'calib_velo_to_cam.txt'))';
+    tf_cam = eye(4);
+    tf_cam(1:3, 1:3) = calib.R{camera+1};
+    tf_cam(1:3, 4) = calib.T{camera+1};
+    tf_cam = tf_cam';
+    tf_rect = eye(4);
+    tf_rect(1:3, 1:3) = calib.R_rect{camera+1};
+    tf_rect = tf_rect';
+    data.tf_miss = experiments.tf_miss;
+    data.tf.T = tf_velo * tf_cam * tf_rect; %add here misscalibration
+    
 
     % camera parameters
-    params.calib_aux = calib;
-    params.camera_params = [];
-    [m, n, ~] = size(data.image); 
-    params.camera_params.image_size = [m n];
-    params.camera_params.intrinsic_matrix = K_rect ; %calib.K{camera+1}
+    [m, n, ~] = size(data.image);
+    params.camera_params = cameraParameters(...
+                                                 'IntrinsicMatrix', calib.P_rect{camera+1}(1:3, 1:3)', ...
+                                                 'ImageSize', [m n]);
     
     % lidar parameters
     params.lidar_model = params.id_kitti64;
@@ -66,14 +72,16 @@ else
     data.tf.T = tf_lidar2map.T * tf_map2camera.T;
     data.image = imread(image_filename);
 
-    params.camera_params = [];
-    [m, n, ~] = size(data.image); 
-    params.camera_params.image_size = [m n];
+    
     % TODO: get from file saved in ros!!!
-    params.camera_params.intrinsic_matrix = ...
-        [461.05267333984375                     0.0                              318.204833984375                    0.0; ...   
-         0.0                                    461.2838134765625  186.91806030273438                                0.0; ...
-         0.0                                    0.0                              1.0                                 0.1];
+    intrinsic_matrix = ...
+        [461.05267333984375      0.0                              318.204833984375; ...   
+         0.0                                    461.2838134765625  186.91806030273438; ...
+         0.0                                    0.0                              1.0];
+     [m, n, ~] = size(data.image);
+    params.camera_params = cameraParameters(...
+                                                 'IntrinsicMatrix', intrinsic_matrix', ...
+                                                 'ImageSize', [m n]);
 
     % lidar parameters
     params.lidar_model = params.id_vlp16;
