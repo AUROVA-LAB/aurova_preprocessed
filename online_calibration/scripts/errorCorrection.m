@@ -1,7 +1,7 @@
 function data = errorCorrection (data, data_prep, matches, params)
 
 % image points calculation
-image_points = cat(1, matches.kp_src, matches.pair_src);
+image_points = cat(1, matches.kp_tmp, matches.pair_tmp);
 
 % world points calculation
 image_w_points = cat(1, matches.kp_tmp, matches.pair_tmp);
