@@ -1,4 +1,4 @@
-function [params, experiments] = getConfigurationParams()
+function [data, params, experiments] = getConfigurationParams()
 
 params.sigma = 20;
 params.base = 255;
@@ -10,8 +10,8 @@ params.threshold_sbl = 0;
 
 params.dist_factor = 0.8;
 params.rot_max = 30;
-params.area = 100;
-params.distance_w = 100;
+params.area = 20;
+params.distance_w = 200;
 params.max_distance = 40.0;
 params.min_intensity = 200;
 params.k = 10; %always pair number
@@ -20,10 +20,18 @@ params.lidar_model = 0; %fill in read data phase
 params.id_vlp16 = 16;
 params.id_kitti64 = 64;
 
+data = [];
+data.matches_acum = [];
+data.matches_acum.max = 100;
+data.matches_acum.num = 0;
+data.matches_acum.kp_src =[];
+data.matches_acum.kp_tmp =[];
+data.matches_acum.wp_tmp =[];
+
 experiments.id_dataset = 1;
 experiments.id_sample = 1;
 experiments.kitti_cam_id = 0;
-experiments.fileout = 'results/20200218/frame';
+experiments.fileout = 'results/20200219/frame';
 experiments.num_datasets = 10;
 experiments.is_kitti(1) = true;
 experiments.num_samples(1) = 185;

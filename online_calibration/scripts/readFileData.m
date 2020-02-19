@@ -1,6 +1,4 @@
-function [data, params] = readFileData(params, experiments)
-
-data = [];
+function [data, params] = readFileData(data, params, experiments)
 
 if experiments.is_kitti(experiments.id_dataset)
     
