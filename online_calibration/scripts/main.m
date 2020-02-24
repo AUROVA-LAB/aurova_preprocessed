@@ -7,9 +7,11 @@ M = experiments.num_datasets;
 results = {};
 
 t = tic;
-for j = 5
+for j = 1:M
+    disp('*** init program: load parameters (only Matlab functions) ***');
+    [data, params, experiments] = getConfigurationParams();
     N = experiments.num_samples(j);
-    experiments.tf_miss = generateMisscalibration();
+    %data.tf_miss = generateMisscalibration();
     for i = 1:N       
         experiments.id_dataset = j;
         experiments.id_sample = i;  

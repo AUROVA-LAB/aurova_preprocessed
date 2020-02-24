@@ -2,10 +2,10 @@ function matches = findImageKpCorrespondence(data_prep, descriptors, params)
 
 matches = [];
 [num_kp, ~] = size(descriptors.kp);
-matches.kp_src(1:num_kp, 1:2) = 0;
-matches.kp_tmp(1:num_kp, 1:2) = 0;
-matches.pair_src(1:num_kp, 1:2) = 0;
-matches.pair_tmp(1:num_kp, 1:2) = 0;
+matches.kp_src(1:num_kp, 1:2) = 1;
+matches.kp_tmp(1:num_kp, 1:2) = 1;
+matches.pair_src(1:num_kp, 1:2) = 1;
+matches.pair_tmp(1:num_kp, 1:2) = 1;
 
 for j = 1:num_kp
 
@@ -113,12 +113,21 @@ for j = 1:num_kp
     ii = find(vector==max(max(vector)));
     id_kp = floor((ii-1) / N2) + 1;
     id_pair = mod(ii-1, N2) + 1;
-    matches.kp_src(j, 1) = kp_x(id_kp);
-    matches.kp_src(j, 2) = kp_y(id_kp);
+    
+    [m1, n1] = size(kp_x(id_kp));
+    [m2, n2] = size(kp_y(id_kp));
+    [m3, n3] = size(pair_x(id_pair));
+    [m4, n4] = size(pair_y(id_pair));
+    
+    if m1 > 0 && n1>0 && m2 > 0 && n2>0 && ...
+       m3 > 0 && n3>0 && m4 > 0 && n4>0
+        matches.kp_src(j, 1) = kp_x(id_kp);
+        matches.kp_src(j, 2) = kp_y(id_kp);
+        matches.pair_src(j, 1) = pair_x(id_pair);
+        matches.pair_src(j, 2) = pair_y(id_pair);
+    end
     matches.kp_tmp(j, 1) = descriptors.kp(j, 1);
     matches.kp_tmp(j, 2) = descriptors.kp(j, 2);
-    matches.pair_src(j, 1) = pair_x(id_pair);
-    matches.pair_src(j, 2) = pair_y(id_pair);
     matches.pair_tmp(j, 1) = descriptors.pair(j, 1);
     matches.pair_tmp(j, 2) = descriptors.pair(j, 2);
 

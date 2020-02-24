@@ -27,11 +27,12 @@ data.matches_acum.num = 0;
 data.matches_acum.kp_src =[];
 data.matches_acum.kp_tmp =[];
 data.matches_acum.wp_tmp =[];
+data.tf_miss = affine3d;
 
 experiments.id_dataset = 1;
 experiments.id_sample = 1;
 experiments.kitti_cam_id = 0;
-experiments.fileout = 'results/20200221/frame';
+experiments.fileout = 'results/20200224/frame';
 experiments.num_datasets = 10;
 experiments.is_kitti(1) = true;
 experiments.num_samples(1) = 185;

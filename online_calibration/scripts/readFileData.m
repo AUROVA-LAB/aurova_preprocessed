@@ -34,8 +34,7 @@ if experiments.is_kitti(experiments.id_dataset)
     tf_rect = eye(4);
     tf_rect(1:3, 1:3) = calib.R_rect{camera+1};
     tf_rect = tf_rect';
-    data.tf_miss = experiments.tf_miss;
-    data.tf.T = tf_velo * tf_cam * tf_rect; %add here misscalibration
+    data.tf.T = tf_velo * tf_cam * tf_rect;
     
 
     % camera parameters
