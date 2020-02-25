@@ -7,7 +7,7 @@ M = experiments.num_datasets;
 results = {};
 
 t = tic;
-for j = 1:M
+for j = [2 6 9 10 10]
     disp('*** init program: load parameters (only Matlab functions) ***');
     [data, params, experiments] = getConfigurationParams();
     N = experiments.num_samples(j);
