@@ -14,7 +14,7 @@ params.area = 20;
 params.distance_w = 200;
 params.max_distance = 40.0;
 params.min_intensity = 200;
-params.k = 10; %always pair number
+params.k = 20; %always pair number
 
 params.lidar_model = 0; %fill in read data phase
 params.id_vlp16 = 16;
@@ -22,7 +22,7 @@ params.id_kitti64 = 64;
 
 data = [];
 data.matches_acum = [];
-data.matches_acum.max = 200;
+data.matches_acum.max = 800;
 data.matches_acum.num = 0;
 data.matches_acum.kp_src =[];
 data.matches_acum.kp_tmp =[];
@@ -32,7 +32,7 @@ data.tf_miss = affine3d;
 experiments.id_dataset = 1;
 experiments.id_sample = 1;
 experiments.kitti_cam_id = 0;
-experiments.fileout = 'results/20200225/frame';
+experiments.fileout = 'results/20200302/frame';
 experiments.num_datasets = 11;
 experiments.is_kitti(1) = true;
 experiments.num_samples(1) = 185;

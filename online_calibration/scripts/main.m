@@ -6,8 +6,14 @@ disp('*** init program: load parameters (only Matlab functions) ***');
 M = experiments.num_datasets;
 results = {};
 
+% datasets test
+ind = 1:M;
+ind = cat(2, ind, ind);
+ind = cat(2, ind, [9 9 9]);
+ind = cat(2, ind, [10 10 10 10]);
+
 t = tic;
-for j = [2 6 9 10 10]
+for j = ind
     disp('*** init program: load parameters (only Matlab functions) ***');
     [data, params, experiments] = getConfigurationParams();
     N = experiments.num_samples(j);
