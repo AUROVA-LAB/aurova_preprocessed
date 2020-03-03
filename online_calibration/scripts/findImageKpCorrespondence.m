@@ -119,8 +119,8 @@ for j = 1:num_kp
     [m3, n3] = size(pair_x(id_pair));
     [m4, n4] = size(pair_y(id_pair));
     
-    if m1 > 0 && n1>0 && m2 > 0 && n2>0 && ...
-       m3 > 0 && n3>0 && m4 > 0 && n4>0
+    if m1 == 1 && n1 == 1 && m2 == 1 && n2 == 1 && ...
+       m3 == 1 && n3 == 1 && m4 == 1 && n4 == 1
         matches.kp_src(j, 1) = kp_x(id_kp);
         matches.kp_src(j, 2) = kp_y(id_kp);
         matches.pair_src(j, 1) = pair_x(id_pair);
