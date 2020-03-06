@@ -10,7 +10,7 @@ params.threshold_sbl = 0;
 
 params.dist_factor = 0.8;
 params.rot_max = 30;
-params.area = 40;
+params.area = 20;
 params.distance_w = 200;
 params.max_distance = 40.0;
 params.min_intensity = 200;
@@ -31,7 +31,7 @@ data.matches_acum.wp_tmp =[];
 experiments.id_dataset = 1;
 experiments.id_sample = 1;
 experiments.kitti_cam_id = 0;
-experiments.fileout = 'results/20200304/frame';
+experiments.fileout = 'results/20200306/frame';
 experiments.num_datasets = 11;
 experiments.is_kitti(1) = true;
 experiments.num_samples(1) = 185;

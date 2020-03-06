@@ -62,16 +62,16 @@ final_plot3 = insertShape(final_plot3, 'line', [u_tmp v_tmp-h u_src v_src], 'Lin
 final_plot3 = insertShape(final_plot3, 'circle', [u_tmp, v_tmp-h, k], 'LineWidth', 3, 'Color', 'yellow');
 final_plot3 = insertShape(final_plot3, 'circle', [u_src, v_src, k], 'LineWidth', 3, 'Color', 'red');
 
-% save image
-filename = strcat(experiments.fileout, num2str(experiments.id_dataset,'_%d'));
-filename = strcat(filename, num2str(experiments.id_sample,'_%d_1.jpg'));
-imwrite(final_plot, filename);
-filename = strcat(experiments.fileout, num2str(experiments.id_dataset,'_%d'));
-filename = strcat(filename, num2str(experiments.id_sample,'_%d_2.jpg'));
-imwrite(final_plot2, filename);
-filename = strcat(experiments.fileout, num2str(experiments.id_dataset,'_%d'));
-filename = strcat(filename, num2str(experiments.id_sample,'_%d_3.jpg'));
-imwrite(final_plot3, filename);
+% % save image
+% filename = strcat(experiments.fileout, num2str(experiments.id_dataset,'_%d'));
+% filename = strcat(filename, num2str(experiments.id_sample,'_%d_1.jpg'));
+% imwrite(final_plot, filename);
+% filename = strcat(experiments.fileout, num2str(experiments.id_dataset,'_%d'));
+% filename = strcat(filename, num2str(experiments.id_sample,'_%d_2.jpg'));
+% imwrite(final_plot2, filename);
+% filename = strcat(experiments.fileout, num2str(experiments.id_dataset,'_%d'));
+% filename = strcat(filename, num2str(experiments.id_sample,'_%d_3.jpg'));
+% imwrite(final_plot3, filename);
 
 % % plot image
 % close all

@@ -17,7 +17,7 @@ ind = cat(2, ind, [9 9 9]);
 ind = cat(2, ind, [10 10 10 10]);
 
 t = tic;
-for j = [10 10 10 10]
+for j = ind
     N = experiments.num_samples(j);
     for i = 1:N       
         experiments.id_dataset = j;
