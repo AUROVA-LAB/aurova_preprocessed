@@ -11,7 +11,7 @@ for j = 1:m
     intensity = scan_lidarframe.Intensity(j);
     
     point_pc_lid = cat(2, point, 1);
-    point_pc_cam = point_pc_lid * data.tf.T; 
+    point_pc_cam = point_pc_lid * data.tf.T * data.tf_err.T; 
     
     image_point = worldToImageSimple(params.camera_params.IntrinsicMatrix, point_pc_cam(1:3));
     %%% matlab native function for projection %%%
