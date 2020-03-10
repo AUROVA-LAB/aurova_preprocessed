@@ -35,55 +35,93 @@ if params.k > 1
 
     % get center of clusters as keypoints and pairs
     [m, n] = size(data_prep.img_depth);
-    len = params.k;
-    count = 1:len;
-    jj = 0;
-    while len > 0
-        distance_min = n * 2;
-        i = count(1);
+    for i = 1:params.k
+        pair_ok = false;
         ii = find(i_k == i);
-        %kp = [round(median(i_x(ii))) round(median(i_y(ii)))];
+        num = length(ii);
         kp = [i_x(ii(1)) i_y(ii(1))];
-        for j = count(2:end)
-            ii = find(i_k == j);
-            pair = [i_x(ii(1)) i_y(ii(1))];
-            [distance, ~, ~] = cartesian2SphericalInDegrees(pair(1) - kp(1), pair(2) - kp(2), 0);
-            if distance < distance_min
-                distance_min = distance;
-                jj = j;
+        j = 1;
+        while j <= num
+            [dist, rot, ~] = cartesian2SphericalInDegrees(i_x(ii(j)) - i_x(ii(1)), i_y(ii(j)) - i_y(ii(1)), 0);
+            if dist >= params.min_rho && dist <= params.max_rho
+                pair = [i_x(ii(j)) i_y(ii(j))];
+                descriptors.pair = cat(1, descriptors.pair, pair);
+                descriptors.distance = cat(1, descriptors.distance, dist);
+                descriptors.rotation = cat(1, descriptors.rotation, rot);
+                j = num;
+                pair_ok = true;
             end
+            j = j + 1;
         end
-        ii = find(i_k == jj);
-        pair = [i_x(ii(1)) i_y(ii(1))];
+        if pair_ok
+            descriptors.kp = cat(1, descriptors.kp, kp);
 
-        % fill data structure
-        descriptors.kp = cat(1, descriptors.kp, kp);
-        min_x = limitValue(kp(1) - params.area/2, 1, n);
-        min_y = limitValue(kp(2) - params.area/2, 1, m);
-        max_x = limitValue(kp(1) + params.area/2, 1, n);
-        max_y = limitValue(kp(2) + params.area/2, 1, m);
-        descriptors.roi.p11 = cat(1, descriptors.roi.p11, [min_x min_y]);
-        descriptors.roi.p12 = cat(1, descriptors.roi.p12, [max_x min_y]);
-        descriptors.roi.p21 = cat(1, descriptors.roi.p21, [min_x max_y]);
+            min_x = limitValue(kp(1) - params.area/2, 1, n);
+            min_y = limitValue(kp(2) - params.area/2, 1, m);
+            max_x = limitValue(kp(1) + params.area/2, 1, n);
+            max_y = limitValue(kp(2) + params.area/2, 1, m);
+            descriptors.roi.p11 = cat(1, descriptors.roi.p11, [min_x min_y]);
+            descriptors.roi.p12 = cat(1, descriptors.roi.p12, [max_x min_y]);
+            descriptors.roi.p21 = cat(1, descriptors.roi.p21, [min_x max_y]);
 
-        descriptors.pair = cat(1, descriptors.pair, pair);
-        min_x = limitValue(pair(1) - params.area/2, 1, n);
-        min_y = limitValue(pair(2) - params.area/2, 1, m);
-        max_x = limitValue(pair(1) + params.area/2, 1, n);
-        max_y = limitValue(pair(2) + params.area/2, 1, m);
-        descriptors.roip.p11 = cat(1, descriptors.roip.p11, [min_x min_y]);
-        descriptors.roip.p12 = cat(1, descriptors.roip.p12, [max_x min_y]);
-        descriptors.roip.p21 = cat(1, descriptors.roip.p21, [min_x max_y]);
-
-        [dist, rot, ~] = cartesian2SphericalInDegrees(pair(1) - kp(1), pair(2) - kp(2), 0);
-        descriptors.distance = cat(1, descriptors.distance, dist);
-        descriptors.rotation = cat(1, descriptors.rotation, rot);
-
-        % actualization for next iteration
-        count(1) = [];
-        count(count == jj)  = [];
-        len = length(count);
+            min_x = limitValue(pair(1) - params.area/2, 1, n);
+            min_y = limitValue(pair(2) - params.area/2, 1, m);
+            max_x = limitValue(pair(1) + params.area/2, 1, n);
+            max_y = limitValue(pair(2) + params.area/2, 1, m);
+            descriptors.roip.p11 = cat(1, descriptors.roip.p11, [min_x min_y]);
+            descriptors.roip.p12 = cat(1, descriptors.roip.p12, [max_x min_y]);
+            descriptors.roip.p21 = cat(1, descriptors.roip.p21, [min_x max_y]);
+        end
     end
+%     len = params.k;
+%     count = 1:len;
+%     jj = 0;
+%     while len > 0
+%         distance_min = n * 2;
+%         i = count(1);
+%         ii = find(i_k == i);
+%         %kp = [round(median(i_x(ii))) round(median(i_y(ii)))];
+%         kp = [i_x(ii(1)) i_y(ii(1))];
+%         for j = count(2:end)
+%             ii = find(i_k == j);
+%             pair = [i_x(ii(1)) i_y(ii(1))];
+%             [distance, ~, ~] = cartesian2SphericalInDegrees(pair(1) - kp(1), pair(2) - kp(2), 0);
+%             if distance < distance_min
+%                 distance_min = distance;
+%                 jj = j;
+%             end
+%         end
+%         ii = find(i_k == jj);
+%         pair = [i_x(ii(1)) i_y(ii(1))];
+% 
+%         % fill data structure
+%         descriptors.kp = cat(1, descriptors.kp, kp);
+%         min_x = limitValue(kp(1) - params.area/2, 1, n);
+%         min_y = limitValue(kp(2) - params.area/2, 1, m);
+%         max_x = limitValue(kp(1) + params.area/2, 1, n);
+%         max_y = limitValue(kp(2) + params.area/2, 1, m);
+%         descriptors.roi.p11 = cat(1, descriptors.roi.p11, [min_x min_y]);
+%         descriptors.roi.p12 = cat(1, descriptors.roi.p12, [max_x min_y]);
+%         descriptors.roi.p21 = cat(1, descriptors.roi.p21, [min_x max_y]);
+% 
+%         descriptors.pair = cat(1, descriptors.pair, pair);
+%         min_x = limitValue(pair(1) - params.area/2, 1, n);
+%         min_y = limitValue(pair(2) - params.area/2, 1, m);
+%         max_x = limitValue(pair(1) + params.area/2, 1, n);
+%         max_y = limitValue(pair(2) + params.area/2, 1, m);
+%         descriptors.roip.p11 = cat(1, descriptors.roip.p11, [min_x min_y]);
+%         descriptors.roip.p12 = cat(1, descriptors.roip.p12, [max_x min_y]);
+%         descriptors.roip.p21 = cat(1, descriptors.roip.p21, [min_x max_y]);
+% 
+%         [dist, rot, ~] = cartesian2SphericalInDegrees(pair(1) - kp(1), pair(2) - kp(2), 0);
+%         descriptors.distance = cat(1, descriptors.distance, dist);
+%         descriptors.rotation = cat(1, descriptors.rotation, rot);
+% 
+%         % actualization for next iteration
+%         count(1) = [];
+%         count(count == jj)  = [];
+%         len = length(count);
+%     end
 end
 
 

@@ -10,11 +10,13 @@ params.threshold_sbl = 0;
 
 params.dist_factor = 0.8;
 params.rot_max = 30;
-params.area = 20;
-params.distance_w = 200;
+params.max_rho = 30;
+params.min_rho = 20;
+params.area = 50;
+params.distance_w = 150;
 params.max_distance = 40.0;
 params.min_intensity = 200;
-params.k = 10; %always pair number
+params.k = 5; %always pair number
 
 params.lidar_model = 0; %fill in read data phase
 params.id_vlp16 = 16;

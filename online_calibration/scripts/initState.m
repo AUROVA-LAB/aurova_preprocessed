@@ -1,7 +1,7 @@
 function state = initState()
 
 sigma_randn = 0.2;
-sigma_randn2 = 0.6;
+sigma_randn2 = 0.8;
 xyz = randn(1, 3) * sigma_randn;
 ypr = randn(1, 3) * sigma_randn2;
 

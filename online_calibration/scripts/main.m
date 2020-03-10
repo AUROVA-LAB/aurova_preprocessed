@@ -15,6 +15,7 @@ ind = 1:M;
 ind = cat(2, ind, ind);
 ind = cat(2, ind, [9 9 9]);
 ind = cat(2, ind, [10 10 10 10]);
+ind = fliplr(ind);
 
 t = tic;
 for j = ind
