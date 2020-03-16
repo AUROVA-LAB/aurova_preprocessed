@@ -1,7 +1,7 @@
 clear, clc, close all
 
-load('results/obs_20200310.mat')
-load('results/gt_20200310.mat')
+load('results/obs_20200313.mat')
+load('results/gt_20200313.mat')
 load('noise_model.mat')
 num_samples = length(ext_obs);
 
@@ -30,7 +30,7 @@ for i = 1:num_samples
     r = cat(2, r, state.stt(6));
 end
 
-lim = 138;
+lim = 120;
 subplot(6, 1, 1)
 plot(x(1:lim), 'LineWidth', 2)
 hold on

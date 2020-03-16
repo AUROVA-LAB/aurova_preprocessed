@@ -18,7 +18,7 @@ data_prep.img_sobel = img_sobel / max(max(img_sobel));
 [m, n] = size(img_sobel);
 mask(1:m, 1:n) = 1;
 mask(1:2:m, 1:2:n) = 0;
-data_prep.img_sobel_dw = data_prep.img_sobel .* mask; %edge(image_gray, 'canny', 0.05);
+data_prep.img_sobel_dw = data_prep.img_sobel;
 
 % preprocess lidar data
 scan_filtered = filterScanAzimuth(data.scan, params);
