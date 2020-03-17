@@ -16,7 +16,7 @@ params.area = 20;
 params.distance_w = 150;
 params.max_distance = 40.0;
 params.min_intensity = 200;
-params.k = 5; %always pair number
+params.k = 0; %always pair number
 
 params.lidar_model = 0; %fill in read data phase
 params.id_vlp16 = 16;

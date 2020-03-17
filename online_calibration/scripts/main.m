@@ -18,9 +18,9 @@ ind = cat(2, ind, [10 10 10 10]);
 %ind = fliplr(ind);
 
 t = tic;
-for j = ind
+for j = 9
     N = experiments.num_samples(j);
-    for i = 1:N       
+    for i = 1 %1:N       
         experiments.id_dataset = j;
         experiments.id_sample = i;  
         

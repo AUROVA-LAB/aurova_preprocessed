@@ -36,6 +36,16 @@ color3(:, 3) = 0;
 final_plot = cat(1, sobel_plot, depth_plot);
 final_plot2 = cat(1, sobel_plot2, depth_plot2);
 final_plot3 = sobel_plot2;
+final_plot3(:, :, :) = uint8(0);
+% final_plot4 = sobel_plot;
+% for i = 1:w
+%     for j = 1:h
+%         if (depth_plot(j, i, 1) > 1)
+%             c = [depth_plot(j, i, 1) depth_plot(j, i, 2) depth_plot(j, i, 3)];
+%             final_plot4 = insertShape(final_plot4, 'circle', [i, j, kl(1)], 'LineWidth', 2, 'Color', c);
+%         end
+%     end
+% end
 
 [m, ~] = size(matches.kp_tmp);
 k(1:m*2, 1) = 3;
@@ -73,14 +83,16 @@ final_plot3 = insertShape(final_plot3, 'circle', [u_src, v_src, k], 'LineWidth',
 % filename = strcat(filename, num2str(experiments.id_sample,'_%d_3.jpg'));
 % imwrite(final_plot3, filename);
 
-% % plot image
-% close all
+% plot image
+close all
+figure
+imshow(final_plot)
+figure
+imshow(final_plot2)
+figure
+imshow(final_plot3)
 % figure
-% imshow(final_plot)
-% figure
-% imshow(final_plot2)
-% figure
-% imshow(final_plot3)
+% imshow(final_plot4)
 
 % *************************************************** %
 % ************ STATISTICS (EXPERIMENTS) ************* %
