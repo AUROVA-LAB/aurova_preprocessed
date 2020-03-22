@@ -30,7 +30,7 @@ for j = 1:num_kp
     end
 
     % generate SOURCE image data 
-    source = data_prep.img_sobel_dw;
+    source = data_prep.img_sobel_src;
     objective = data_prep.img_sobel;
 
     % generate sobel-KEYPOINTs
@@ -61,7 +61,7 @@ for j = 1:num_kp
 %     pair_x = repmat(pair_x', M, 1);
 %     pair_x = gpuArray(pair_x(:));
 
-    % find sobel-KEYPOINTs that maximize cost function
+    % find sobel-KEYPOINTs-PAIRs that maximize cost function
     clear vector;
     vector = zeros(1, N*N2);
     dist_tmplt = descriptors.distance(j);

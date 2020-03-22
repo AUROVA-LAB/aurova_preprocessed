@@ -1,31 +1,31 @@
-function plotResults(data, data_prep, matches, params, experiments)
+function plotResults(data, params, experiments)
 
-[h, w, c] = size(data.image);
+[h, w, c] = size(data.input.image);
 if c == 3
-    sobel_plot(:, :, 1) = rgb2gray(data.image);
-    sobel_plot(:, :, 2) = rgb2gray(data.image);
-    sobel_plot(:, :, 3) = rgb2gray(data.image);
+    sobel_plot(:, :, 1) = rgb2gray(data.input.image);
+    sobel_plot(:, :, 2) = rgb2gray(data.input.image);
+    sobel_plot(:, :, 3) = rgb2gray(data.input.image);
 else
-    sobel_plot(:, :, 1) = data.image;
-    sobel_plot(:, :, 2) = data.image;
-    sobel_plot(:, :, 3) = data.image;
+    sobel_plot(:, :, 1) = data.input.image;
+    sobel_plot(:, :, 2) = data.input.image;
+    sobel_plot(:, :, 3) = data.input.image;
 end
-sobel_nrm = data_prep.img_sobel / max(max(data_prep.img_sobel));
+sobel_nrm = data.process.img_sobel / max(max(data.process.img_sobel));
 sobel_nrm = uint8(sobel_nrm * params.base);
 sobel_plot2(:, :, 1) = sobel_nrm;
 sobel_plot2(:, :, 2) = sobel_nrm;
 sobel_plot2(:, :, 3) = sobel_nrm;
 
-depth_plot = ind2rgb(uint8(data_prep.img_depth), jet(params.base+1));
-depth_plot(:, :, 1) = depth_plot(:, :, 1) .* double(data_prep.img_depth > 0);
-depth_plot(:, :, 2) = depth_plot(:, :, 2) .* double(data_prep.img_depth > 0);
-depth_plot(:, :, 3) = depth_plot(:, :, 3) .* double(data_prep.img_depth > 0);
+depth_plot = ind2rgb(uint8(data.process.img_depth), jet(params.base+1));
+depth_plot(:, :, 1) = depth_plot(:, :, 1) .* double(data.process.img_depth > 0);
+depth_plot(:, :, 2) = depth_plot(:, :, 2) .* double(data.process.img_depth > 0);
+depth_plot(:, :, 3) = depth_plot(:, :, 3) .* double(data.process.img_depth > 0);
 depth_plot = uint8(depth_plot * params.base);
 depth_plot2 = depth_plot;
 depth_plot2(:, :, :) = 0;
-[v, u] = find(data_prep.img_discnt > params.threshold_dsc);
+[v, u] = find(data.process.img_discnt > params.threshold_dsc);
 index = sub2ind([h w], v, u);
-color2 = repmat(data_prep.img_discnt(index), 1, 3);
+color2 = repmat(data.process.img_discnt(index), 1, 3);
 n = length(v);
 kl(1:n, 1) = 0;
 depth_plot2 = insertShape(depth_plot2, 'circle', [u, v, kl], 'LineWidth', 2, 'Color', color2);
@@ -47,23 +47,23 @@ final_plot3(:, :, :) = uint8(0);
 %     end
 % end
 
-[m, ~] = size(matches.kp_tmp);
+[m, ~] = size(data.matches.current.kp_tmp);
 k(1:m*2, 1) = 3;
 
-u_tmp = matches.kp_tmp(:, 1);
-v_tmp = matches.kp_tmp(:, 2) + h;
-u_tmp = cat(1, u_tmp, matches.pair_tmp(:, 1));
-v_tmp = cat(1, v_tmp, matches.pair_tmp(:, 2) + h);
-u_src = matches.kp_src(:, 1);
-v_src = matches.kp_src(:, 2);
-u_src = cat(1, u_src, matches.pair_src(:, 1));
-v_src = cat(1, v_src, matches.pair_src(:, 2));
+u_tmp = data.matches.current.kp_tmp(:, 1);
+v_tmp = data.matches.current.kp_tmp(:, 2) + h;
+u_tmp = cat(1, u_tmp, data.matches.current.pair_tmp(:, 1));
+v_tmp = cat(1, v_tmp, data.matches.current.pair_tmp(:, 2) + h);
+u_src = data.matches.current.kp_src(:, 1);
+v_src = data.matches.current.kp_src(:, 2);
+u_src = cat(1, u_src, data.matches.current.pair_src(:, 1));
+v_src = cat(1, v_src, data.matches.current.pair_src(:, 2));
 
-final_plot = insertShape(final_plot, 'line', [matches.kp_src(:, 1) matches.kp_src(:, 2) matches.pair_src(:, 1) matches.pair_src(:, 2)], 'LineWidth', 1, 'Color', 'blue');
+final_plot = insertShape(final_plot, 'line', [data.matches.current.kp_src(:, 1) data.matches.current.kp_src(:, 2) data.matches.current.pair_src(:, 1) data.matches.current.pair_src(:, 2)], 'LineWidth', 1, 'Color', 'blue');
 final_plot = insertShape(final_plot, 'line', [u_tmp v_tmp u_src v_src], 'LineWidth', 1, 'Color', 'green');
 final_plot = insertShape(final_plot, 'circle', [u_tmp, v_tmp, k], 'LineWidth', 3, 'Color', 'yellow');
 final_plot = insertShape(final_plot, 'circle', [u_src, v_src, k], 'LineWidth', 3, 'Color', 'red');
-final_plot2 = insertShape(final_plot2, 'line', [matches.kp_src(:, 1) matches.kp_src(:, 2) matches.pair_src(:, 1) matches.pair_src(:, 2)], 'LineWidth', 1, 'Color', 'blue');
+final_plot2 = insertShape(final_plot2, 'line', [data.matches.current.kp_src(:, 1) data.matches.current.kp_src(:, 2) data.matches.current.pair_src(:, 1) data.matches.current.pair_src(:, 2)], 'LineWidth', 1, 'Color', 'blue');
 final_plot2 = insertShape(final_plot2, 'line', [u_tmp v_tmp u_src v_src], 'LineWidth', 1, 'Color', 'green');
 final_plot2 = insertShape(final_plot2, 'circle', [u_tmp, v_tmp, k], 'LineWidth', 3, 'Color', 'yellow');
 final_plot2 = insertShape(final_plot2, 'circle', [u_src, v_src, k], 'LineWidth', 3, 'Color', 'red');
@@ -97,8 +97,8 @@ imshow(final_plot3)
 % *************************************************** %
 % ************ STATISTICS (EXPERIMENTS) ************* %
 % for i = 1:n
-%     x = matches.kp_tmp(i, 1) - matches.kp_src(i, 1);
-%     y = matches.kp_tmp(i, 2) - matches.kp_src(i, 2);
+%     x = matches.current.kp_tmp(i, 1) - matches.current.kp_src(i, 1);
+%     y = matches.current.kp_tmp(i, 2) - matches.current.kp_src(i, 2);
 %     [error, ~, ~] = cartesian2SphericalInDegrees(x, y, 0);
 %     results.error_signal = cat(1, results.error_signal, error);
 %     if error <= 3
@@ -113,8 +113,8 @@ imshow(final_plot3)
 %         results.error_x = results.error_x + 1;
 %     end
 %     
-%     x = matches.pair_tmp(i, 1) - matches.pair_src(i, 1);
-%     y = matches.pair_tmp(i, 2) - matches.pair_src(i, 2);
+%     x = matches.current.pair_tmp(i, 1) - matches.current.pair_src(i, 1);
+%     y = matches.current.pair_tmp(i, 2) - matches.current.pair_src(i, 2);
 %     [error, ~, ~] = cartesian2SphericalInDegrees(x, y, 0);
 %     results.error_signal = cat(1, results.error_signal, error);
 %     if error <= 3

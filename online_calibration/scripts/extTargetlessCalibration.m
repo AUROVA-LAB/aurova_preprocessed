@@ -1,11 +1,11 @@
-function [data, data_prep, matches] = extTargetlessCalibration(data, params)
+function data = extTargetlessCalibration(data, params)
 
 % PART I
-data_prep = preprocessData(data, params);
+data = preprocessData(data, params);
 
 % PART II
-matches = lidarImageCorregistration(data_prep, params);
-data = acumMatches(data, data_prep, matches);
+data = lidarImageCorregistration(data, params);
+data = acumMatches(data);
 
 % PART III
 data = errorCorrection (data, params);

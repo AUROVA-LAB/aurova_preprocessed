@@ -1,17 +1,17 @@
-function [image_depth, image_intsty, image_world] = imageDepthFromLidar(scan_lidarframe, data, params)
+function data = imageDepthFromLidar(data, params)
 
 yx = params.camera_params.ImageSize;
 image_depth(1:yx(1), 1:yx(2)) = uint8(0);
 image_intsty(1:yx(1), 1:yx(2)) = uint8(0);
 image_world(1:yx(1), 1:yx(2), 1:3) = double(0);
-m = scan_lidarframe.Count;
+m = data.process.scan_filtered.Count;
 
 for j = 1:m
-    point = scan_lidarframe.Location(j, :);
-    intensity = scan_lidarframe.Intensity(j);
+    point = data.process.scan_filtered.Location(j, :);
+    intensity = data.process.scan_filtered.Intensity(j);
     
     point_pc_lid = cat(2, point, 1);
-    point_pc_cam = point_pc_lid * data.tf.T * data.tf_err.T; 
+    point_pc_cam = point_pc_lid * data.input.tf.T * data.input.tf_err.T; 
     
     image_point = worldToImageSimple(params.camera_params.IntrinsicMatrix, point_pc_cam(1:3));
     %%% matlab native function for projection %%%
@@ -30,6 +30,10 @@ for j = 1:m
         end
     end
 end
+
+data.process.img_depth = image_depth;
+data.process.img_discnt = image_intsty;
+data.process.image_world = image_world;
 
 end
 

@@ -9,23 +9,23 @@ if experiments.is_kitti(experiments.id_dataset)
     index = experiments.id_sample;
 
     % load kitti image
-    data.image = imread(sprintf('%s/image_%02d/data/%010d.png', base_dir, camera, index));
+    data.input.image = imread(sprintf('%s/image_%02d/data/%010d.png', base_dir, camera, index));
 
     % load kitti velodyne points
     file = fopen(sprintf('%s/velodyne_points/data/%010d.bin', base_dir, index), 'rb');
     lidar = fread(file, [4 inf], 'single')';
     fclose(file);
-    data.scan = pointCloud(lidar(:, 1:3));
+    data.input.scan = pointCloud(lidar(:, 1:3));
     [n, ~] = size(lidar);
     intensity(1:n) = 0;
-    data.scan.Intensity = intensity';
+    data.input.scan.Intensity = intensity';
     
     
     % load each camera calibration parameters 
     calib = loadCalibrationCamToCam(fullfile(calib_dir,'calib_cam_to_cam.txt'));
     
     % load transform lidar -> camera_xx
-    data.tf = affine3d;
+    data.input.tf = affine3d;
     tf_velo = loadCalibrationRigid(fullfile(calib_dir,'calib_velo_to_cam.txt'))';
     tf_cam = eye(4);
     tf_cam(1:3, 1:3) = calib.R{camera+1};
@@ -34,11 +34,11 @@ if experiments.is_kitti(experiments.id_dataset)
     tf_rect = eye(4);
     tf_rect(1:3, 1:3) = calib.R_rect{camera+1};
     tf_rect = tf_rect';
-    data.tf.T = tf_velo * tf_cam * tf_rect;
+    data.input.tf.T = tf_velo * tf_cam * tf_rect;
     
 
     % camera parameters
-    [m, n, ~] = size(data.image);
+    [m, n, ~] = size(data.input.image);
     params.camera_params = cameraParameters(...
                                                  'IntrinsicMatrix', calib.P_rect{camera+1}(1:3, 1:3)', ...
                                                  'ImageSize', [m n]);
@@ -63,11 +63,11 @@ else
     xyz_rpy = csvread(tf_filename);
     tf_lidar2map = getTfAffineMatrix(xyz_rpy, 1);
     tf_map2camera = getTfAffineMatrix(xyz_rpy, 2);
-    data.tf = affine3d;
+    data.input.tf = affine3d;
 
-    data.scan = pcread(scan_filename);
-    data.tf.T = tf_lidar2map.T * tf_map2camera.T;
-    data.image = imread(image_filename);
+    data.input.scan = pcread(scan_filename);
+    data.input.tf.T = tf_lidar2map.T * tf_map2camera.T;
+    data.input.image = imread(image_filename);
 
     
     % TODO: get from file saved in ros!!!
@@ -75,7 +75,7 @@ else
         [461.05267333984375      0.0                              318.204833984375; ...   
          0.0                                    461.2838134765625  186.91806030273438; ...
          0.0                                    0.0                              1.0];
-     [m, n, ~] = size(data.image);
+     [m, n, ~] = size(data.input.image);
     params.camera_params = cameraParameters(...
                                                  'IntrinsicMatrix', intrinsic_matrix', ...
                                                  'ImageSize', [m n]);
@@ -83,7 +83,7 @@ else
     % lidar parameters
     params.lidar_model = params.id_vlp16;
     params.lidar_parameters = [];
-    params.lidar_parameters = fillVlp16PuckCfg(data.scan);
+    params.lidar_parameters = fillVlp16PuckCfg(data.input.scan);
 end
 
 end

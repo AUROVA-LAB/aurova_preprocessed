@@ -7,15 +7,12 @@ M = experiments.num_datasets;
 ext_obs = {};
 ext_stt = {};
 state = initState();
-[data.tf_err, gt] = generateMisscalibration();
+[data.input.tf_err, gt] = generateMisscalibration();
 load('noise_model.mat')
 
 % datasets test
-ind = 1:M;
-ind = cat(2, ind, ind);
-ind = cat(2, ind, [9 9 9]);
-ind = cat(2, ind, [10 10 10 10]);
-%ind = fliplr(ind);
+ind = 2:M;
+ind = fliplr(ind);
 
 t = tic;
 for j = 9
@@ -29,12 +26,12 @@ for j = 9
         [data, params] = readFileData(data, params, experiments);
 
         disp('*** init extrinsic targetless calibration (library) ***')
-        [data, data_prep, matches] = extTargetlessCalibration(data, params);
+        data = extTargetlessCalibration(data, params);
         
         disp('*** plot results (only Matlab functions) ***')
-        plotResults(data, data_prep, matches, params, experiments);
+        plotResults(data, params, experiments);
         
-        if data.matches_acum.num >= data.matches_acum.max
+        if data.matches.num >= data.matches.max
             ext_obs = [ext_obs data.output];
             observation = setObservation(data.output, noise_model);
             state = updateState(observation, state);

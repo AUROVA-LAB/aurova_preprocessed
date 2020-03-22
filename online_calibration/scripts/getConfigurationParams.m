@@ -23,12 +23,16 @@ params.id_vlp16 = 16;
 params.id_kitti64 = 64;
 
 data = [];
-data.matches_acum = [];
-data.matches_acum.max = 200;
-data.matches_acum.num = 0;
-data.matches_acum.kp_src =[];
-data.matches_acum.kp_tmp =[];
-data.matches_acum.wp_tmp =[];
+data.input = [];
+data.output = [];
+data.process = [];
+data.matches = [];
+data.matches.max = 200;
+data.matches.num = 0;
+data.matches.kp_src =[];
+data.matches.kp_tmp =[];
+data.matches.wp_tmp =[];
+data.matches.current = [];
 
 experiments.id_dataset = 1;
 experiments.id_sample = 1;

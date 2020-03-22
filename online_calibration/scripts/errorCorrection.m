@@ -2,13 +2,13 @@ function data = errorCorrection (data, params)
 
 data.output = [];
 
-if data.matches_acum.num >= data.matches_acum.max
+if data.matches.num >= data.matches.max
     
     % image points calculation
-    image_points = data.matches_acum.kp_src;
+    image_points = data.matches.kp_src;
 
     % world points calculation
-    world_points = data.matches_acum.wp_tmp;
+    world_points = data.matches.wp_tmp;
 
     [orientation, location, inliers, status] = estimateWorldCameraPose(image_points, world_points, params.camera_params);
 
