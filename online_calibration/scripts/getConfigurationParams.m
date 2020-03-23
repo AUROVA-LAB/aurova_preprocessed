@@ -5,7 +5,7 @@ params.base = 255;
 
 params.threshold_dw = 0.5;
 params.threshold_up = 10;
-params.threshold_dsc = 0;
+params.threshold_dsc = 30;
 params.threshold_sbl = 0;
 
 params.dist_factor = 0.8;
@@ -16,7 +16,9 @@ params.area = 20;
 params.distance_w = 150;
 params.max_distance = 40.0;
 params.min_intensity = 200;
-params.k = 0; %always pair number
+params.k = 4; %always pair number
+params.s = 10; %slices in distance segmentation
+params.min_sz_clus = 40;
 
 params.lidar_model = 0; %fill in read data phase
 params.id_vlp16 = 16;

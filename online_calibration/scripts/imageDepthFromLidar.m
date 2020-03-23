@@ -1,10 +1,12 @@
 function data = imageDepthFromLidar(data, params)
 
 yx = params.camera_params.ImageSize;
+seg_num = params.s;
+m = data.process.scan_filtered.Count;
 image_depth(1:yx(1), 1:yx(2)) = uint8(0);
 image_intsty(1:yx(1), 1:yx(2)) = uint8(0);
 image_world(1:yx(1), 1:yx(2), 1:3) = double(0);
-m = data.process.scan_filtered.Count;
+image_segment(1:yx(1), 1:yx(2), 1:seg_num) = false;
 
 for j = 1:m
     point = data.process.scan_filtered.Location(j, :);
@@ -22,8 +24,10 @@ for j = 1:m
         v = round(image_point(2));
         if (v >= 1 && v <= yx(1)) && (u >= 1 && u <= yx(2))
             dist_value = point_pc_cam(3);
+            segment = floor(dist_value / seg_num) + 1;
             image_depth(v, u) = mapDistanceToUint(dist_value, params.sigma, params.base);
             image_intsty(v, u) = intensity;
+            image_segment(v, u, segment) = true;
             image_world(v, u, 1) = point_pc_cam(1);
             image_world(v, u, 2) = point_pc_cam(2);
             image_world(v, u, 3) = point_pc_cam(3);
@@ -34,6 +38,13 @@ end
 data.process.img_depth = image_depth;
 data.process.img_discnt = image_intsty;
 data.process.image_world = image_world;
+data.process.img_segment = image_segment;
+image_discnt_mask = image_segment;
+for i = 1:params.s
+    discnt = image_intsty > params.threshold_dsc;
+    image_discnt_mask(:, :, i) = discnt .* image_segment(:, :, i);
+end
+data.process.img_discnt_msk = image_discnt_mask;
 
 end
 

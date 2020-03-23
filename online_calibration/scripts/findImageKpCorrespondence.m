@@ -1,13 +1,13 @@
 function matches = findImageKpCorrespondence(data_prep, descriptors, params)
 
-matches = [];
-[num_kp, ~] = size(descriptors.kp);
-matches.kp_src(1:num_kp, 1:2) = 1;
-matches.kp_tmp(1:num_kp, 1:2) = 1;
-matches.pair_src(1:num_kp, 1:2) = 1;
-matches.pair_tmp(1:num_kp, 1:2) = 1;
+% matches = [];
+% [num_kp, ~] = size(descriptors.kp);
+% matches.kp_src(1:num_kp, 1:2) = 1;
+% matches.kp_tmp(1:num_kp, 1:2) = 1;
+% matches.pair_src(1:num_kp, 1:2) = 1;
+% matches.pair_tmp(1:num_kp, 1:2) = 1;
 
-for j = 1:num_kp
+for j = 1:0
 
     % generate TEMPLATE xyz data
     threshold = params.threshold_dsc;
