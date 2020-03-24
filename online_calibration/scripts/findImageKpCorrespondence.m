@@ -1,36 +1,24 @@
 function matches = findImageKpCorrespondence(data_prep, descriptors, params)
 
-% matches = [];
-% [num_kp, ~] = size(descriptors.kp);
-% matches.kp_src(1:num_kp, 1:2) = 1;
-% matches.kp_tmp(1:num_kp, 1:2) = 1;
-% matches.pair_src(1:num_kp, 1:2) = 1;
-% matches.pair_tmp(1:num_kp, 1:2) = 1;
+matches = [];
+[num_kp, ~] = size(descriptors.kp);
+matches.kp_src(1:num_kp, 1:2) = 1;
+matches.kp_tmp(1:num_kp, 1:2) = 1;
+matches.pair_src(1:num_kp, 1:2) = 1;
+matches.pair_tmp(1:num_kp, 1:2) = 1;
+matches.corr(1:num_kp) = 0;
+matches.descriptor = descriptors;
 
-for j = 1:0
+for j = 1:num_kp
 
-    % generate TEMPLATE xyz data
-    threshold = params.threshold_dsc;
-    [y_tmp, x_tmp] = find(data_prep.img_discnt > threshold); % cloud template
-    z_tmp = data_prep.img_discnt(data_prep.img_discnt > threshold);
-    z_tmp = double(z_tmp) / params.base;
-    x_tmp2 = x_tmp - descriptors.pair(j, 1); % tr to pair reference
-    y_tmp2 = y_tmp - descriptors.pair(j, 2);
+    % generate TEMPLATE xyz descriptor
+    x_tmp = descriptors.cluster{j}(:, 1);
+    y_tmp = descriptors.cluster{j}(:, 2);
     x_tmp = x_tmp - descriptors.kp(j, 1); % tr to kp reference
     y_tmp = y_tmp - descriptors.kp(j, 2);
-    M = length(y_tmp);
-    parfor jj = 1:M %distance weight calculation
-        [distance, ~, ~] = cartesian2SphericalInDegrees(x_tmp(jj), y_tmp(jj), 0);
-        [distance2, ~, ~] = cartesian2SphericalInDegrees(x_tmp2(jj), y_tmp2(jj), 0);
-        if distance <= params.distance_w || distance2 <= params.distance_w
-            z_tmp(jj) = z_tmp(jj) * 2;
-        else
-            z_tmp(jj) = z_tmp(jj) / 2;
-        end
-    end
 
-    % generate SOURCE image data 
-    source = data_prep.img_sobel_src;
+    % generate SOURCE image descriptor 
+    source = data_prep.img_canny;
     objective = data_prep.img_sobel;
 
     % generate sobel-KEYPOINTs
@@ -61,7 +49,7 @@ for j = 1:0
 %     pair_x = repmat(pair_x', M, 1);
 %     pair_x = gpuArray(pair_x(:));
 
-    % find sobel-KEYPOINTs-PAIRs that maximize cost function
+    % search sobel-KEYPOINTs-PAIRs that maximize cost function
     clear vector;
     vector = zeros(1, N*N2);
     dist_tmplt = descriptors.distance(j);
@@ -102,7 +90,7 @@ for j = 1:0
             for i = 1:length(x_tmp_act)
                 if tr_x_tmp(i) >= 1 && tr_x_tmp(i) <= w && ...
                    tr_y_tmp(i) >= 1 && tr_y_tmp(i) <= h
-                    vector(ii) = vector(ii) + objective(tr_y_tmp(i), tr_x_tmp(i)) * z_tmp(i);
+                    vector(ii) = vector(ii) + objective(tr_y_tmp(i), tr_x_tmp(i));
                 end
             end 
         end
@@ -111,6 +99,7 @@ for j = 1:0
 
     %maximun in cost function
     ii = find(vector==max(max(vector)));
+    matches.corr(j) = max(max(vector));
     id_kp = floor((ii-1) / N2) + 1;
     id_pair = mod(ii-1, N2) + 1;
     

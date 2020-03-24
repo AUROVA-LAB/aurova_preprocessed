@@ -23,7 +23,7 @@ for i = 1:params.s
     [i_y, i_x] = find(data_prep.img_discnt_msk(:,:,i) > 0);
     observations = cat(2, i_x, i_y);
     sz_obs = length(i_y);
-    if (sz_obs > 2*params.min_sz_clus)
+    if (sz_obs > params.min_sz_slice)
         i_k = kmeans(observations, params.k);
         for j = 1:params.k
             indx = find(i_k == j);
@@ -72,16 +72,6 @@ for i = 1:params.s
                     descriptors.roip.p21 = cat(1, descriptors.roip.p21, [min_x max_y]);
                     
                     descriptors.cluster = [descriptors.cluster cluster_j];
-                
-                    close all
-                    scatter(u, v, 10, 'filled')
-                    axis ij
-                    axis([1 n 1 m])
-                    hold on
-                    scatter(kp(1), kp(2), 10, 'filled')
-                    hold on
-                    scatter(pair(1), pair(2), 10, 'filled')
-                    descriptors.cluster;
                 end
             end
         end

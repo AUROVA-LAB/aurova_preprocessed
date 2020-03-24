@@ -10,11 +10,12 @@ end
 image_gray = histeq(image_gray);
 image_gauss = imgaussfilt(image_gray, 1.0);
 [img_sobel, ~] = imgradient(image_gray, 'sobel');
-data.process.img_sobel = img_sobel / max(max(img_sobel));
+data.process.img_sobel = imgaussfilt(img_sobel, 1.0);
+data.process.img_sobel = data.process.img_sobel / max(max(data.process.img_sobel));
 
 % canny
-image_canny = edge(image_gray, 'canny', 0.2);
-data.process.img_canny = image_canny .* data.process.img_sobel;
+image_canny = edge(image_gray, 'canny', 0.1);
+data.process.img_canny = imgaussfilt(double(image_canny), 1.0);
 
 % downsample sobel image
 [m, n] = size(img_sobel);

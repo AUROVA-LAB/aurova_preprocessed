@@ -1,13 +1,88 @@
 function plotResults(data, params, experiments)
 
+[h, w, c] = size(data.input.image);
 close all
-for i = params.s-5:-1:1
-    plot = cat(1, data.process.img_canny, double(data.process.img_discnt_msk(:, :, i)));
-    figure 
-    imshow(plot)
-end
+
+% ************************************************************%
+% FIGURA 1
+figure_1(:, :, 1) = uint8(data.process.img_sobel * params.base);
+figure_1(:, :, 2) = uint8(data.process.img_sobel * params.base);
+figure_1(:, :, 3) = uint8(data.process.img_sobel * params.base);
+
+[v, u] = find(data.process.img_discnt > params.threshold_dsc);
+index = sub2ind([h w], v, u);
+luminance = repmat(data.process.img_discnt(index), 1, 3);
+color = luminance;
+color(:, 1) = 0;
+color(:, 3) = 0;
+clear k;
+k(1:length(v), 1) = 0;
+figure_1 = insertShape(figure_1, 'circle', [u, v, k], 'LineWidth', 2, 'Color', color);
+
+u_tmp = data.matches.current.kp_tmp(:, 1);
+v_tmp = data.matches.current.kp_tmp(:, 2);
+u_tmp = cat(1, u_tmp, data.matches.current.pair_tmp(:, 1));
+v_tmp = cat(1, v_tmp, data.matches.current.pair_tmp(:, 2));
+u_src = data.matches.current.kp_src(:, 1);
+v_src = data.matches.current.kp_src(:, 2);
+u_src = cat(1, u_src, data.matches.current.pair_src(:, 1));
+v_src = cat(1, v_src, data.matches.current.pair_src(:, 2));
+clear k;
+k(1:length(u_tmp), 1) = 3;
+figure_1 = insertShape(figure_1, 'line', [u_tmp v_tmp u_src v_src], 'LineWidth', 1, 'Color', 'yellow');
+figure_1 = insertShape(figure_1, 'circle', [u_tmp, v_tmp, k], 'LineWidth', 3, 'Color', 'yellow');
+figure_1 = insertShape(figure_1, 'circle', [u_src, v_src, k], 'LineWidth', 3, 'Color', 'red');
+
+figure
+imshow(figure_1)
+% ************************************************************%
+
+% ************************************************************%
+% FIGURA 2
+% [n, ~] = size(data.matches.current.kp_src);
+% for i = 1:n
+%     figure_2(:, :, 1) = uint8(data.process.img_sobel * params.base);
+%     figure_2(:, :, 2) = uint8(data.process.img_sobel * params.base);
+%     figure_2(:, :, 3) = uint8(data.process.img_sobel * params.base);
+%     
+%     [u, v] = scaleTranslateRotateDsc(data, i);
+%     u = round(u);
+%     v = round(v);
+%     clear k;
+%     k(1:length(v), 1) = 0;
+%     figure_2 = insertShape(figure_2, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'green');
+%     
+%     u_tmp = [data.matches.current.kp_tmp(i, 1); data.matches.current.pair_tmp(i, 1)];
+%     v_tmp = [data.matches.current.kp_tmp(i, 2); data.matches.current.pair_tmp(i, 2)];
+%     u_src = [data.matches.current.kp_src(i, 1); data.matches.current.pair_src(i, 1)];
+%     v_src = [data.matches.current.kp_src(i, 2); data.matches.current.pair_src(i, 2)];
+%     clear k;
+%     k(1:length(u_tmp), 1) = 3;
+%     figure_2 = insertShape(figure_2, 'line', [u_tmp v_tmp u_src v_src], 'LineWidth', 1, 'Color', 'yellow');
+%     figure_2 = insertShape(figure_2, 'circle', [u_tmp, v_tmp, k], 'LineWidth', 3, 'Color', 'yellow');
+%     figure_2 = insertShape(figure_2, 'circle', [u_src, v_src, k], 'LineWidth', 3, 'Color', 'red');
+%     
+%     figure
+%     imshow(figure_2)
+% end
+% ************************************************************%
 
 
+
+% scatter(u, v, 10, 'filled')
+% axis ij
+% axis([1 n 1 m])
+% hold on
+% scatter(kp(1), kp(2), 10, 'filled')
+% hold on
+% scatter(pair(1), pair(2), 10, 'filled')
+
+% close all
+% for i = params.s-5:-1:1
+%     plot = cat(1, data.process.img_canny, double(data.process.img_discnt_msk(:, :, i)));
+%     figure 
+%     imshow(plot)
+% end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
 % [h, w, c] = size(data.input.image);
