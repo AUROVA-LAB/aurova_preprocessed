@@ -7,11 +7,13 @@ if c == 3
 else
     image_gray = data.input.image;
 end
-image_gray = histeq(image_gray);
-image_gauss = imgaussfilt(image_gray, 1.0);
-[img_sobel, ~] = imgradient(image_gray, 'sobel');
-data.process.img_sobel = imgaussfilt(img_sobel, 1.0);
+image_hist = histeq(image_gray);
+image_gauss = imgaussfilt(image_hist, 1.0);
+[img_sobel, ~] = imgradient(image_gauss, 'sobel');
+data.process.img_sobel = img_sobel; %imgaussfilt(img_sobel, 1.0);
 data.process.img_sobel = data.process.img_sobel / max(max(data.process.img_sobel));
+data.process.img_gauss = image_gauss;
+data.process.img_hist = image_hist;
 
 % canny
 image_canny = edge(image_gray, 'canny', 0.1);

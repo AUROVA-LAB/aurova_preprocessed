@@ -24,13 +24,15 @@ for j = 1:m
         v = round(image_point(2));
         if (v >= 1 && v <= yx(1)) && (u >= 1 && u <= yx(2))
             dist_value = point_pc_cam(3);
-            segment = floor(dist_value / seg_num) + 1;
             image_depth(v, u) = mapDistanceToUint(dist_value, params.sigma, params.base);
             image_intsty(v, u) = intensity;
-            image_segment(v, u, segment) = true;
             image_world(v, u, 1) = point_pc_cam(1);
             image_world(v, u, 2) = point_pc_cam(2);
             image_world(v, u, 3) = point_pc_cam(3);
+            if seg_num > 0
+                segment = floor(dist_value / seg_num) + 1;
+                image_segment(v, u, segment) = true;
+            end
         end
     end
 end

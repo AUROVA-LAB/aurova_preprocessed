@@ -4,7 +4,7 @@ function plotResults(data, params, experiments)
 close all
 
 % ************************************************************%
-% FIGURA 1
+% FIGURE 1
 figure_1(:, :, 1) = uint8(data.process.img_sobel * params.base);
 figure_1(:, :, 2) = uint8(data.process.img_sobel * params.base);
 figure_1(:, :, 3) = uint8(data.process.img_sobel * params.base);
@@ -19,39 +19,48 @@ clear k;
 k(1:length(v), 1) = 0;
 figure_1 = insertShape(figure_1, 'circle', [u, v, k], 'LineWidth', 2, 'Color', color);
 
-u_tmp = data.matches.current.kp_tmp(:, 1);
-v_tmp = data.matches.current.kp_tmp(:, 2);
-u_tmp = cat(1, u_tmp, data.matches.current.pair_tmp(:, 1));
-v_tmp = cat(1, v_tmp, data.matches.current.pair_tmp(:, 2));
-u_src = data.matches.current.kp_src(:, 1);
-v_src = data.matches.current.kp_src(:, 2);
-u_src = cat(1, u_src, data.matches.current.pair_src(:, 1));
-v_src = cat(1, v_src, data.matches.current.pair_src(:, 2));
-clear k;
-k(1:length(u_tmp), 1) = 3;
-figure_1 = insertShape(figure_1, 'line', [u_tmp v_tmp u_src v_src], 'LineWidth', 1, 'Color', 'yellow');
-figure_1 = insertShape(figure_1, 'circle', [u_tmp, v_tmp, k], 'LineWidth', 3, 'Color', 'yellow');
-figure_1 = insertShape(figure_1, 'circle', [u_src, v_src, k], 'LineWidth', 3, 'Color', 'red');
+% u_tmp = data.matches.current.kp_tmp(:, 1);
+% v_tmp = data.matches.current.kp_tmp(:, 2);
+% u_tmp = cat(1, u_tmp, data.matches.current.pair_tmp(:, 1));
+% v_tmp = cat(1, v_tmp, data.matches.current.pair_tmp(:, 2));
+% u_src = data.matches.current.kp_src(:, 1);
+% v_src = data.matches.current.kp_src(:, 2);
+% u_src = cat(1, u_src, data.matches.current.pair_src(:, 1));
+% v_src = cat(1, v_src, data.matches.current.pair_src(:, 2));
+% clear k;
+% k(1:length(u_tmp), 1) = 3;
+% figure_1 = insertShape(figure_1, 'line', [u_tmp v_tmp u_src v_src], 'LineWidth', 1, 'Color', 'yellow');
+% figure_1 = insertShape(figure_1, 'circle', [u_tmp, v_tmp, k], 'LineWidth', 3, 'Color', 'yellow');
+% figure_1 = insertShape(figure_1, 'circle', [u_src, v_src, k], 'LineWidth', 3, 'Color', 'red');
 
 figure
 imshow(figure_1)
 % ************************************************************%
 
 % ************************************************************%
-% FIGURA 2
-% [n, ~] = size(data.matches.current.kp_src);
-% for i = 1:n
-%     figure_2(:, :, 1) = uint8(data.process.img_sobel * params.base);
-%     figure_2(:, :, 2) = uint8(data.process.img_sobel * params.base);
-%     figure_2(:, :, 3) = uint8(data.process.img_sobel * params.base);
-%     
-%     [u, v] = scaleTranslateRotateDsc(data, i);
-%     u = round(u);
-%     v = round(v);
-%     clear k;
-%     k(1:length(v), 1) = 0;
-%     figure_2 = insertShape(figure_2, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'green');
-%     
+% FIGURE 2
+[n, ~] = size(data.matches.current.kp_src);
+for i = 1:n
+    figure_2a(:, :, 1) = uint8(data.process.img_sobel * params.base);
+    figure_2a(:, :, 2) = uint8(data.process.img_sobel * params.base);
+    figure_2a(:, :, 3) = uint8(data.process.img_sobel * params.base);
+    figure_2b = figure_2a;
+    
+    u = data.matches.current.descriptor.cluster{i}(:, 1);
+    v = data.matches.current.descriptor.cluster{i}(:, 2);
+    clear k;
+    k(1:length(v), 1) = 0;
+    figure_2a = insertShape(figure_2a, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'yellow');
+    
+    [u, v] = scaleTranslateRotateDsc(data, i);
+    u = round(u);
+    v = round(v);
+    clear k;
+    k(1:length(v), 1) = 0;
+    figure_2b = insertShape(figure_2b, 'circle', [u, v, k], 'LineWidth', 2, 'Color', 'green');
+    
+    figure_2 = cat(1, figure_2a, figure_2b);
+    
 %     u_tmp = [data.matches.current.kp_tmp(i, 1); data.matches.current.pair_tmp(i, 1)];
 %     v_tmp = [data.matches.current.kp_tmp(i, 2); data.matches.current.pair_tmp(i, 2)];
 %     u_src = [data.matches.current.kp_src(i, 1); data.matches.current.pair_src(i, 1)];
@@ -61,10 +70,35 @@ imshow(figure_1)
 %     figure_2 = insertShape(figure_2, 'line', [u_tmp v_tmp u_src v_src], 'LineWidth', 1, 'Color', 'yellow');
 %     figure_2 = insertShape(figure_2, 'circle', [u_tmp, v_tmp, k], 'LineWidth', 3, 'Color', 'yellow');
 %     figure_2 = insertShape(figure_2, 'circle', [u_src, v_src, k], 'LineWidth', 3, 'Color', 'red');
-%     
-%     figure
-%     imshow(figure_2)
-% end
+    
+    figure
+    imshow(figure_2)
+end
+% ************************************************************%
+
+% ************************************************************%
+% FIGURE 3
+factor_cut = 0.35;
+margin = 10;
+ini_h = round(h * factor_cut);
+end_h = round(h - h * factor_cut);
+ini_w = round(w * factor_cut);
+end_w = round(w - w * factor_cut);
+
+horizontal_bar(1:margin, 1:(2*(end_w-ini_w))+margin+2) = 255;
+vertical_bar(1:(end_h-ini_h)+1, 1:margin) = 255;
+
+image = data.input.image(ini_h:end_h, ini_w:end_w);
+hist = data.process.img_hist(ini_h:end_h, ini_w:end_w);
+gauss = data.process.img_gauss(ini_h:end_h, ini_w:end_w);
+sobel = data.process.img_sobel(ini_h:end_h, ini_w:end_w) * params.base;
+
+figure_3_up = cat(2, image, vertical_bar, hist);
+figure_3_dw = cat(2, gauss, vertical_bar, sobel);
+figure_3 = cat(1, figure_3_up, horizontal_bar, figure_3_dw);
+
+figure
+imshow(figure_3)
 % ************************************************************%
 
 
