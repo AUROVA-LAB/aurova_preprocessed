@@ -13,10 +13,8 @@ params.rot_max = 10;
 params.max_rho = 30;
 params.min_rho = 20;
 params.area = 80;
-params.k = 4;
 params.s = 10; %slices in distance segmentation
 params.min_sz_clus = 50;
-params.min_sz_slice = 70;
 
 params.lidar_model = 0; %fill in read data phase
 params.id_vlp16 = 16;

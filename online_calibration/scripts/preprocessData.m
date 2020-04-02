@@ -19,10 +19,10 @@ data.process.img_hist = image_hist;
 image_canny = edge(image_gray, 'canny', 0.1);
 data.process.img_canny = imgaussfilt(double(image_canny), 1.0);
 
-% downsample sobel image
-[m, n] = size(img_sobel);
-mask(1:m, 1:n) = 1;
-mask(1:2:m, 1:2:n) = 0;
+% generate sourde image
+% [m, n] = size(img_sobel);
+% mask(1:m, 1:n) = 1;
+% mask(1:2:m, 1:2:n) = 0;
 data.process.img_sobel_src = data.process.img_sobel;
 
 % preprocess lidar data

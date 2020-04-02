@@ -1,17 +1,29 @@
-function [tf, gt] = generateMisscalibration()
+function [tf, state, gt] = generateMisscalibration()
 
+% misscalibration
 xyz = [0.08 0.11 0.03];
-yaw = 0.1;
-pitch = 0.6;
-roll = 0.5;
-rot_matrix = angle2dcm(yaw*(pi/180), pitch*(pi/180), roll*(pi/180));
+ypr = [0.1 0.6 0.5];
+
+% generate transform
+rot_matrix = angle2dcm(ypr(1)*(pi/180), ypr(2)*(pi/180), ypr(3)*(pi/180));
 tf_matrix = cat(1, rot_matrix, xyz);
 tf_matrix = cat(2, tf_matrix, [0; 0; 0; 1]);
-
 tf = affine3d;
 tf.T = tf_matrix;
 
-gt = [xyz yaw pitch roll];
+% generate initial state
+state = [];
+state.stt = [xyz ypr]';
+state.cov = eye(length(state.stt));
+state.cov(1, 1) = max(xyz);
+state.cov(2, 2) = max(xyz);
+state.cov(3, 3) = max(xyz);
+state.cov(4, 4) = max(ypr);
+state.cov(5, 5) = max(ypr);
+state.cov(6, 6) = max(ypr);
+
+% save ground truth
+gt = [xyz ypr];
 
 end
 

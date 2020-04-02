@@ -15,68 +15,162 @@ descriptors.roip.p11 = [];
 descriptors.roip.p12 = [];
 descriptors.roip.p21 = [];
 descriptors.cluster = {};
+descriptors.entropy = [];
 
-% clustering in xy the points in each slice z
+% GENERATE CLUSTERS IN Z AXE
 n = params.camera_params.ImageSize(2);
 m = params.camera_params.ImageSize(1);
-for i = 1:params.s
-    [i_y, i_x] = find(data_prep.img_discnt_msk(:,:,i) > 0);
-    observations = cat(2, i_x, i_y);
-    sz_obs = length(i_y);
-    if (sz_obs > params.min_sz_slice)
-        i_k = kmeans(observations, params.k);
-        for j = 1:params.k
-            indx = find(i_k == j);
-            sz_clus = length(indx);
-            if (sz_clus > params.min_sz_clus)
-                u = i_x(indx);
-                v = i_y(indx);
-                cluster_j = cat(2, u, v);
-                
-                % keypoint selection
-                mx = mean(cluster_j(:,1));
-                my = mean(cluster_j(:,2));
-                dists = sqrt((u-mx).*(u-mx) + (v-my).*(v-my));
-                ind_kp = find(dists == min(dists));
-                kp = [u(ind_kp(1)) v(ind_kp(1))];
-                
-                % pair selection
-                dists = sqrt((u-kp(1)).*(u-kp(1)) + (v-kp(2)).*(v-kp(2)));
-                ind_pair = find(dists > params.min_rho & dists < params.max_rho);
-                pair_ok = length(ind_pair);
-                
-                if pair_ok > 0
-                    descriptors.kp = cat(1, descriptors.kp, kp);
-                    
-                    pair = [u(ind_pair(1)) v(ind_pair(1))];
-                    descriptors.pair = cat(1, descriptors.pair, pair);
-                    
-                    [modul, rott, ~] = cartesian2SphericalInDegrees(pair(1) - kp(1), pair(2) - kp(2), 0);
-                    descriptors.distance = cat(1, descriptors.distance, modul);
-                    descriptors.rotation = cat(1, descriptors.rotation, rott);
-                    
-                    min_x = limitValue(kp(1) - params.area/2, 1, n);
-                    min_y = limitValue(kp(2) - params.area/2, 1, m);
-                    max_x = limitValue(kp(1) + params.area/2, 1, n);
-                    max_y = limitValue(kp(2) + params.area/2, 1, m);
-                    descriptors.roi.p11 = cat(1, descriptors.roi.p11, [min_x min_y]);
-                    descriptors.roi.p12 = cat(1, descriptors.roi.p12, [max_x min_y]);
-                    descriptors.roi.p21 = cat(1, descriptors.roi.p21, [min_x max_y]);
+num_seg = round(params.lidar_parameters.max_range / params.s);
+clusters_z = {};
+for i = 1:num_seg
+    threshold_up = i*params.s;
+    threshold_dw = (i-1)*params.s;
+    mask_ia = data_prep.img_depth_real < threshold_up;
+    mask_ib = data_prep.img_depth_real > threshold_dw;
+    mask_i = mask_ia .* mask_ib;
+    discnt = data_prep.img_discnt > params.threshold_dsc;
+    cluster_i = discnt .* mask_i;
+    N_i = sum(sum(cluster_i));
+    if N_i > params.min_sz_clus
+        clusters_z = [clusters_z cluster_i];
+    end
+end
 
-                    min_x = limitValue(pair(1) - params.area/2, 1, n);
-                    min_y = limitValue(pair(2) - params.area/2, 1, m);
-                    max_x = limitValue(pair(1) + params.area/2, 1, n);
-                    max_y = limitValue(pair(2) + params.area/2, 1, m);
-                    descriptors.roip.p11 = cat(1, descriptors.roip.p11, [min_x min_y]);
-                    descriptors.roip.p12 = cat(1, descriptors.roip.p12, [max_x min_y]);
-                    descriptors.roip.p21 = cat(1, descriptors.roip.p21, [min_x max_y]);
-                    
-                    descriptors.cluster = [descriptors.cluster cluster_j];
-                end
-            end
+% GENERATE CLUSTERS IN y AXE
+clusters_zy = {};
+act_zy_cluster = clusters_z{1};
+act_zy_cluster(:, :) = 0;
+margin = 50; %TODO: from param
+for i = 1:length(clusters_z)
+    act_z_cluster = clusters_z{i};
+    act_zy_cluster(:, :) = 0;
+    for j = 1:n-margin
+        num_p_slice = sum(sum(act_z_cluster(:, j:j+margin)));
+        num_p_cluster = sum(sum(act_zy_cluster));
+        if num_p_slice > 0
+            act_zy_cluster(:, j:j+margin) = act_z_cluster(:, j:j+margin);
+        elseif num_p_cluster > params.min_sz_clus
+            clusters_zy = [clusters_zy act_zy_cluster];
+            act_zy_cluster(:, :) = 0;
+        else
+            act_zy_cluster(:, :) = 0;
         end
     end
 end
+
+% GENERATE DESCRIPTORS
+for i = 1:length(clusters_zy)
+    [i_y, i_x] = find(clusters_zy{i} > 0);
+    u = i_x;
+    v = i_y;
+    cluster_j = cat(2, u, v);
+
+    % keypoint selection
+    mx = mean(cluster_j(:,1));
+    my = mean(cluster_j(:,2));
+    dists = sqrt((u-mx).*(u-mx) + (v-my).*(v-my));
+    ind_kp = find(dists == min(dists));
+    kp = [u(ind_kp(1)) v(ind_kp(1))];
+
+    % pair selection
+    dists = sqrt((u-kp(1)).*(u-kp(1)) + (v-kp(2)).*(v-kp(2)));
+    ind_pair = find(dists > params.min_rho & dists < params.max_rho);
+    pair_ok = length(ind_pair);
+
+    if pair_ok > 0
+        descriptors.kp = cat(1, descriptors.kp, kp);
+
+        pair = [u(ind_pair(1)) v(ind_pair(1))];
+        descriptors.pair = cat(1, descriptors.pair, pair);
+
+        [modul, rott, ~] = cartesian2SphericalInDegrees(pair(1) - kp(1), pair(2) - kp(2), 0);
+        descriptors.distance = cat(1, descriptors.distance, modul);
+        descriptors.rotation = cat(1, descriptors.rotation, rott);
+
+        min_x = limitValue(kp(1) - params.area/2, 1, n);
+        min_y = limitValue(kp(2) - params.area/2, 1, m);
+        max_x = limitValue(kp(1) + params.area/2, 1, n);
+        max_y = limitValue(kp(2) + params.area/2, 1, m);
+        descriptors.roi.p11 = cat(1, descriptors.roi.p11, [min_x min_y]);
+        descriptors.roi.p12 = cat(1, descriptors.roi.p12, [max_x min_y]);
+        descriptors.roi.p21 = cat(1, descriptors.roi.p21, [min_x max_y]);
+
+        min_x = limitValue(pair(1) - params.area/2, 1, n);
+        min_y = limitValue(pair(2) - params.area/2, 1, m);
+        max_x = limitValue(pair(1) + params.area/2, 1, n);
+        max_y = limitValue(pair(2) + params.area/2, 1, m);
+        descriptors.roip.p11 = cat(1, descriptors.roip.p11, [min_x min_y]);
+        descriptors.roip.p12 = cat(1, descriptors.roip.p12, [max_x min_y]);
+        descriptors.roip.p21 = cat(1, descriptors.roip.p21, [min_x max_y]);
+
+        descriptors.cluster = [descriptors.cluster cluster_j];
+        
+        %entropy = clusterEntropy(u, v, 10);
+        %descriptors.entropy = cat(1, descriptors.entropy, entropy);
+    end
+end
+
+% % clustering in xy the points in each slice z
+% n = params.camera_params.ImageSize(2);
+% m = params.camera_params.ImageSize(1);
+% for i = 1:params.s
+%     [i_y, i_x] = find(data_prep.img_discnt_msk(:,:,i) > 0);
+%     observations = cat(2, i_x, i_y);
+%     sz_obs = length(i_y);
+%     if (sz_obs > params.min_sz_slice)
+%         i_k = kmeans(observations, params.k);
+%         for j = 1:params.k
+%             indx = find(i_k == j);
+%             sz_clus = length(indx);
+%             if (sz_clus > params.min_sz_clus)
+%                 u = i_x(indx);
+%                 v = i_y(indx);
+%                 cluster_j = cat(2, u, v);
+%                 
+%                 % keypoint selection
+%                 mx = mean(cluster_j(:,1));
+%                 my = mean(cluster_j(:,2));
+%                 dists = sqrt((u-mx).*(u-mx) + (v-my).*(v-my));
+%                 ind_kp = find(dists == min(dists));
+%                 kp = [u(ind_kp(1)) v(ind_kp(1))];
+%                 
+%                 % pair selection
+%                 dists = sqrt((u-kp(1)).*(u-kp(1)) + (v-kp(2)).*(v-kp(2)));
+%                 ind_pair = find(dists > params.min_rho & dists < params.max_rho);
+%                 pair_ok = length(ind_pair);
+%                 
+%                 if pair_ok > 0
+%                     descriptors.kp = cat(1, descriptors.kp, kp);
+%                     
+%                     pair = [u(ind_pair(1)) v(ind_pair(1))];
+%                     descriptors.pair = cat(1, descriptors.pair, pair);
+%                     
+%                     [modul, rott, ~] = cartesian2SphericalInDegrees(pair(1) - kp(1), pair(2) - kp(2), 0);
+%                     descriptors.distance = cat(1, descriptors.distance, modul);
+%                     descriptors.rotation = cat(1, descriptors.rotation, rott);
+%                     
+%                     min_x = limitValue(kp(1) - params.area/2, 1, n);
+%                     min_y = limitValue(kp(2) - params.area/2, 1, m);
+%                     max_x = limitValue(kp(1) + params.area/2, 1, n);
+%                     max_y = limitValue(kp(2) + params.area/2, 1, m);
+%                     descriptors.roi.p11 = cat(1, descriptors.roi.p11, [min_x min_y]);
+%                     descriptors.roi.p12 = cat(1, descriptors.roi.p12, [max_x min_y]);
+%                     descriptors.roi.p21 = cat(1, descriptors.roi.p21, [min_x max_y]);
+% 
+%                     min_x = limitValue(pair(1) - params.area/2, 1, n);
+%                     min_y = limitValue(pair(2) - params.area/2, 1, m);
+%                     max_x = limitValue(pair(1) + params.area/2, 1, n);
+%                     max_y = limitValue(pair(2) + params.area/2, 1, m);
+%                     descriptors.roip.p11 = cat(1, descriptors.roip.p11, [min_x min_y]);
+%                     descriptors.roip.p12 = cat(1, descriptors.roip.p12, [max_x min_y]);
+%                     descriptors.roip.p21 = cat(1, descriptors.roip.p21, [min_x max_y]);
+%                     
+%                     descriptors.cluster = [descriptors.cluster cluster_j];
+%                 end
+%             end
+%         end
+%     end
+% end
 
 % if params.k > 1
 %     

@@ -2,22 +2,16 @@ clear, clc, close all
 
 disp('*** init program: load parameters (only Matlab functions) ***');
 [data, params, experiments] = getConfigurationParams();
-
 M = experiments.num_datasets;
 ext_obs = {};
 ext_stt = {};
-state = initState();
-[data.input.tf_err, gt] = generateMisscalibration();
+[data.input.tf_err, state, gt] = generateMisscalibration();
 load('noise_model.mat')
-
-% datasets test
-ind = 2:M;
-ind = fliplr(ind);
 
 t = tic;
 for j = 10 %[2 10 6 7 9 10]
     N = experiments.num_samples(j);
-    for i = 1 %1:N       
+    for i = 1:N       
         experiments.id_dataset = j;
         experiments.id_sample = i;  
         

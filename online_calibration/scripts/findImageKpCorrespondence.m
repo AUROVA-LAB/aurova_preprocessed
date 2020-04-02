@@ -99,7 +99,6 @@ for j = 1:num_kp
 
     %maximun in cost function
     ii = find(vector==max(max(vector)));
-    matches.corr(j) = max(max(vector));
     id_kp = floor((ii-1) / N2) + 1;
     id_pair = mod(ii-1, N2) + 1;
     
