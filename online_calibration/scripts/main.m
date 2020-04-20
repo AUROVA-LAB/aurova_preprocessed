@@ -5,11 +5,13 @@ disp('*** init program: load parameters (only Matlab functions) ***');
 M = experiments.num_datasets;
 ext_obs = {};
 ext_stt = {};
+ext_meas = {};
+ext_id = {};
 [data.input.tf_err, state, gt] = generateMisscalibration();
 load('noise_model.mat')
 
 t = tic;
-for j = 10 %[2 10 6 7 9 10]
+for j = [10 2 6 7 9]
     N = experiments.num_samples(j);
     for i = 1:N       
         experiments.id_dataset = j;
@@ -27,9 +29,13 @@ for j = 10 %[2 10 6 7 9 10]
         
         if data.matches.num >= data.matches.max
             ext_obs = [ext_obs data.output];
-            observation = setObservation(data.output, noise_model);
-            state = updateState(observation, state);
-            ext_stt = [ext_stt state];
+            [yaw, pitch, roll] = dcm2angle(data.output.orientation);
+            measure = [data.output.location, yaw, pitch, roll];
+            ext_meas = [ext_meas measure];
+            ext_id = [ext_id j];
+%             observation = setObservation(data.output, noise_model);
+%             state = updateState(observation, state);
+%             ext_stt = [ext_stt state];
         end
     end
 end

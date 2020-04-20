@@ -1,8 +1,8 @@
 function [tf, state, gt] = generateMisscalibration()
 
 % misscalibration
-xyz = [0.08 0.11 0.03];
-ypr = [0.1 0.6 0.5];
+xyz = [-0.8 0.7 -0.6];
+ypr = [0.8 0.9 -0.99];
 
 % generate transform
 rot_matrix = angle2dcm(ypr(1)*(pi/180), ypr(2)*(pi/180), ypr(3)*(pi/180));

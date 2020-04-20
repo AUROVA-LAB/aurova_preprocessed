@@ -7,8 +7,16 @@ if data.matches.num >= data.matches.max
     data.matches.wp_tmp =[];
 end
 
-template = cat(1, data.matches.current.kp_tmp, data.matches.current.pair_tmp);
-source = cat(1, data.matches.current.kp_src, data.matches.current.pair_src);
+[n, ~] = size(data.matches.current.kp_src);
+template = [];
+source = [];
+for i = 1:n
+ [cls_u, cls_v] = scaleTranslateRotateDsc(data, i);
+ cluster_tf = cat(2, cls_u, cls_v);
+ source = cat(1, source, cluster_tf);
+ template = cat(1, template, data.matches.current.descriptor.cluster{i});
+end
+
 [num, ~] = size(template);
 world_points(1:num, 1:3) = 0;
 for i = 1:num

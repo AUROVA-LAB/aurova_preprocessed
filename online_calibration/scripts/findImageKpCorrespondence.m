@@ -6,7 +6,6 @@ matches.kp_src(1:num_kp, 1:2) = 1;
 matches.kp_tmp(1:num_kp, 1:2) = 1;
 matches.pair_src(1:num_kp, 1:2) = 1;
 matches.pair_tmp(1:num_kp, 1:2) = 1;
-matches.corr(1:num_kp) = 0;
 matches.descriptor = descriptors;
 
 for j = 1:num_kp

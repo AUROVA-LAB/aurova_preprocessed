@@ -8,12 +8,12 @@ params.threshold_up = 10;
 params.threshold_dsc = 30;
 params.threshold_sbl = 0;
 
-params.dist_factor = 0.8;
-params.rot_max = 10;
+params.dist_factor = 0.9;
+params.rot_max = 5;
 params.max_rho = 30;
 params.min_rho = 20;
 params.area = 80;
-params.s = 10; %slices in distance segmentation
+params.s = 20; %slices in distance segmentation
 params.min_sz_clus = 50;
 
 params.lidar_model = 0; %fill in read data phase
@@ -25,7 +25,7 @@ data.input = [];
 data.output = [];
 data.process = [];
 data.matches = [];
-data.matches.max = 200;
+data.matches.max = 8000;
 data.matches.num = 0;
 data.matches.kp_src =[];
 data.matches.kp_tmp =[];
