@@ -13,8 +13,9 @@ GpsToOdomAlgNode::GpsToOdomAlgNode(void) :
   this->odom_gps_pub_ = this->public_node_handle_.advertise < nav_msgs::Odometry > ("/odometry_gps", 1);
 
   // [init subscribers]
-  this->odom_fix_sub_ = this->public_node_handle_.subscribe("/odometry_gps_fix", 1, &GpsToOdomAlgNode::cb_getGpsOdomMsg,
-                                                            this);
+  this->gnss_fix_sub_ = this->public_node_handle_.subscribe("/fix", 1, &GpsToOdomAlgNode::cb_getGpsFixMsg, this);
+  this->odom_fix_sub_ = this->public_node_handle_.subscribe("/odometry_gps_fix", 1, &GpsToOdomAlgNode::cb_getGpsOdomMsg, this);
+  this->gnss_fix_vel_sub_ = this->public_node_handle_.subscribe("/fix_vel", 1, &GpsToOdomAlgNode::cb_getGpsFixVelVecMsg, this);
   this->fix_vel_sub_ = this->public_node_handle_.subscribe("/rover/fix_velocity", 1,
                                                            &GpsToOdomAlgNode::cb_getGpsFixVelMsg, this);
 
@@ -62,6 +63,77 @@ void GpsToOdomAlgNode::cb_getGpsOdomMsg(const nav_msgs::Odometry::ConstPtr& odom
   this->odom_gps_.pose.covariance[7] = odom_msg->pose.covariance[7];
   this->odom_gps_.pose.covariance[14] = odom_msg->pose.covariance[14];
   this->flag_gnss_position_received_ = true;
+
+  this->alg_.unlock();
+}
+
+void GpsToOdomAlgNode::cb_getGpsFixMsg(const sensor_msgs::NavSatFix::ConstPtr& fix_msg)
+{
+  this->alg_.lock();
+  
+  Ellipsoid utm;
+  double utm_x;
+  double utm_y;
+  char utm_zone[30];
+  int ref_ellipsoid = 23;
+  
+  utm.LLtoUTM(ref_ellipsoid, fix_msg->latitude, fix_msg->longitude, utm_y, utm_x, utm_zone);
+  
+  ///////////////////////////////////////////////////////////
+  ///// TRANSFORM TO TF FARME
+  geometry_msgs::PointStamped fix_tf;
+  geometry_msgs::PointStamped fix_utm;
+  fix_utm.header.frame_id = "utm"; //TODO: from param
+  fix_utm.header.stamp = ros::Time(0); //ros::Time::now();
+  fix_utm.point.x = utm_x;
+  fix_utm.point.y = utm_y;
+  fix_utm.point.z = 0.0;
+  try
+  {
+    this->listener_.transformPoint("odom", fix_utm, fix_tf);
+  }
+  catch (tf::TransformException& ex)
+  {
+    ROS_WARN("[draw_frames] TF exception:\n%s", ex.what());
+    return;
+  }
+  ///////////////////////////////////////////////////////////
+  
+  this->odom_gps_.header = fix_msg->header;
+  this->odom_gps_.header.frame_id = "odom";
+  this->odom_gps_.pose.pose.position.x = fix_tf.point.x;
+  this->odom_gps_.pose.pose.position.y = fix_tf.point.y;
+  this->odom_gps_.pose.pose.position.z = 0.0;
+  this->odom_gps_.pose.covariance[0] = fix_msg->position_covariance[0];
+  this->odom_gps_.pose.covariance[7] = fix_msg->position_covariance[4];
+  this->odom_gps_.pose.covariance[14] = fix_msg->position_covariance[8];
+  this->flag_gnss_position_received_ = true;
+
+  this->alg_.unlock();
+}
+
+void GpsToOdomAlgNode::cb_getGpsFixVelVecMsg(const geometry_msgs::Vector3Stamped::ConstPtr& vel_msg)
+{
+  this->alg_.lock();
+  
+  double yaw = atan2(vel_msg->vector.y, vel_msg->vector.x);
+  tf::Quaternion quat_world = tf::createQuaternionFromRPY(0, 0, yaw);
+  
+  this->odom_gps_.pose.pose.orientation.x = quat_world[0];
+  this->odom_gps_.pose.pose.orientation.y = quat_world[1];
+  this->odom_gps_.pose.pose.orientation.z = quat_world[2];
+  this->odom_gps_.pose.pose.orientation.w = quat_world[3];
+  
+  double speed_max = 1.3; //TODO: from param
+  double speed = sqrt(pow(vel_msg->vector.y, 2) + pow(vel_msg->vector.x, 2));
+  double min_variance_yaw = (2 * 3.1416) / 180.0; 
+  double max_variance_yaw = (360 * 3.1416) / 180.0;
+  double dif_variance_yaw = max_variance_yaw - min_variance_yaw;
+  double variance_yaw = max_variance_yaw - dif_variance_yaw * (speed / speed_max);
+  
+  this->odom_gps_.pose.covariance[35] = variance_yaw;
+  
+  this->flag_gnss_velocity_received_ = true;
 
   this->alg_.unlock();
 }

@@ -35,8 +35,11 @@
 #include <tf/transform_listener.h>
 #include <tf/tf.h>
 #include "nav_msgs/Odometry.h"
+#include "sensor_msgs/NavSatFix.h"
 #include "geometry_msgs/TwistWithCovarianceStamped.h"
+#include "geometry_msgs/Vector3Stamped.h"
 #include "math.h"
+#include "planning/graph.h"
 
 //include gps_to_odom_alg main library
 

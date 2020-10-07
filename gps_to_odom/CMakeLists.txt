@@ -3,6 +3,8 @@ project(gps_to_odom)
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED)
+find_package(planning REQUIRED)
+FIND_PACKAGE(Eigen3 REQUIRED)
 # ******************************************************************** 
 #                 Add catkin additional components here
 # ******************************************************************** 
@@ -89,6 +91,7 @@ add_executable(${PROJECT_NAME} src/gps_to_odom_alg.cpp src/gps_to_odom_alg_node.
 #                   Add the libraries
 # ******************************************************************** 
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} planning)
 # target_link_libraries(${PROJECT_NAME} ${<dependency>_LIBRARY})
 
 # ******************************************************************** 

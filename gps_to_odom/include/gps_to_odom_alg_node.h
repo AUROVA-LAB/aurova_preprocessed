@@ -62,18 +62,34 @@ private:
   ros::Publisher odom_gps_pub_;
 
   // [subscriber attributes]
+  ros::Subscriber gnss_fix_sub_;
+  ros::Subscriber gnss_fix_vel_sub_;
   ros::Subscriber odom_fix_sub_;
   ros::Subscriber fix_vel_sub_;
 
   /**
-   * \brief callback for read odometry messages
+   * \brief callback for read odometry messages (from navsat node)
    * This message can be read from different localization sources by remapping in the
    * execution of the node.
    */
   void cb_getGpsOdomMsg(const nav_msgs::Odometry::ConstPtr& odom_msg);
+  
+  /**
+   * \brief callback for read gpd fix messages (from gazebo)
+   * This message can be read from different localization sources by remapping in the
+   * execution of the node.
+   */
+  void cb_getGpsFixMsg(const sensor_msgs::NavSatFix::ConstPtr& fix_msg);
 
   /**
-   * \brief callback for read fix velocity messages
+   * \brief callback for read fix velocity messages (from gazebo)
+   * This message can be read from different localization sources by remapping in the
+   * execution of the node.
+   */
+  void cb_getGpsFixVelVecMsg(const geometry_msgs::Vector3Stamped::ConstPtr& vel_msg);
+  
+  /**
+   * \brief callback for read fix velocity messages (from sensor)
    * This message can be read from different localization sources by remapping in the
    * execution of the node.
    */
