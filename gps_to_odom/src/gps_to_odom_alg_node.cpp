@@ -131,6 +131,11 @@ void GpsToOdomAlgNode::cb_getGpsFixVelVecMsg(const geometry_msgs::Vector3Stamped
   double dif_variance_yaw = max_variance_yaw - min_variance_yaw;
   double variance_yaw = max_variance_yaw - dif_variance_yaw * (speed / speed_max);
   
+  if (variance_yaw < min_variance_yaw)
+  {
+    variance_yaw = min_variance_yaw;
+  }
+  
   this->odom_gps_.pose.covariance[35] = variance_yaw;
   
   this->flag_gnss_velocity_received_ = true;
