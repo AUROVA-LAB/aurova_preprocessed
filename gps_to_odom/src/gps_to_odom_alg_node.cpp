@@ -90,7 +90,7 @@ void GpsToOdomAlgNode::cb_getGpsFixMsg(const sensor_msgs::NavSatFix::ConstPtr& f
   fix_utm.point.z = 0.0;
   try
   {
-    this->listener_.transformPoint("odom", fix_utm, fix_tf);
+    this->listener_.transformPoint("map", fix_utm, fix_tf);
   }
   catch (tf::TransformException& ex)
   {
@@ -100,7 +100,7 @@ void GpsToOdomAlgNode::cb_getGpsFixMsg(const sensor_msgs::NavSatFix::ConstPtr& f
   ///////////////////////////////////////////////////////////
   
   this->odom_gps_.header = fix_msg->header;
-  this->odom_gps_.header.frame_id = "odom";
+  this->odom_gps_.header.frame_id = "map";
   this->odom_gps_.pose.pose.position.x = fix_tf.point.x;
   this->odom_gps_.pose.pose.position.y = fix_tf.point.y;
   this->odom_gps_.pose.pose.position.z = 0.0;
@@ -115,6 +115,8 @@ void GpsToOdomAlgNode::cb_getGpsFixMsg(const sensor_msgs::NavSatFix::ConstPtr& f
 void GpsToOdomAlgNode::cb_getGpsFixVelVecMsg(const geometry_msgs::Vector3Stamped::ConstPtr& vel_msg)
 {
   this->alg_.lock();
+  
+  // no transform because the orientation is in north of frame "world" that coincides with frame "map" 
   
   double yaw = atan2(vel_msg->vector.y, vel_msg->vector.x);
   tf::Quaternion quat_world = tf::createQuaternionFromRPY(0, 0, yaw);
