@@ -8,6 +8,8 @@ GpsToOdomAlgNode::GpsToOdomAlgNode(void) :
   this->flag_gnss_position_received_ = false;
   this->flag_gnss_velocity_received_ = false;
   this->loop_rate_ = 10; //in [Hz]
+  this->public_node_handle_.getParam("/gps_to_odom/frame_id", this->frame_id_);
+  this->public_node_handle_.getParam("/gps_to_odom/max_speed", this->max_speed_);
 
   // [init publishers]
   this->odom_gps_pub_ = this->public_node_handle_.advertise < nav_msgs::Odometry > ("/odometry_gps", 1);
@@ -83,14 +85,14 @@ void GpsToOdomAlgNode::cb_getGpsFixMsg(const sensor_msgs::NavSatFix::ConstPtr& f
   ///// TRANSFORM TO TF FARME
   geometry_msgs::PointStamped fix_tf;
   geometry_msgs::PointStamped fix_utm;
-  fix_utm.header.frame_id = "utm"; //TODO: from param
+  fix_utm.header.frame_id = "utm";
   fix_utm.header.stamp = ros::Time(0); //ros::Time::now();
   fix_utm.point.x = utm_x;
   fix_utm.point.y = utm_y;
   fix_utm.point.z = 0.0;
   try
   {
-    this->listener_.transformPoint("map", fix_utm, fix_tf);
+    this->listener_.transformPoint(this->frame_id_, fix_utm, fix_tf);
   }
   catch (tf::TransformException& ex)
   {
@@ -100,7 +102,7 @@ void GpsToOdomAlgNode::cb_getGpsFixMsg(const sensor_msgs::NavSatFix::ConstPtr& f
   ///////////////////////////////////////////////////////////
   
   this->odom_gps_.header = fix_msg->header;
-  this->odom_gps_.header.frame_id = "map";
+  this->odom_gps_.header.frame_id = this->frame_id_;
   this->odom_gps_.pose.pose.position.x = fix_tf.point.x;
   this->odom_gps_.pose.pose.position.y = fix_tf.point.y;
   this->odom_gps_.pose.pose.position.z = 0.0;
@@ -125,13 +127,12 @@ void GpsToOdomAlgNode::cb_getGpsFixVelVecMsg(const geometry_msgs::Vector3Stamped
   this->odom_gps_.pose.pose.orientation.y = quat_world[1];
   this->odom_gps_.pose.pose.orientation.z = quat_world[2];
   this->odom_gps_.pose.pose.orientation.w = quat_world[3];
-  
-  double speed_max = 1.3; //TODO: from param
+   
   double speed = sqrt(pow(vel_msg->vector.y, 2) + pow(vel_msg->vector.x, 2));
   double min_variance_yaw = (2 * 3.1416) / 180.0; 
   double max_variance_yaw = (360 * 3.1416) / 180.0;
   double dif_variance_yaw = max_variance_yaw - min_variance_yaw;
-  double variance_yaw = max_variance_yaw - dif_variance_yaw * (speed / speed_max);
+  double variance_yaw = max_variance_yaw - dif_variance_yaw * (speed / this->max_speed_);
   
   if (variance_yaw < min_variance_yaw)
   {
@@ -159,7 +160,7 @@ void GpsToOdomAlgNode::cb_getGpsFixVelMsg(const geometry_msgs::TwistWithCovarian
   // Get transform from UTM to MAP
   try
   {
-    this->listener_.lookupTransform("map", "utm", ros::Time(0), this->utm_trans_);
+    this->listener_.lookupTransform(this->frame_id_, "utm", ros::Time(0), this->utm_trans_);
   }
   catch (tf::TransformException ex)
   {

@@ -54,6 +54,8 @@ private:
   bool flag_publish_odom_;
   bool flag_gnss_position_received_;
   bool flag_gnss_velocity_received_;
+  float max_speed_;
+  std::string frame_id_;
   nav_msgs::Odometry odom_gps_;
   tf::StampedTransform utm_trans_;
   tf::TransformListener listener_;
