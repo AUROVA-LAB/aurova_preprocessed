@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-  
-  <!-- calibration node -->
-  <node name="online_calibration" pkg="online_calibration" type="online_calibration" output="screen">
-    <remap from="image" to="/camera/color/image_raw" /> <!-- TODO: get from parameter (previous change code) -->
-  </node>
-
-</launch>
