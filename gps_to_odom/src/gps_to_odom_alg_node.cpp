@@ -15,11 +15,10 @@ GpsToOdomAlgNode::GpsToOdomAlgNode(void) :
   this->odom_gps_pub_ = this->public_node_handle_.advertise < nav_msgs::Odometry > ("/odometry_gps", 1);
 
   // [init subscribers]
-  this->gnss_fix_sub_ = this->public_node_handle_.subscribe("/fix", 1, &GpsToOdomAlgNode::cb_getGpsFixMsg, this);
-  this->odom_fix_sub_ = this->public_node_handle_.subscribe("/odometry_gps_fix", 1, &GpsToOdomAlgNode::cb_getGpsOdomMsg, this);
-  this->gnss_fix_vel_sub_ = this->public_node_handle_.subscribe("/fix_vel", 1, &GpsToOdomAlgNode::cb_getGpsFixVelVecMsg, this);
-  this->fix_vel_sub_ = this->public_node_handle_.subscribe("/rover/fix_velocity", 1,
-                                                           &GpsToOdomAlgNode::cb_getGpsFixVelMsg, this);
+  this->sim_fix_sub_ = this->public_node_handle_.subscribe("/fix", 1, &GpsToOdomAlgNode::cb_getSimGpsFixMsg, this);
+  this->sim_vel_sub_ = this->public_node_handle_.subscribe("/fix_vel", 1, &GpsToOdomAlgNode::cb_getSimGpsVelMsg, this);
+  this->bot_fix_sub_ = this->public_node_handle_.subscribe("/odometry_gps_fix", 1, &GpsToOdomAlgNode::cb_getBotGpsFixMsg, this);
+  this->bot_vel_sub_ = this->public_node_handle_.subscribe("/rover/fix_velocity", 1, &GpsToOdomAlgNode::cb_getBotGpsVelMsg, this);
 
   // [init services]
 
@@ -54,22 +53,7 @@ void GpsToOdomAlgNode::mainNodeThread(void)
 }
 
 /*  [subscriber callbacks] */
-void GpsToOdomAlgNode::cb_getGpsOdomMsg(const nav_msgs::Odometry::ConstPtr& odom_msg)
-{
-  this->alg_.lock();
-
-  this->odom_gps_.header = odom_msg->header;
-  this->odom_gps_.child_frame_id = odom_msg->child_frame_id;
-  this->odom_gps_.pose.pose.position = odom_msg->pose.pose.position; // In Map frame
-  this->odom_gps_.pose.covariance[0] = odom_msg->pose.covariance[0];
-  this->odom_gps_.pose.covariance[7] = odom_msg->pose.covariance[7];
-  this->odom_gps_.pose.covariance[14] = odom_msg->pose.covariance[14];
-  this->flag_gnss_position_received_ = true;
-
-  this->alg_.unlock();
-}
-
-void GpsToOdomAlgNode::cb_getGpsFixMsg(const sensor_msgs::NavSatFix::ConstPtr& fix_msg)
+void GpsToOdomAlgNode::cb_getSimGpsFixMsg(const sensor_msgs::NavSatFix::ConstPtr& fix_msg)
 {
   this->alg_.lock();
   
@@ -114,7 +98,7 @@ void GpsToOdomAlgNode::cb_getGpsFixMsg(const sensor_msgs::NavSatFix::ConstPtr& f
   this->alg_.unlock();
 }
 
-void GpsToOdomAlgNode::cb_getGpsFixVelVecMsg(const geometry_msgs::Vector3Stamped::ConstPtr& vel_msg)
+void GpsToOdomAlgNode::cb_getSimGpsVelMsg(const geometry_msgs::Vector3Stamped::ConstPtr& vel_msg)
 {
   this->alg_.lock();
   
@@ -146,7 +130,22 @@ void GpsToOdomAlgNode::cb_getGpsFixVelVecMsg(const geometry_msgs::Vector3Stamped
   this->alg_.unlock();
 }
 
-void GpsToOdomAlgNode::cb_getGpsFixVelMsg(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr& vel_msg)
+void GpsToOdomAlgNode::cb_getBotGpsFixMsg(const nav_msgs::Odometry::ConstPtr& fix_msg)
+{
+  this->alg_.lock();
+
+  this->odom_gps_.header = fix_msg->header;
+  this->odom_gps_.child_frame_id = fix_msg->child_frame_id;
+  this->odom_gps_.pose.pose.position = fix_msg->pose.pose.position; // In Map frame
+  this->odom_gps_.pose.covariance[0] = fix_msg->pose.covariance[0];
+  this->odom_gps_.pose.covariance[7] = fix_msg->pose.covariance[7];
+  this->odom_gps_.pose.covariance[14] = fix_msg->pose.covariance[14];
+  this->flag_gnss_position_received_ = true;
+
+  this->alg_.unlock();
+}
+
+void GpsToOdomAlgNode::cb_getBotGpsVelMsg(const geometry_msgs::TwistWithCovarianceStamped::ConstPtr& vel_msg)
 {
   this->alg_.lock();
 
