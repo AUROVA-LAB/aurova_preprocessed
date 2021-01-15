@@ -188,8 +188,7 @@ void GpsToOdomAlgNode::cb_getBotGpsVelMsg(const geometry_msgs::TwistWithCovarian
   {
 
 		map_orientations_RPY(0) = 0.0; //We assume that the 3D movement of a ground vehicle is due to pitch and yaw only
-		map_orientations_RPY(1) = 0.0;
-		//map_orientations_RPY(1) = -1.0 * atan2(vz, sqrt(vx*vx + vy*vy)); // The -1.0 is to point the heading direction
+		map_orientations_RPY(1) = -1.0 * atan2(vz, sqrt(vx*vx + vy*vy)); // The -1.0 is to point the heading direction
 		                                                                 // up when z > 0 (because positive pitch angles make
 		                                                                 // the nose go down when using a front (x) , left (y)
 		                                                                 // up (z) representation
@@ -263,45 +262,43 @@ void GpsToOdomAlgNode::cb_getBotGpsVelMsg(const geometry_msgs::TwistWithCovarian
 		{
 		  variance_yaw = min_variance_yaw;
 		}
-		
-		this->odom_gps_.pose.covariance[35] = variance_yaw;
 
 		// To compute the orientation covariance (in this case DEPENDING ON VELOCITIES COV!!!) 
 		// we need the jacobian of the function that maps velocities to orientation
-		//Eigen::Matrix3d map_orientation_RPY_jacobian = Eigen::Matrix3d::Zero();
+		Eigen::Matrix3d map_orientation_RPY_jacobian = Eigen::Matrix3d::Zero();
 
-		//double mod_xy  = sqrt(vx*vx + vy*vy);
-		//double mod_xyz_squared = vx*vx + vy*vy + vz*vz;
+		double mod_xy  = sqrt(vx*vx + vy*vy);
+		double mod_xyz_squared = vx*vx + vy*vy + vz*vz;
 
 		// Roll is set as constant, so any derivative is just zero
-		//map_orientation_RPY_jacobian(0,0) = 0.0;                     // partial derivative of roll wrt vx
-		//map_orientation_RPY_jacobian(0,1) = 0.0;                     // partial derivative of roll wrt vy
-		//map_orientation_RPY_jacobian(0,2) = 0.0;                     // partial derivative of roll wrt vz
+		map_orientation_RPY_jacobian(0,0) = 0.0;                     // partial derivative of roll wrt vx
+		map_orientation_RPY_jacobian(0,1) = 0.0;                     // partial derivative of roll wrt vy
+		map_orientation_RPY_jacobian(0,2) = 0.0;                     // partial derivative of roll wrt vz
 
-		//map_orientation_RPY_jacobian(1,0) = (vz * vx) / (mod_xy * mod_xyz_squared); // partial derivative of pitch wrt vx
-		//map_orientation_RPY_jacobian(1,1) = (vz * vy) / (mod_xy * mod_xyz_squared); // partial derivative of pitch wrt vy
-		//map_orientation_RPY_jacobian(1,2) = -1.0 * mod_xy / mod_xyz_squared;        // partial derivative of pitch wrt vz
+		map_orientation_RPY_jacobian(1,0) = (vz * vx) / (mod_xy * mod_xyz_squared); // partial derivative of pitch wrt vx
+		map_orientation_RPY_jacobian(1,1) = (vz * vy) / (mod_xy * mod_xyz_squared); // partial derivative of pitch wrt vy
+		map_orientation_RPY_jacobian(1,2) = -1.0 * mod_xy / mod_xyz_squared;        // partial derivative of pitch wrt vz
 
-		//map_orientation_RPY_jacobian(2,0) = -1*vy / mod_xy; // partial derivative of yaw wrt vx
-		//map_orientation_RPY_jacobian(2,1) =    vx / mod_xy; // partial derivative of yaw wrt vy
-		//map_orientation_RPY_jacobian(2,2) = 0.0;            // partial derivative of yaw wrt vz
+		map_orientation_RPY_jacobian(2,0) = -1*vy / mod_xy; // partial derivative of yaw wrt vx
+		map_orientation_RPY_jacobian(2,1) =    vx / mod_xy; // partial derivative of yaw wrt vy
+		map_orientation_RPY_jacobian(2,2) = 0.0;            // partial derivative of yaw wrt vz
 
 		// Finally, we compute the first order approximation
-		//Eigen::Matrix3d map_orientation_RPY_cov = Eigen::Matrix3d::Zero();
-		//map_orientation_RPY_cov = map_orientation_RPY_jacobian * map_vel_cov * map_orientation_RPY_jacobian.transpose();
+		Eigen::Matrix3d map_orientation_RPY_cov = Eigen::Matrix3d::Zero();
+		map_orientation_RPY_cov = map_orientation_RPY_jacobian * map_vel_cov * map_orientation_RPY_jacobian.transpose();
 
 		// Passing to ROS message
-		//this->odom_gps_.pose.covariance[21] = map_orientation_RPY_cov(0,0);
-		//this->odom_gps_.pose.covariance[22] = map_orientation_RPY_cov(0,1);
-		//this->odom_gps_.pose.covariance[23] = map_orientation_RPY_cov(0,2);
+		this->odom_gps_.pose.covariance[21] = map_orientation_RPY_cov(0,0);
+		this->odom_gps_.pose.covariance[22] = map_orientation_RPY_cov(0,1);
+		this->odom_gps_.pose.covariance[23] = map_orientation_RPY_cov(0,2);
 
-		//this->odom_gps_.pose.covariance[27] = map_orientation_RPY_cov(1,0);
-		//this->odom_gps_.pose.covariance[28] = map_orientation_RPY_cov(1,1);
-		//this->odom_gps_.pose.covariance[29] = map_orientation_RPY_cov(1,2);
+		this->odom_gps_.pose.covariance[27] = map_orientation_RPY_cov(1,0);
+		this->odom_gps_.pose.covariance[28] = map_orientation_RPY_cov(1,1);
+		this->odom_gps_.pose.covariance[29] = map_orientation_RPY_cov(1,2);
 
-		//this->odom_gps_.pose.covariance[33] = map_orientation_RPY_cov(2,0);
-		//this->odom_gps_.pose.covariance[34] = map_orientation_RPY_cov(2,1);
-		//this->odom_gps_.pose.covariance[35] = map_orientation_RPY_cov(2,2);
+		this->odom_gps_.pose.covariance[33] = map_orientation_RPY_cov(2,0);
+		this->odom_gps_.pose.covariance[34] = map_orientation_RPY_cov(2,1);
+		this->odom_gps_.pose.covariance[35] = map_orientation_RPY_cov(2,2) + variance_yaw;
   
   }
 
