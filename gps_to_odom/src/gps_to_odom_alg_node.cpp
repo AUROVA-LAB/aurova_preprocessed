@@ -198,9 +198,9 @@ void GpsToOdomAlgNode::cb_getBotGpsVelMsg(const geometry_msgs::TwistWithCovarian
     tf::Quaternion quaternion = tf::createQuaternionFromRPY(map_orientations_RPY(0), map_orientations_RPY(1),
                                                             map_orientations_RPY(2));
 
-    std::cout << "Roll = " << map_orientations_RPY(0) * 180.0 / M_PI << "    Pitch = "
-        << map_orientations_RPY(1) * 180.0 / M_PI << "    Yaw = " << map_orientations_RPY(2) * 180.0 / M_PI
-        << std::endl;
+    //std::cout << "Roll = " << map_orientations_RPY(0) * 180.0 / M_PI << "    Pitch = "
+    //    << map_orientations_RPY(1) * 180.0 / M_PI << "    Yaw = " << map_orientations_RPY(2) * 180.0 / M_PI
+    //    << std::endl;
 
     // Pass it to the output message
     this->odom_gps_.pose.pose.orientation.x = quaternion[0];
