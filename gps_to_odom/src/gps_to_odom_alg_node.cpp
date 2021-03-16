@@ -110,6 +110,9 @@ void GpsToOdomAlgNode::cb_getSimGpsVelMsg(const geometry_msgs::Vector3Stamped::C
   this->alg_.lock();
 
   // no transform because the orientation is in north of frame "world" that coincides with frame "map" 
+  this->odom_gps_.twist.twist.linear.x = vel_msg->vector.x;
+  this->odom_gps_.twist.twist.linear.y = vel_msg->vector.y;
+  this->odom_gps_.twist.twist.linear.z = vel_msg->vector.z;
 
   double yaw = atan2(vel_msg->vector.y, vel_msg->vector.x);
   tf::Quaternion quat_world = tf::createQuaternionFromRPY(0, 0, yaw);
