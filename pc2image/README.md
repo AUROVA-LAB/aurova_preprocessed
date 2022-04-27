@@ -2,7 +2,7 @@
 This code converts a point cloud obtained by a Velodyne VLP16 3D-Lidar sensor into a depth image mono16.
 
 <p float="left">
-  <img src="/images/pc2image.GIF" width="770"  />
+  <img src="https://github.com/AUROVA-LAB/aurova_preprocessed/blob/master/pc2image/images/pc2image.GIF" width="770"  />
 </p>
 
 ## Requisites
