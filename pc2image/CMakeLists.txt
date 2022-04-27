@@ -3,6 +3,7 @@ project(pc2image)
 
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS "-std=c++14")
+set(CMAKE_CXX_FLAGS "-std=gnu++14")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
 find_package(catkin REQUIRED COMPONENTS
