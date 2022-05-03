@@ -4,7 +4,7 @@ VirtualImuAlgNode::VirtualImuAlgNode(void) :
     algorithm_base::IriBaseAlgorithm<VirtualImuAlgorithm>()
 {
   //init class attributes if necessary
-  this->loop_rate_ = 100; //in [Hz]
+  //this->loop_rate_ = 100; //in [Hz]
   this->originl_imu_msg_.angular_velocity.x = 0.0;
   this->originl_imu_msg_.angular_velocity.y = 0.0;
   this->originl_imu_msg_.angular_velocity.z = 0.0;
