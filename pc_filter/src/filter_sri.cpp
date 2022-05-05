@@ -336,9 +336,9 @@ void callback(const ImageConstPtr& imgIn)
   out_msg.image    = curr_ground; // Your cv::Mat
   pub_ground.publish(out_msg.toImageMsg()); 
 
-  edge_cloud->header.frame_id = "base_link";
-  surf_cloud->header.frame_id = "base_link";
-  ground_cloud->header.frame_id = "base_link";
+  edge_cloud->header.frame_id = "velodyne";
+  surf_cloud->header.frame_id = "velodyne";
+  ground_cloud->header.frame_id = "velodyne";
   //pcl_conversions::toPCL(ros::Time::now(), edge_cloud->header.stamp);
   pub_1.publish (edge_cloud);
   pub_2.publish (surf_cloud);
