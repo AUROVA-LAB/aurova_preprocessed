@@ -14,8 +14,8 @@
     <param name="max_angle_height"     type="double" value="360" />
     <param name="pcTopic"       type="str"    value="/velodyne_points" />
 
-    <node pkg="pc2image" type="pc2image_node" name="pc2image_node" output="screen"/>
-    <node pkg="pc_filter" type="filter_node" name="pc_filter_node" output="screen"/>
+    <node pkg="pc2image" type="pc2image_node" name="pc2image_node"/>
+    <node pkg="pc_filter" type="filter_node" name="pc_filter_node"/>
 
   
 </launch>
