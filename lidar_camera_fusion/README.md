@@ -37,4 +37,7 @@ The code implemented in ROS projects a point cloud obtained by a Velodyne VLP16 
   roslaunch lidar_camera_fusion vlp16OnImg.launch 
 ```
 ## Test 
+<p float="left">
+  <img src="/images/poin_cloud_interpoled.GIF" width="410"  />
+</p>
 
