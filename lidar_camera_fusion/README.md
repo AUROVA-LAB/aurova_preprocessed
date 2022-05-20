@@ -8,10 +8,9 @@ The code implemented in ROS projects a point cloud obtained by a Velodyne VLP16 
     cd ~/(your_work_space)/src
     git clone https://github.com/ros-drivers/velodyne.git -b melodic-devel
     cd ..
-    catkin_make --only-pkg-with-deps velodyne        
+    catkin_make --only-pkg-with-deps velodyne
   ```
 - [PCL](https://pointclouds.org/) (Point Cloud Library)
-- [Armadillo](http://arma.sourceforge.net/download.html)
 - [Armadillo](http://arma.sourceforge.net/download.html) (11.0.1 or higher)
   ```
     tar -xvf armadillo-11.1.1.tar.xz
