@@ -6,7 +6,8 @@ find_package(catkin REQUIRED)
 # ******************************************************************** 
 #                 Add catkin additional components here
 # ******************************************************************** 
-find_package(catkin REQUIRED COMPONENTS iri_base_algorithm Eigen3)
+#find_package(catkin REQUIRED COMPONENTS iri_base_algorithm Eigen3)
+find_package(catkin REQUIRED COMPONENTS iri_base_algorithm eigen_conversions) 
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -64,7 +65,7 @@ catkin_package(
 # ******************************************************************** 
 #      Add system and labrobotica run time dependencies here
 # ******************************************************************** 
-DEPENDS Eigen  
+#DEPENDS Eigen  
 )
 
 ###########
@@ -76,7 +77,7 @@ DEPENDS Eigen
 # ******************************************************************** 
 include_directories(include)
 include_directories(${catkin_INCLUDE_DIRS}
-                    ${EIGEN_INCLUDE_DIRS})
+                    )#${EIGEN_INCLUDE_DIRS})
 # include_directories(${<dependency>_INCLUDE_DIR})
 
 ## Declare a cpp library
