@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import message_filters
 import rospy
 import sys
@@ -9,24 +7,24 @@ import numpy as np
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 
-def callback(range, signal, reflec, nearir):
+def callback(range_in, signal_in, reflec_in, nearir_in):
     global flag, bridge, merge_img_pub
     if flag:
         flag=False
-        range = bridge.imgmsg_to_cv2(range)
+        range = bridge.imgmsg_to_cv2(range_in)
         range = (range/256).astype('uint8')
-        signal = bridge.imgmsg_to_cv2(signal)
+        signal = bridge.imgmsg_to_cv2(signal_in)
         signal =(signal/256).astype('uint8')
-        reflec = bridge.imgmsg_to_cv2(reflec)
+        reflec = bridge.imgmsg_to_cv2(reflec_in)
         reflec =(reflec/256).astype('uint8')
-        nearir = bridge.imgmsg_to_cv2(nearir)
+        nearir = bridge.imgmsg_to_cv2(nearir_in)
         nearir =(nearir/256).astype('uint8')
 
         merged=cv2.merge([signal,nearir,reflec,range])
-
-        image_message = bridge.cv2_to_imgmsg(merged, "bgra8")
+        image_message = bridge.cv2_to_imgmsg(merged, "bgra8")  
+        image_message.header.stamp = range_in.header.stamp
+        image_message.header.frame_id = "ouster_sensor"
         merge_img_pub.publish(image_message)
-
 
 
 if __name__ == '__main__':
