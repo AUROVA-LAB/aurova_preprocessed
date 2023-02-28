@@ -20,7 +20,7 @@ fields = [PointField('x', 0, PointField.FLOAT32, 1),
 
 pub_surf = rospy.Publisher("pc_surf", PointCloud2, queue_size=1)
 pub_edge = rospy.Publisher("pc_edge", PointCloud2, queue_size=1)
-pub_suelo = rospy.Publisher("pc_suelo", PointCloud2, queue_size=1)
+pub_suelo = rospy.Publisher("pc_ground", PointCloud2, queue_size=1)
 
 header = Header()
 header.frame_id = "/velodyne"
@@ -62,7 +62,7 @@ def callback(data):
     #magnitude_spectrum,mask_2,_ = fft.fourier_filtter(curr_fft, mask_obj,50)  
 
     # ground points extraction with FFT
-    mask,_,curr_fft = fft.fourier_filtter(current_frame, mask_suelo,4)   
+    mask,_,curr_fft = fft.fourier_filtter(current_frame, mask_suelo,1)   
    
 
     
@@ -171,7 +171,7 @@ def callback(data):
     #pub2.publish(br.cv2_to_imgmsg(((curr_fft/2**8).astype(np.uint8))))
     #pub.publish(br.cv2_to_imgmsg(img_gray.astype(np.uint8)))
 
-    pc_suelo= point_cloud2.create_cloud(header, fields, points_curr)
+    pc_ground= point_cloud2.create_cloud(header, fields, points_curr)
     pc_edge = point_cloud2.create_cloud(header, fields, points_edge)
     pc_surf = point_cloud2.create_cloud(header, fields, points_surf)
 
@@ -183,10 +183,10 @@ def callback(data):
 
   
 
-    pc_suelo.header.stamp = rospy.Time.now()
+    pc_ground.header.stamp = rospy.Time.now()
     pc_edge.header.stamp = rospy.Time.now()
     pc_surf.header.stamp = rospy.Time.now()
-    pub_suelo.publish(pc_suelo)
+    pub_suelo.publish(pc_ground)
     pub_edge.publish(pc_edge)
     pub_surf.publish(pc_surf)
 

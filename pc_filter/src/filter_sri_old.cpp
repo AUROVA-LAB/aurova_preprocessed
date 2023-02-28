@@ -16,8 +16,6 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
 
-#include <pcl/filters/voxel_grid.h>
-
 #include <iostream>
 
 #include <chrono>
@@ -42,7 +40,6 @@ ros::Publisher pub_1;
 ros::Publisher pub_2;
 ros::Publisher pub_3;
 
-//float max_depth =40.96;;
 float max_depth =100.0;
 float min_depth = 8.0;
 std::string imgTopic = "/depht_image";
@@ -127,10 +124,6 @@ void callback(const ImageConstPtr& imgIn)
   cv::Mat element = cv::Mat(3, 3, CV_32F, image_data);  
   cv::morphologyEx(th_sobel, ground_mask1,cv::MORPH_CLOSE, element,cv::Point(1,1),1);
 
-  //open
-  cv::Mat open_kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
-  cv::morphologyEx(ground_mask1, ground_mask1, cv::MORPH_CLOSE,  open_kernel,cv::Point(1,1),5);
-//
 // Edge 
   cv::Mat edge_y, abs_edge_y ,th_edge, edge_frame;
  
@@ -141,7 +134,7 @@ void callback(const ImageConstPtr& imgIn)
 
   cv::Sobel(edge_frame, edge_y, CV_64F, 1, 0, 1);
   cv::convertScaleAbs(edge_y, abs_edge_y);
-  cv::threshold(abs_edge_y,th_edge,1, 255, cv::THRESH_BINARY);
+  cv::threshold(abs_edge_y,th_edge,6, 255, cv::THRESH_BINARY);
 
   /*canny
   cv::Mat detected_edges;
@@ -154,7 +147,12 @@ void callback(const ImageConstPtr& imgIn)
   //th_edge = th_edge.mul((detected_edges));
   //
 
-
+  //open
+  //int morph_size = 1;
+  //cv::Mat open_kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
+  //int kernelOpen[9] = {0, 1, 0, 0, 1, 0, 0, 1, 0};
+  //cv::Mat element_open = cv::Mat(3, 3, CV_32F, kernelOpen);  
+ // cv::Mat open_th_edge = th_edge;
   
     // For Erosion
 
@@ -195,19 +193,12 @@ void callback(const ImageConstPtr& imgIn)
   ground_mask_inv.convertTo(ground_mask_inv, CV_16U);  
 
   curr_surf = curr_surf.mul((ground_mask_inv)); // ground
-  
-
   //curr_surf = curr_surf.mul((th_edge_inv)); // surf and ground
-
-
 
   ////////////// without ground
   
   //curr_surf = curr_surf.mul((ground_mask2));
   //////////////
-
-
-  
  
  
 //ground segmentation
@@ -221,6 +212,20 @@ void callback(const ImageConstPtr& imgIn)
 
   Eigen::Matrix<float,Dynamic,Dynamic> x_surf, y_surf, x_edge, y_edge;
   
+  /*cv2eigen(curr_edge,x_edge);
+  cv2eigen(curr_edge,y_edge);
+  cv2eigen(curr_surf,x_surf);
+  cv2eigen(curr_surf,y_surf);*/
+
+  Eigen::Matrix<float,Dynamic,Dynamic> edge_sz;
+  cv2eigen(curr_edge,edge_sz);  
+  Eigen::Matrix<float,Dynamic,Dynamic> surf_sz;
+  cv2eigen(curr_surf,surf_sz);
+
+  Eigen::Matrix<float,Dynamic,Dynamic> ground_sz;
+  cv2eigen(curr_ground,ground_sz);
+  
+
   //pcl::PointCloud<pcl::PointXYZ> edge_cloud;
   PointCloud::Ptr edge_cloud (new PointCloud);
   edge_cloud->width = l_img.cols; 
@@ -243,13 +248,6 @@ void callback(const ImageConstPtr& imgIn)
   ground_cloud ->is_dense = false;
   ground_cloud->points.resize (ground_cloud->width * ground_cloud->height);
 
-  Eigen::Matrix<float,Dynamic,Dynamic> edge_sz;
-  cv2eigen(curr_edge,edge_sz);  
-  Eigen::Matrix<float,Dynamic,Dynamic> surf_sz;
-  cv2eigen(curr_surf,surf_sz);
-  Eigen::Matrix<float,Dynamic,Dynamic> ground_sz;
-  cv2eigen(curr_ground,ground_sz);
-
   int numpe = 0, numps =0 , numpg = 0;
   for (int i=0; i< l_img.rows; i+=1)
    {       
@@ -259,12 +257,12 @@ void callback(const ImageConstPtr& imgIn)
         
         if(!(edge_sz(i,j)== 0 || edge_sz(i,j) > (pow(2,16)- (min_depth/max_depth) * pow(2,16)))){
         //if(!(edge_sz(i,j))== 0){ 
-        // continue;
+         // continue;
         //}
-        // std::cout<<"I: "<<i<<endl;
-        // std::cout<<"J: "<<j<<endl;
+       // std::cout<<"I: "<<i<<endl;
+       // std::cout<<"J: "<<j<<endl;
 
-       //  std::cout<<"edge: "<<edge_sz(i,j)<<endl;
+      //  std::cout<<"edge: "<<edge_sz(i,j)<<endl;
         float edge_data = (pow(2,16)-edge_sz(i,j))*(max_depth)/pow(2,16);                
         float edge_x_data = sqrt(pow(edge_data,2)- pow(z_range(i,j),2)) * cos(ang);
         float edge_y_data = sqrt(pow(edge_data,2)- pow(z_range(i,j),2)) * sin(ang);
@@ -277,21 +275,10 @@ void callback(const ImageConstPtr& imgIn)
         numpe++;
 
       }
-      else{
-          curr_edge.at<ushort>(i, j) = 0;         
-      }
-
       //if(!(surf_sz(i,j)== 0 || surf_sz(i,j) > (pow(2,16)- (min_depth/max_depth) * pow(2,16)))){
       if(!(surf_sz(i,j)== 0)){
-
-        /*if(i < (l_img.rows/2)){   ///// Esto solo funciona cuando es con el velodyne
-         //surf_sz(i,j) = 0; 
-         curr_surf.at<ushort>(i, j) = 0;
-         continue;
-        }*/
-
-        //  
-        //}        
+        //  continue;
+        //}
 
         float surf_data = (pow(2,16)-surf_sz(i,j))*(max_depth)/pow(2,16);                
         float surf_x_data = sqrt(pow(surf_data,2)- pow(z_range(i,j),2)) * cos(ang);
@@ -303,12 +290,12 @@ void callback(const ImageConstPtr& imgIn)
 
         numps++;
       }
-      else{
-          curr_surf.at<ushort>(i, j) = 0;
-      }
 
 
       if(!(ground_sz(i,j)== 0 || ground_sz(i,j) > (pow(2,16)- (min_depth/max_depth) * pow(2,16)))){
+        //if(ground_sz(i,j)== 0){
+         //continue;
+        //}
 
         float ground_data = (pow(2,16)-ground_sz(i,j))*(max_depth)/pow(2,16);                
         float groundx_data = sqrt(pow(ground_data,2)- pow(z_range(i,j),2)) * cos(ang);
@@ -319,26 +306,16 @@ void callback(const ImageConstPtr& imgIn)
         ground_cloud->points[numpg].z = z_range(i,j);
 
         numpg++;
-        }
-        else{
-          curr_ground.at<ushort>(i, j) = 0;
-      }////// cierre del if
+        }////// cierre del if
       }
    }  
 
-
-  /*PointCloud::Ptr cloud_filtered (new PointCloud);
-  // Create the filtering object
-  pcl::VoxelGrid<pcl::PointXYZ> sor;
-  sor.setInputCloud (surf_cloud);
-  sor.setLeafSize (1.0, 1.0, 1.0);
-  sor.filter (*cloud_filtered); */
 
 
   cv_bridge::CvImage out_msg;
   out_msg.header   = imgIn->header; // Same timestamp and tf frame as input image
   out_msg.encoding = sensor_msgs::image_encodings::MONO8; // Or whatever
-  out_msg.image    = img_frame; // Your cv::Mat
+  out_msg.image    = img_frame_eq; // Your cv::Mat
   pub_img.publish(out_msg.toImageMsg()); 
 
   //cv_bridge::CvImage out_msg;
@@ -357,13 +334,9 @@ void callback(const ImageConstPtr& imgIn)
   out_msg.image    = curr_ground; // Your cv::Mat
   pub_ground.publish(out_msg.toImageMsg()); 
 
-  edge_cloud->header.frame_id = "base_link";
-  surf_cloud->header.frame_id = "base_link";
-  ground_cloud->header.frame_id = "base_link";
-  ros::Time time_st = imgIn->header.stamp; // Para PCL se debe modificar el stamp y no se puede usar directamente el del topic de entrada
-  edge_cloud->header.stamp    =  time_st.toNSec()/1e3;
-  surf_cloud->header.stamp    =  time_st.toNSec()/1e3;
-  ground_cloud->header.stamp  =  time_st.toNSec()/1e3;
+  edge_cloud->header.frame_id = "velodyne";
+  surf_cloud->header.frame_id = "velodyne";
+  ground_cloud->header.frame_id = "velodyne";
   //pcl_conversions::toPCL(ros::Time::now(), edge_cloud->header.stamp);
   pub_1.publish (edge_cloud);
   pub_2.publish (surf_cloud);
@@ -399,14 +372,14 @@ int main(int argc, char** argv)
   //sync.registerCallback(boost::bind(&callback, _1, _2));
   image_transport::ImageTransport it(nh);
   image_transport::Subscriber sub = it.subscribe("/depth_image", 1, callback);
-  pub_img = nh.advertise<sensor_msgs::Image>("/depth_img", 1);
+  pub_img = nh.advertise<sensor_msgs::Image>("/eq_image", 1);
   pub_edge = nh.advertise<sensor_msgs::Image>("/edge_image", 1);
   pub_surf = nh.advertise<sensor_msgs::Image>("/surf_image", 1);
   pub_ground = nh.advertise<sensor_msgs::Image>("/ground_image", 1);
 
   pub_1= nh.advertise<PointCloud> ("/pc_edge", 100);
-  pub_2 = nh.advertise<PointCloud> ("/pc_ground", 100);  // dara la vuelta con la linea de abajo para cambiar solo ground
   pub_3 = nh.advertise<PointCloud> ("/pc_surf", 100);
+  pub_2 = nh.advertise<PointCloud> ("/pc_ground", 100);
 
   ros::spin();
   //return 0;
