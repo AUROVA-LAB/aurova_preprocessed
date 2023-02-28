@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import message_filters
 import rospy
 import sys
