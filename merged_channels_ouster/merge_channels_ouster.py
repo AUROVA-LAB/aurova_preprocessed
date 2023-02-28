@@ -13,8 +13,8 @@ def callback(range_in, signal_in, reflec_in, nearir_in):
     global flag, bridge, merge_img_pub
     if flag:
         flag=False
-        range = bridge.imgmsg_to_cv2(range_in)
-        range = (range/256).astype('uint8')
+        #range = bridge.imgmsg_to_cv2(range_in)
+        #range = (range/256).astype('uint8')
         signal = bridge.imgmsg_to_cv2(signal_in)
         signal =(signal/256).astype('uint8')
         reflec = bridge.imgmsg_to_cv2(reflec_in)
@@ -22,8 +22,8 @@ def callback(range_in, signal_in, reflec_in, nearir_in):
         nearir = bridge.imgmsg_to_cv2(nearir_in)
         nearir =(nearir/256).astype('uint8')
 
-        merged=cv2.merge([signal,nearir,reflec,range])
-        image_message = bridge.cv2_to_imgmsg(merged, "bgra8")  
+        merged=cv2.merge([signal,nearir,reflec])
+        image_message = bridge.cv2_to_imgmsg(merged, "bgr8")  
         image_message.header.stamp = range_in.header.stamp
         image_message.header.frame_id = "ouster_sensor"
         merge_img_pub.publish(image_message)
