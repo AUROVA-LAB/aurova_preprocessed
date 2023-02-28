@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>merged_channels_ouster</name>
+  <version>0.0.0</version>
+  <description>merge_channels_ouster</description> 
+  <maintainer email="epvelasco1912@gmail.com">EPVS</maintainer>
+
+  <license>BSD</license>
+  <author email="epvelasco1912@gmail.com">EPVelasco</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <export>
+
+
+  </export>
+</package>
