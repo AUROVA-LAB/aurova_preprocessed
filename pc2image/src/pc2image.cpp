@@ -11,20 +11,17 @@
 #include <math.h>
 #include <iostream>
 
-
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
-
-
 
 
 ros::Publisher imgD_pub;
 boost::shared_ptr<pcl::RangeImageSpherical> rngSpheric;
 pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::LASER_FRAME;
 
-float maxlen =500;
+float maxlen =100;
 float minlen = 0.1;
 float angular_resolution_x = 0.25f;
-float angular_resolution_y = 0.85f;
+float angular_resolution_y = 2.05f;
 float max_angle_width= 360.0f;
 float max_angle_height = 360.0f;
 
@@ -57,16 +54,17 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
   rngSpheric->pcl::RangeImage::createFromPointCloud(*cloud_out, pcl::deg2rad(angular_resolution_x), pcl::deg2rad(angular_resolution_y),
                                        pcl::deg2rad(max_angle_width), pcl::deg2rad(max_angle_height),
                                        Eigen::Affine3f::Identity(), coordinate_frame, 0.0f, 0.0f, 0);
+                                
+  rngSpheric->header.frame_id = msg_pointCloud->header.frame_id;
+  rngSpheric->header.stamp    = msg_pointCloud->header.stamp;
 
-  rngSpheric->header.frame_id = cloud_out->header.frame_id;
-  rngSpheric->header.stamp    = cloud_out->header.stamp;
-
+  
   int cols = (rngSpheric->width) * 2;
   int rows = rngSpheric->height;
   
 
   cv::Mat dephtImage =  cv::Mat::zeros(rows, cols, cv_bridge::getCvType("mono16"));
-  
+
   unsigned short range = 0 , z_range = 0;
 
   for (int i=0; i< int(cols/2); ++i)
@@ -92,10 +90,11 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
     }
   }
 
-   sensor_msgs::ImagePtr image_msg;
-   image_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", dephtImage).toImageMsg();
-   imgD_pub.publish(image_msg);
+  sensor_msgs::ImagePtr image_msg;
+  image_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", dephtImage).toImageMsg();
 
+  image_msg->header = pcl_conversions::fromPCL(msg_pointCloud->header);
+  imgD_pub.publish(image_msg);
 
 }
 
