@@ -2,7 +2,8 @@
 <launch>
  
     <param name="range_img"                     type="str"    value="/ouster/range_image" />
-    <param name="detection_BoundingBoxes"       type="str"    value="/mask/topic" />    
+    <param name="mask_Topic"                    type="str"    value="/ground_lines_img" /> 
+    <param name="out_Topic"                    type="str"    value="/ground_lines_pc" />    
   
 
     <node pkg="image2pcl"   type="image2pcl_node" name="image2pcl_node" output="screen"/>

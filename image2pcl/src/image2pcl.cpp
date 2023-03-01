@@ -57,18 +57,19 @@ ros::Publisher pc_filtered_pub; // publisher de la imagen de puntos filtrada
 
 // input topics 
 std::string rangeTopic  = "/ouster/range_image";
-std::string maskTopic= "/mask/topic";
+std::string maskTopic = "/mask/topic";
+std::string outTopic = "/out/topic";
 
 ///////////////////////////////////////callback
 
 
-void callback(const ImageConstPtr& in_image, const ImageConstPtr& &cv_maks)
+void callback(const ImageConstPtr& in_image, const ImageConstPtr& in_mask)
 {
-    cv_bridge::CvImagePtr cv_range, cv_maks;
+    cv_bridge::CvImagePtr cv_range, cv_mask;
         try
         {
           cv_range = cv_bridge::toCvCopy(in_image, sensor_msgs::image_encodings::MONO16);
-          cv_maks = cv_bridge::toCvCopy(in_image, sensor_msgs::image_encodings::MONO8);
+          cv_mask = cv_bridge::toCvCopy(in_mask, sensor_msgs::image_encodings::MONO8);
         }
         catch (cv_bridge::Exception& e)
         {
@@ -77,10 +78,11 @@ void callback(const ImageConstPtr& in_image, const ImageConstPtr& &cv_maks)
         }
 
   cv::Mat img_range  = cv_range->image; // get image matrix of cv_range
-  cv::Mat img_mask  = cv_maks->image;   // get image matrix of cv_range
+  cv::Mat img_mask  = cv_mask->image;   // get image matrix of cv_range
 
-  Eigen::Matrix<float,Dynamic,Dynamic> depth_data , data_metrics;// matrix with image values and matrix qith image values into real range data
+  Eigen::Matrix<float,Dynamic,Dynamic> depth_data , data_metrics, data_mask;// matrix with image values and matrix qith image values into real range data
   cv2eigen(img_range,depth_data);       // convert img_range into eigen matrix
+  cv2eigen(img_mask,data_mask); 
   data_metrics = depth_data*(261/pow(2,16)); // resolution 16 bits -> 4mm. 
   
  
@@ -93,10 +95,10 @@ void callback(const ImageConstPtr& in_image, const ImageConstPtr& &cv_maks)
   point_cloud->points.resize (point_cloud->width * point_cloud->height);
   uint num_pix = 0;
 
-  for (uint i = 0;i<img_range.rows; i++){
-      for (uint j = 0;j<img_range.cols; j++){
+  for (int i = 0;i<img_range.rows; i++){
+      for (int j = 0;j<img_range.cols; j++){
 
-        if (data_metrics(i,j)==0)
+        if (data_metrics(i,j)==0 || data_mask(i,j)==0)
           continue;
 
         float ang_h = 22.5 - (45.0/128.0)*i;
@@ -104,7 +106,7 @@ void callback(const ImageConstPtr& in_image, const ImageConstPtr& &cv_maks)
         float ang_w = 184.0 - (360.0/2048.0)*j;
         ang_w = ang_w*M_PI/180.0;
 
-        float z = data_metrics(iy,j) * sin(ang_h);
+        float z = data_metrics(i,j) * sin(ang_h);
         float y = sqrt(pow(data_metrics(i,j),2)-pow(z,2))*sin(ang_w);
         float x = sqrt(pow(data_metrics(i,j),2)-pow(z,2))*cos(ang_w);
         //asignacion de valores maximo y minimos
@@ -121,8 +123,8 @@ void callback(const ImageConstPtr& in_image, const ImageConstPtr& &cv_maks)
   cloud_out->is_dense = false;
   cloud_out->width = (int) cloud_out->points.size();
   cloud_out->height = 1;
-  cloud_out->header.frame_id = "/os_sensor";
-  ros::Time time_st = bb_data->header.stamp; // Para PCL se debe modificar el stamp y no se puede usar directamente el del topic de entrada
+  cloud_out->header.frame_id = "os_sensor";
+  ros::Time time_st = cv_mask->header.stamp; // Para PCL se debe modificar el stamp y no se puede usar directamente el del topic de entrada
   cloud_out->header.stamp = time_st.toNSec()/1e3;
   pc_filtered_pub.publish (cloud_out);
   
@@ -140,6 +142,8 @@ int main(int argc, char** argv)
 
   nh.getParam("/range_img", rangeTopic);
   nh.getParam("/mask_Topic", maskTopic);
+  nh.getParam("/out_Topic", outTopic);
+
 
   message_filters::Subscriber<Image> range_sub (nh, rangeTopic,  10);
   message_filters::Subscriber<Image> mask_sub(nh, maskTopic , 10);
@@ -148,7 +152,7 @@ int main(int argc, char** argv)
   Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), range_sub, mask_sub);
   sync.registerCallback(boost::bind(&callback, _1, _2));
 
-  pc_filtered_pub = nh.advertise<PointCloud> ("/pcl_filtered", 1);  
+  pc_filtered_pub = nh.advertise<PointCloud> (outTopic, 1);  
   
 
   ros::spin();

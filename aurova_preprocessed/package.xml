@@ -51,6 +51,7 @@
   
   <exec_depend>virtual_imu</exec_depend>
   <exec_depend>pc2image</exec_depend>
+  <exec_depend>image2pcl</exec_depend>
   <exec_depend>pc_filter</exec_depend>
   <exec_depend>lidar_camera_fusion</exec_depend>
 
