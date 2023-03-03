@@ -55,13 +55,13 @@ target_link_libraries(lidar_camera_node
    ${Boost_LIBRARIES}
 )
 
-add_executable(interpolated_node  src/interpolated_lidar.cpp)
-target_link_libraries(interpolated_node
-   ${catkin_LIBRARIES}
-   ${PCL_LIBRARIES}
-   ${OpenCV_LIBRARIES}
-   ${Boost_LIBRARIES}
-)
+#add_executable(interpolated_node  src/interpolated_lidar.cpp)
+#target_link_libraries(interpolated_node
+ #  ${catkin_LIBRARIES}
+ #  ${PCL_LIBRARIES}
+ #  ${OpenCV_LIBRARIES}
+ #  ${Boost_LIBRARIES}
+#)
 
 add_executable(lidar_camera_simple_node  src/lidar_camera_node_simple.cpp)
 target_link_libraries(lidar_camera_simple_node
