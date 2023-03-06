@@ -357,9 +357,9 @@ void callback(const ImageConstPtr& imgIn)
   out_msg.image    = curr_ground; // Your cv::Mat
   pub_ground.publish(out_msg.toImageMsg()); 
 
-  edge_cloud->header.frame_id = "base_link";
-  surf_cloud->header.frame_id = "base_link";
-  ground_cloud->header.frame_id = "base_link";
+  edge_cloud->header.frame_id = "os_sensor";
+  surf_cloud->header.frame_id = "os_sensor";
+  ground_cloud->header.frame_id = "os_sensor";
   ros::Time time_st = imgIn->header.stamp; // Para PCL se debe modificar el stamp y no se puede usar directamente el del topic de entrada
   edge_cloud->header.stamp    =  time_st.toNSec()/1e3;
   surf_cloud->header.stamp    =  time_st.toNSec()/1e3;
