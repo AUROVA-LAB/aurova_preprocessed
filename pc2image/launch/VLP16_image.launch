@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+
+    <param name="maxlen"               type="double" value="100.0" />    
+    <param name="minlen"               type="double" value="8.0" />    
+    <param name="angular_resolution_x" type="double" value="0.5" />
+    
+
+    <!--<param name="angular_resolution_x" type="double" value="0.17578125" 0.35156250 , 0.087890625 -->
+    <!--param name="angular_resolution_y" type="double" value="0.35"/ para imagenes en kitti debo usar 05 05 para lidar blue 0.5 1.025   debes modificar el pcfilter node a la version nueva cuando ocupes el de 16 lineas--> 
+
+ <!--param name="angular_resolution_y" type="double" value="1.025"/-->
+
+    <param name="angular_resolution_y" type="double" value="0.5"/> <!--0.35 para ouster 1.025 para velodyne -->
+    <param name="max_angle_width"      type="double" value="360" />
+    <param name="max_angle_height"     type="double" value="180" />
+    <param name="pcTopic"              type="str"    value="/velodyne_points" />
+
+    <node pkg="pc2image" type="pc2image_node" name="pc2image_node" output="screen"/>
+
+  
+</launch>
+
