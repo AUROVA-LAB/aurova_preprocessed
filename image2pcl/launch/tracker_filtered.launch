@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+ 
+    
+    <param name="range_img"                     type="str"    value="/ouster/range_image" />
+    <param name="detection_BoundingBoxes"       type="str"    value="/yolov5/detections" />    
+    <param name="filtering_method"              type="str"    value="median" />
+    <param name="bounding_box_percet_reduction" type="double" value="0.6" />      
+    <param name="filtering_desviation"          type="double" value="1.2" />  
+    <param name="bounding_box_percet_augmentation" type="double" value="0.6" /> 
+  
+
+    <node pkg="image2pcl"   type="tracker_filtered_node" name="tracker_filtered_node" output="screen">
+        <param name="rate" value="10.0"/>
+    </node>
+
+    <!-- <node type="rviz" name="rviz" pkg="rviz" args="-d $(find image2pcl)/rviz/tracker_filtered.rviz" /> -->
+ 
+</launch>

@@ -9,8 +9,8 @@
     <param name="filtering_desviation"          type="double" value="0.1" />  
   
 
-    <node pkg="ouster_filtering"   type="ouster_filtering_node" name="ouster_filtering_node" output="screen"/>
+    <node pkg="image2pcl"   type="ouster_filtering_yolo_node" name="ouster_filtering_node" output="screen"/>
 
-<node type="rviz" name="rviz" pkg="rviz" args="-d $(find ouster_filtering)/rviz/ouster_filtering.rviz" />
+<node type="rviz" name="rviz" pkg="rviz" args="-d $(find image2pcl)/rviz/ouster_filtering.rviz" />
  
 </launch>

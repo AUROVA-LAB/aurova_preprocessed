@@ -50,6 +50,7 @@ include_directories(
 
 add_executable(ouster_filtered_yolo_node  src/ouster_filtered_yolo.cpp)
 add_executable(image2pcl_node  src/image2pcl.cpp)
+add_executable(tracker_filtered_node  src/tracker_filtered.cpp)
 target_link_libraries(image2pcl_node  
    ${catkin_LIBRARIES}
    ${PCL_LIBRARIES}
@@ -57,6 +58,13 @@ target_link_libraries(image2pcl_node
    ${Boost_LIBRARIES}
 )
 target_link_libraries(ouster_filtered_yolo_node 
+   ${catkin_LIBRARIES}
+   ${PCL_LIBRARIES}
+   ${OpenCV_LIBRARIES}
+   ${Boost_LIBRARIES}
+)
+
+target_link_libraries(tracker_filtered_node
    ${catkin_LIBRARIES}
    ${PCL_LIBRARIES}
    ${OpenCV_LIBRARIES}
