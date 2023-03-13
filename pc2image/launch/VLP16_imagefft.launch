@@ -12,7 +12,7 @@
     <node pkg="pc2image" type="zdepthdata_node" name="pc2image_node" />
     <node pkg="pc2image" name="filter_node" type="filter_PCL.py" />
 
-    <arg name="rviz" default="true" />
+    <arg name="rviz" default="false" />
     <group if="$(arg rviz)">
         <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find pc2image)/rviz/pc2image_rviz.rviz" />
     </group>
