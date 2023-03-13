@@ -30,6 +30,12 @@ catkin_package(
 
 )
 
+catkin_install_python(PROGRAMS
+  src/fft.py
+  src/filter_PCL.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
@@ -47,8 +53,9 @@ target_link_libraries(pc2image_node
    ${OpenCV_LIBRARIES}
    ${Boost_LIBRARIES}
 )
-add_executable(pcfilter_node src/filter_sri.cpp)
-target_link_libraries(pcfilter_node
+
+add_executable(zdepthdata_node src/pc2image_z_depth_data.cpp)
+target_link_libraries(zdepthdata_node
    ${catkin_LIBRARIES}
    ${PCL_LIBRARIES}
    ${OpenCV_LIBRARIES}
