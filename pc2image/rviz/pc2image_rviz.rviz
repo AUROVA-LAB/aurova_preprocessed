@@ -3,7 +3,8 @@ Panels:
     Help Height: 78
     Name: Displays
     Property Tree Widget:
-      Expanded: ~
+      Expanded:
+        - /Global Options1
       Splitter Ratio: 0.4941176474094391
     Tree Height: 364
   - Class: rviz/Selection
@@ -121,7 +122,7 @@ Visualization Manager:
       Size (Pixels): 5
       Size (m): 0.009999999776482582
       Style: Flat Squares
-      Topic: /velodyne_points
+      Topic: /ouster/points
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -214,7 +215,7 @@ Visualization Manager:
   Global Options:
     Background Color: 46; 52; 54
     Default Light: true
-    Fixed Frame: velodyne
+    Fixed Frame: os_sensor
     Frame Rate: 30
   Name: root
   Tools:
@@ -238,25 +239,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 18.36191177368164
+      Distance: 28.892826080322266
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 5.617636203765869
-        Y: 0.826263964176178
-        Z: -0.4163995385169983
+        X: 6.415377140045166
+        Y: -2.4549553394317627
+        Z: -0.5902151465415955
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.4297980070114136
+      Pitch: 0.48479849100112915
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.9080628156661987
+      Yaw: 3.3980648517608643
     Saved: ~
 Window Geometry:
   Displays:
