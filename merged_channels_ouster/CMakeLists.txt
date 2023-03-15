@@ -161,6 +161,7 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
   merge_channels_ouster.py
+  save_merge_channels_ouster.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
