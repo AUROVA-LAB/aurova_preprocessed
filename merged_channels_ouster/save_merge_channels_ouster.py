@@ -10,11 +10,11 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 
 def callback(range_in, signal_in, reflec_in, nearir_in):
-    global flag, bridge, merge_img_pub, cont, i,path,j
+    global flag, bridge, merge_img_pub, cont, i, path, j, offset, freq
     if flag:
         flag=False
-        range = bridge.imgmsg_to_cv2(range_in)
-        range = (range/256).astype('uint8')
+        depth = bridge.imgmsg_to_cv2(range_in)
+        depth = (depth/256).astype('uint8')
         signal = bridge.imgmsg_to_cv2(signal_in)
         signal =(signal/256).astype('uint8')
         reflec = bridge.imgmsg_to_cv2(reflec_in)
@@ -22,7 +22,7 @@ def callback(range_in, signal_in, reflec_in, nearir_in):
         nearir = bridge.imgmsg_to_cv2(nearir_in)
         nearir =(nearir/256).astype('uint8')
 
-        merged_4ch=cv2.merge([signal,nearir,reflec,range])
+        merged_4ch=cv2.merge([signal,nearir,reflec,depth])
         merged_3ch=cv2.merge([signal,nearir,reflec])
 
         image_message = bridge.cv2_to_imgmsg(merged_4ch, "bgra8")  
@@ -30,13 +30,13 @@ def callback(range_in, signal_in, reflec_in, nearir_in):
         image_message.header.frame_id = "ouster_sensor"
         merge_img_pub.publish(image_message)
         
-        if (cont%10==0):            
-            if cv2.imwrite(path+"/4_channels/merged_"+str(i)+".png", merged_4ch):
+        if (cont%freq==0):            
+            if cv2.imwrite(path+"/4_channels/merged_"+str(i+offset)+".png", merged_4ch):
                 print("imagen merged_"+str(i)+".png 4 channels Guardada")
                 i = i+1
             else:
                 print("[ERROR] Imagen 4 channles no guardada. verificar el path: "+path)
-            if cv2.imwrite(path+"/3_channels/merged_"+str(j)+".png", merged_3ch):
+            if cv2.imwrite(path+"/3_channels/merged_"+str(j+offset)+".png", merged_3ch):
                 print("imagen merged_"+str(j)+".png 3 channels Guardada")
                 j = j+1
             else:
@@ -47,11 +47,17 @@ def callback(range_in, signal_in, reflec_in, nearir_in):
 
 
 if __name__ == '__main__':
-    global flag, bridge, merge_img_pub, cont, i,path,j
-    path = "../../../../labrobotica/dataset/merged/"
+    global flag, bridge, merge_img_pub, cont, i, path, j, offset, freq
+
+    # ------------- CONFIGURATION PARAMETERS ---------------------#
+    path = "/home/mice85/aurova-lab/labrobotica/dataset/2023-03-06_loc_and_plann/2023-03-06-15-37-47/merged/"
+    offset = 346
+    freq = 10
+    # -------------------------------------------------------------#
+
     cont = 0
-    i=0
-    j=0
+    i = 0
+    j = 0
     try:
         os.mkdir(path+"4_channels")
         os.mkdir(path+"3_channels")
