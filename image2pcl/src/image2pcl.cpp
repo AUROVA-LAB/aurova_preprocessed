@@ -54,28 +54,32 @@ visualization_msgs::Marker marker;
 
 //Publisher
 ros::Publisher pc_filtered_pub; // publisher de la imagen de puntos filtrada
+ros::Publisher pc_raw_pub; // publisher pc
 
 // input topics 
 std::string rangeTopic  = "/ouster/range_image";
 std::string maskTopic = "/mask/topic";
-std::string outTopic = "/out/topic";
+std::string outTopicPc = "/out/topic_pc";
+std::string outTopicDt = "/out/topic_dt";
+bool include_detections = true;
+bool include_pc = true;
 
 ///////////////////////////////////////callback
 
 
-void callback(const ImageConstPtr& in_image, const ImageConstPtr& in_mask)
+void callback_dt(const ImageConstPtr& in_image, const ImageConstPtr& in_mask)
 {
-    cv_bridge::CvImagePtr cv_range, cv_mask;
-        try
-        {
-          cv_range = cv_bridge::toCvCopy(in_image, sensor_msgs::image_encodings::MONO16);
-          cv_mask = cv_bridge::toCvCopy(in_mask, sensor_msgs::image_encodings::MONO8);
-        }
-        catch (cv_bridge::Exception& e)
-        {
-          ROS_ERROR("cv_bridge exception: %s", e.what());
-          return;
-        }
+  cv_bridge::CvImagePtr cv_range, cv_mask;
+  try
+  {
+    cv_range = cv_bridge::toCvCopy(in_image, sensor_msgs::image_encodings::MONO16);
+    cv_mask = cv_bridge::toCvCopy(in_mask, sensor_msgs::image_encodings::MONO8);
+  }
+  catch (cv_bridge::Exception& e)
+  {
+    ROS_ERROR("cv_bridge exception: %s", e.what());
+    return;
+  }
 
   cv::Mat img_range  = cv_range->image; // get image matrix of cv_range
   cv::Mat img_mask  = cv_mask->image;   // get image matrix of cv_range
@@ -131,7 +135,73 @@ void callback(const ImageConstPtr& in_image, const ImageConstPtr& in_mask)
   cloud_out->header.frame_id = "os_sensor";
   ros::Time time_st = cv_mask->header.stamp; // Para PCL se debe modificar el stamp y no se puede usar directamente el del topic de entrada
   cloud_out->header.stamp = time_st.toNSec()/1e3;
-  pc_filtered_pub.publish (cloud_out);
+  if (include_detections) pc_filtered_pub.publish (cloud_out);
+  
+
+}
+
+void callback_pc(const ImageConstPtr& in_image)
+{
+  cv_bridge::CvImagePtr cv_range;
+  try
+  {
+    cv_range = cv_bridge::toCvCopy(in_image, sensor_msgs::image_encodings::MONO16);
+  }
+  catch (cv_bridge::Exception& e)
+  {
+    ROS_ERROR("cv_bridge exception: %s", e.what());
+    return;
+  }
+
+  cv::Mat img_range  = cv_range->image; // get image matrix of cv_range
+
+  Eigen::Matrix<float,Dynamic,Dynamic> depth_data , data_metrics;// matrix with image values and matrix qith image values into real range data
+  cv2eigen(img_range,depth_data);       // convert img_range into eigen matrix
+  data_metrics = depth_data*(261/pow(2,16)); // resolution 16 bits -> 4mm. 
+  
+ 
+  PointCloud::Ptr point_cloud (new PointCloud);
+  PointCloud::Ptr cloud_out (new PointCloud);
+
+  point_cloud->width = img_range.cols; 
+  point_cloud->height = img_range.rows;
+  point_cloud->is_dense = false;
+  point_cloud->points.resize (point_cloud->width * point_cloud->height);
+  uint num_pix = 0;
+
+  for (int i = 0;i<img_range.rows; i++){
+      for (int j = 0;j<img_range.cols; j++){
+
+        if (data_metrics(i,j)==0)
+          continue;
+
+        float ang_h = 22.5 - (45.0/128.0)*i;
+        ang_h = ang_h*M_PI/180.0;
+        float ang_w = 184.0 - (360.0/2048.0)*j;
+        ang_w = ang_w*M_PI/180.0;
+
+        float z = data_metrics(i,j) * sin(ang_h);
+        float y = sqrt(pow(data_metrics(i,j),2)-pow(z,2))*sin(ang_w);
+        float x = sqrt(pow(data_metrics(i,j),2)-pow(z,2))*cos(ang_w);
+        //asignacion de valores maximo y minimos
+
+        point_cloud->points[num_pix].x = x;
+        point_cloud->points[num_pix].y = y;
+        point_cloud->points[num_pix].z = z;
+        cloud_out->push_back(point_cloud->points[num_pix]); 
+        num_pix++; 
+
+      }
+  } 
+  
+  cloud_out->is_dense = false;
+  cloud_out->width = (int) cloud_out->points.size();
+  cloud_out->height = 1;
+  cloud_out->header.frame_id = "os_sensor";
+  ros::Time time_st = cv_range->header.stamp; // Para PCL se debe modificar el stamp y no se puede usar directamente el del topic de entrada
+  cloud_out->header.stamp = time_st.toNSec()/1e3;
+  
+  if (include_pc) pc_raw_pub.publish (cloud_out);
   
 
 }
@@ -146,19 +216,22 @@ int main(int argc, char** argv)
   /// Load Parameters
 
   nh.getParam("/range_img", rangeTopic);
-  nh.getParam("/mask_Topic", maskTopic);
-  nh.getParam("/out_Topic", outTopic);
-
+  nh.getParam("/mask_img", maskTopic);
+  nh.getParam("/out_pc", outTopicPc);
+  nh.getParam("/out_detections", outTopicDt);
+  nh.getParam("/include_detections", include_detections);
+  nh.getParam("/include_pc", include_pc);
 
   message_filters::Subscriber<Image> range_sub (nh, rangeTopic,  10);
   message_filters::Subscriber<Image> mask_sub(nh, maskTopic , 10);
+  ros::Subscriber range_aux_sub = nh.subscribe<Image>(rangeTopic, 10, callback_pc);
 
   typedef sync_policies::ApproximateTime<Image, Image> MySyncPolicy;
   Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), range_sub, mask_sub);
-  sync.registerCallback(boost::bind(&callback, _1, _2));
+  sync.registerCallback(boost::bind(&callback_dt, _1, _2));
 
-  pc_filtered_pub = nh.advertise<PointCloud> (outTopic, 1);  
-  
+  pc_filtered_pub = nh.advertise<PointCloud> (outTopicDt, 1);  
+  pc_raw_pub = nh.advertise<PointCloud> (outTopicPc, 1);
 
   ros::spin();
 }
