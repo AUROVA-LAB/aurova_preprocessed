@@ -23,7 +23,7 @@ def callback(range_in, signal_in, reflec_in, nearir_in):
         nearir =(nearir/256).astype('uint8')
 
         merged_4ch=cv2.merge([signal,nearir,reflec,depth])
-        merged_3ch=cv2.merge([signal,nearir,reflec])
+        merged_3ch=cv2.merge([reflec,reflec,depth])
 
         image_message = bridge.cv2_to_imgmsg(merged_4ch, "bgra8")  
         image_message.header.stamp = range_in.header.stamp
@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     # ------------- CONFIGURATION PARAMETERS ---------------------#
     path = "/home/mice85/aurova-lab/labrobotica/dataset/2023-03-06_loc_and_plann/2023-03-06-15-37-47/merged/"
-    offset = 346
+    offset = 0
     freq = 10
     # -------------------------------------------------------------#
 
