@@ -8,8 +8,8 @@
     <param name="maxZ_filter" type="double" value="0.1" />  <!-- altura maxima de la PCL -->
     <param name="voxel"       type="double" value="0.15" /> <!-- voxelizado de la nube de puntos 0.15 --> 
     <param name="smNorm"      type="double" value="0.4" />  <!-- normales pequeñas  de la pcl 0.4 -->
-    <param name="laNorm"      type="double" value="0.5" /> <!-- normales largas  de la pcl 0.56 -->   
-    <param name="threshold"   type="double" value="0.01" /> <!-- threshold de filtrado de la ambas normales -->
+    <param name="laNorm"      type="double" value="0.56" /> <!-- normales largas  de la pcl 0.56 -->   
+    <param name="threshold"   type="double" value="0.02" /> <!-- threshold de filtrado de la ambas normales -->
     <param name="scaleRadio"  type="double" value="0.98" /> <!-- escalado del radio para eliminar ruido en el radio -->
 
     <param name="vecinos"   type="double" value="10.0" /> <!-- 10 -->
