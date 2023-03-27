@@ -55,6 +55,7 @@
   <exec_depend>pc_filter</exec_depend>
   <exec_depend>lidar_camera_fusion</exec_depend>
   <exec_depend>merged_channels_ouster</exec_depend>
+  <exec_depend>lidar_obstacle_detection</exec_depend>  
 
 
   <buildtool_depend>catkin</buildtool_depend>
