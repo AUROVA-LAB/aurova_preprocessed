@@ -20,3 +20,5 @@ This node filters the range image from the pc2image node and converts the range 
 **merged_channels_ouster**
 This node merges the nearir, signal and reflec channels published by the ouster sensor node.
 
+**lidar_obstacle_detection**.
+Obstacle detection node with ouster lidar. It works by calculating the normals in two ranges (small and large) and then filtering them **(node in test version)**
