@@ -177,8 +177,8 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
     pcl_obstXY->points[i].y= pcl_obstacle->points[i].y; 
     pcl_obstXY->points[i].z= 0.0;   
     float ang =   M_PI-(i*2.0*M_PI)/pcl_obstacle->points.size();
-    limits_cloud->points[i].x = maxlen*cos(ang);;
-    limits_cloud->points[i].y = maxlen*sin(ang);;
+    limits_cloud->points[i].x = maxlen*cos(ang);
+    limits_cloud->points[i].y = maxlen*sin(ang);
     limits_cloud->points[i].z = 0.0;
   }
 
