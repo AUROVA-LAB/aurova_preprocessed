@@ -176,6 +176,8 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
     pcl_obstXY->points[i].x= pcl_obstacle->points[i].x;     
     pcl_obstXY->points[i].y= pcl_obstacle->points[i].y; 
     pcl_obstXY->points[i].z= 0.0;   
+    
+    // ring generator
     float ang =   M_PI-(i*2.0*M_PI)/pcl_obstacle->points.size();
     limits_cloud->points[i].x = maxlen*cos(ang);
     limits_cloud->points[i].y = maxlen*sin(ang);
@@ -193,19 +195,14 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
   pcl::PointCloud<pcl::PointXYZ>::Ptr limits_cloud_out (new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_obstXY_out (new pcl::PointCloud<pcl::PointXYZ>);
 
-  limits_cloud_out->is_dense = false;
-  limits_cloud_out->width = cloud_combined->width;
-  limits_cloud_out->height = cloud_combined->height;
-  limits_cloud_out->points.resize (cloud_combined->width * cloud_combined->height);
-
-  pcl_obstXY_out->is_dense = false;
-  pcl_obstXY_out->width = cloud_combined->width;
-  pcl_obstXY_out->height = cloud_combined->height;
-  pcl_obstXY_out->points.resize (cloud_combined->width * cloud_combined->height);
+  pcl::PointCloud<pcl::PointXYZ>::Ptr point_var (new pcl::PointCloud<pcl::PointXYZ>);
+  point_var->width = 1;
+  point_var->height = 1;
+  point_var->is_dense = false;
+  point_var->points.resize (point_var->width * point_var->height);
 
   int cols = rngSpheric->width;
   int rows = rngSpheric->height;
-  int numpe = 0, numlim = 0;
   float xx=0, yy=0 ,r = maxlen;
 
   for (int i=0; i< int(cols); i++)    {
@@ -223,18 +220,12 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
           obstacle = true;          
         }        
       }
-    if (obstacle){
-       pcl_obstXY_out->points[numpe].x = xx;
-       pcl_obstXY_out->points[numpe].y = yy;
-       pcl_obstXY_out->points[numpe].z = -1.1;
-       numpe++;
-     }   
-     else{
-       limits_cloud_out->points[numlim].x = xx;
-       limits_cloud_out->points[numlim].y = yy;
-       limits_cloud_out->points[numlim].z = -1.1;
-       numlim++;
-     }
+    point_var->points[0].x = xx;
+    point_var->points[0].y = yy;
+    point_var->points[0].z = -1.1;
+    if (obstacle) pcl_obstXY_out->push_back(point_var->points[0]);
+    else        limits_cloud_out->push_back(point_var->points[0]);
+
   }
  
   // obstacles point cloud
@@ -247,11 +238,19 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
   pc_filtered_pub.publish (pcl_obstacle);
 
   // obstacles point cloud projection in XY plane  
+  pcl_obstXY_out->is_dense = false;
+  pcl_obstXY_out->width = pcl_obstXY_out->width;
+  pcl_obstXY_out->height = pcl_obstXY_out->height;
+  pcl_obstXY_out->points.resize (pcl_obstXY_out->width * pcl_obstXY_out->height);
   pcl_obstXY_out->header.frame_id = "os_sensor";
   pcl_obstXY_out->header.stamp = msg_pointCloud->header.stamp;
   pc_obstXY_pub.publish (pcl_obstXY_out);
 
   // limits cloud
+  limits_cloud_out->is_dense = false;
+  limits_cloud_out->width = limits_cloud_out->width;
+  limits_cloud_out->height = limits_cloud_out->height;
+  limits_cloud_out->points.resize (limits_cloud_out->width * limits_cloud_out->height);
   limits_cloud_out->header.frame_id = "os_sensor";
   limits_cloud_out->header.stamp = msg_pointCloud->header.stamp;
   pc_limits_pub.publish (limits_cloud_out);
