@@ -12,6 +12,8 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/extract_indices.h>
 
+#include <std_msgs/Float64.h>
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -37,6 +39,7 @@ ros::Publisher edgeImg_pub, rangImg_pub, grndImg_pub, surfImg_pub;
 ros::Publisher edgePCL_pub;
 ros::Publisher surfPCL_pub;
 ros::Publisher grndPCL_pub;
+ros::Publisher time_average;
 
 boost::shared_ptr<pcl::RangeImageSpherical> rngSpheric;
 pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::LASER_FRAME;
@@ -62,8 +65,7 @@ std::string pcTopic = "/velodyne_points";
 
 void callback(const PointCloud::ConstPtr& msg_pointCloud)
 {
-  auto t1 = Clock::now(); // lectura de tiempo para estimar el retardo del proceso
-
+  
   if (msg_pointCloud == NULL) return;
 
   PointCloud::Ptr cloud_in (new PointCloud);
@@ -80,6 +82,7 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
           continue;
      cloud_out->push_back(cloud_in->points[i]);          
   }
+  
 
   ///////////////////////Rotacion lidar: pruebas del lidar velodyne que esta girado -17 grados
   Eigen::Matrix<float, 3, 3> R;
@@ -96,7 +99,7 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
   rngSpheric->pcl::RangeImage::createFromPointCloud(*cloud_out, pcl::deg2rad(angular_resolution_x), pcl::deg2rad(angular_resolution_y),
                                        pcl::deg2rad(max_angle_width), pcl::deg2rad(max_angle_height),
                                        aff, coordinate_frame, 0.0f, 0.0f, 0);
-                                
+  auto t1 = Clock::now(); // lectura de tiempo para estimar el retardo del proceso                              
   rngSpheric->header.frame_id = msg_pointCloud->header.frame_id;
   rngSpheric->header.stamp    = msg_pointCloud->header.stamp;
   
@@ -314,7 +317,12 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
   surfImg_pub.publish(surfImg_msg);
   auto t4= Clock::now();
   float time_t = std::chrono::duration_cast<std::chrono::nanoseconds>(t4-t1).count()/1000000000.0;
-  std::cout<<"Tiempo tot: "<<time_t<<std::endl;
+  std::cout<<"Time_per_frame: "<<time_t<<std::endl;
+  std_msgs::Float64 time_msg;
+  time_msg.data = time_t*1000.0;
+  time_average.publish(time_msg);
+
+
 }
 
 int main(int argc, char** argv)
@@ -344,6 +352,7 @@ int main(int argc, char** argv)
   edgePCL_pub= nh.advertise<PointCloud>  ("/pcl_edge"  ,10);
   surfPCL_pub = nh.advertise<PointCloud> ("/pcl_surf"  ,10);  
   grndPCL_pub = nh.advertise<PointCloud> ("/pcl_ground",10);
+  time_average = nh.advertise<std_msgs::Float64>("/time_feature_average", 1);
 
   ros::spin();
   return 0;
