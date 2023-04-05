@@ -85,14 +85,13 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
   
 
   ///////////////////////Rotacion lidar: pruebas del lidar velodyne que esta girado -17 grados
-  Eigen::Matrix<float, 3, 3> R;
+  /*Eigen::Matrix<float, 3, 3> R;
   R << 0.9563047,  0.0000000,  0.2923717,
    0.0000000,  1.0000000,  0.0000000,
-  -0.2923717,  0.0000000,  0.9563047;
+  -0.2923717,  0.0000000,  0.9563047;*/
 
   Eigen::Affine3f aff = Eigen::Affine3f::Identity();
-  //Eigen::Affine3f::Identity()
-  aff.rotate (Eigen::AngleAxisf (-0*M_PI/180.0, Eigen::Vector3f::UnitY()));
+  //aff.rotate (Eigen::AngleAxisf (-0*M_PI/180.0, Eigen::Vector3f::UnitY()));
 
   /////////////////////////////////////////////77
 
