@@ -126,7 +126,7 @@ void callback_dt(const ImageConstPtr& in_image, const ImageConstPtr& in_mask)
 
   pcl::VoxelGrid<pcl::PointXYZ> vg;
   vg.setInputCloud(cloud_out);
-  vg.setLeafSize(1.0f, 1.0f, 100.0f);
+  vg.setLeafSize(0.5f, 0.5f, 100.0f);
   vg.filter(*cloud_out);
   
   cloud_out->is_dense = false;
