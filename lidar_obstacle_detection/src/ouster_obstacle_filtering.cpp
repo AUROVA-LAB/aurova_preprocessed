@@ -261,22 +261,22 @@ int main(int argc, char** argv)
 {
 
   ros::init(argc, argv, "LidarObstacle");
-  ros::NodeHandle nh;  
+  ros::NodeHandle nh("~");  
   std::cout<<"Nodo obstaculos inicializado: "<<std::endl;
   
   /// Load Parameters
 
-  nh.getParam("/pcTopic", pcTopic);
-  nh.getParam("/maxlen", maxlen);
-  nh.getParam("/minlen", minlen);
-  nh.getParam("/maxZ_filter", max_z);
-  nh.getParam("/smNorm", smNorm);
-  nh.getParam("/laNorm", laNorm);
-  nh.getParam("/threshold", th);
-  nh.getParam("/voxel", vx_cloud);
-  nh.getParam("/scaleRadio", scaleRadio);
-  nh.getParam("/vecinos", vecinos);
-  nh.getParam("/th_meanK", th_meanK);
+  nh.getParam("pcTopic", pcTopic);
+  nh.getParam("maxlen", maxlen);
+  nh.getParam("minlen", minlen);
+  nh.getParam("maxZ_filter", max_z);
+  nh.getParam("smNorm", smNorm);
+  nh.getParam("laNorm", laNorm);
+  nh.getParam("threshold", th);
+  nh.getParam("voxel", vx_cloud);
+  nh.getParam("scaleRadio", scaleRadio);
+  nh.getParam("vecinos", vecinos);
+  nh.getParam("th_meanK", th_meanK);
   
   rngSpheric = boost::shared_ptr<pcl::RangeImageSpherical>(new pcl::RangeImageSpherical);
   

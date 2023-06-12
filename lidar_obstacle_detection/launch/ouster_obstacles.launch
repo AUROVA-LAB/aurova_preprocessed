@@ -1,22 +1,35 @@
 <?xml version="1.0"?>
 <launch>
  
-    <param name="pcTopic"     type="str"    value="/ouster/points" />
+    <arg name="pcTopic"     default="/ouster_filtered" />
     <!-- Los siguientes valores se recomienda NO MODIFICAR hasta hacer pruebas con varios escenarios -->
-    <param name="maxlen"      type="double" value="8.0" />  <!-- distancia maxima de la pcl para tomar encuenta-->
-    <param name="minlen"      type="double" value="0.5" />  <!-- distancia minima de la pcl para tomar encuenta-->
-    <param name="maxZ_filter" type="double" value="0.1" />  <!-- altura maxima de la PCL -->
-    <param name="voxel"       type="double" value="0.15" /> <!-- voxelizado de la nube de puntos 0.15 --> 
-    <param name="smNorm"      type="double" value="0.4" />  <!-- normales pequeñas  de la pcl 0.4 -->
-    <param name="laNorm"      type="double" value="0.56" /> <!-- normales largas  de la pcl 0.56 -->   
-    <param name="threshold"   type="double" value="0.02" /> <!-- threshold de filtrado de la ambas normales -->
-    <param name="scaleRadio"  type="double" value="0.98" /> <!-- escalado del radio para eliminar ruido en el radio -->
+    <arg name="maxlen"      default="8.0" />  <!-- distancia maxima de la pcl para tomar encuenta-->
+    <arg name="minlen"      default="0.5" />  <!-- distancia minima de la pcl para tomar encuenta-->
+    <arg name="maxZ_filter" default="0.1" />  <!-- altura maxima de la PCL -->
+    <arg name="voxel"       default="0.15" /> <!-- voxelizado de la nube de puntos 0.15 --> 
+    <arg name="smNorm"      default="0.4" />  <!-- normales pequeñas  de la pcl 0.4 -->
+    <arg name="laNorm"      default="0.56" /> <!-- normales largas  de la pcl 0.56 -->   
+    <arg name="threshold"   default="0.02" /> <!-- threshold de filtrado de la ambas normales -->
+    <arg name="scaleRadio"  default="0.98" /> <!-- escalado del radio para eliminar ruido en el radio -->
 
-    <param name="vecinos"   type="double" value="10.0" /> <!-- 10 -->
-    <param name="th_meanK"  type="double" value="1.0" /> <!-- 1.0 -->
+    <arg name="vecinos"   default="10.0" /> <!-- 10 -->
+    <arg name="th_meanK"  default="1.0" /> <!-- 1.0 -->
 
 
 
-    <node pkg="lidar_obstacle_detection"   type="ouster_obstacle_filtering_node" name="ouster_obstacle_filtering_node" output="screen"/>
+    <node pkg="lidar_obstacle_detection"   type="ouster_obstacle_filtering_node" name="ouster_obstacle_filtering_node" output="screen">
+        <param name="pcTopic"     type="str"    value="$(arg pcTopic)" />
+        <param name="maxlen"      type="double" value="$(arg maxlen)" />  
+        <param name="minlen"      type="double" value="$(arg minlen)" />  
+        <param name="maxZ_filter" type="double" value="$(arg maxZ_filter)" />  
+        <param name="voxel"       type="double" value="$(arg voxel)" />
+        <param name="smNorm"      type="double" value="$(arg smNorm)" />  
+        <param name="laNorm"      type="double" value="$(arg laNorm)" />  
+        <param name="threshold"   type="double" value="$(arg threshold)" />
+        <param name="scaleRadio"  type="double" value="$(arg scaleRadio)" /> 
+
+        <param name="vecinos"   type="double" value="$(arg vecinos)" /> 
+        <param name="th_meanK"  type="double" value="$(arg th_meanK)" /> 
+    </node>
  
 </launch>
