@@ -25,6 +25,7 @@ def callback(range_in, signal_in, reflec_in, nearir_in):
         merged=cv2.merge([reflec,reflec,depht])
         image_message = bridge.cv2_to_imgmsg(merged, "bgr8")  
         image_message.header.stamp = range_in.header.stamp
+        image_message.header.seq = range_in.header.seq
         image_message.header.frame_id = "ouster_sensor"
         merge_img_pub.publish(image_message)
 

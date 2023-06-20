@@ -135,6 +135,7 @@ void callback_dt(const ImageConstPtr& in_image, const ImageConstPtr& in_mask)
   cloud_out->header.frame_id = "os_sensor";
   ros::Time time_st = cv_mask->header.stamp; // Para PCL se debe modificar el stamp y no se puede usar directamente el del topic de entrada
   cloud_out->header.stamp = time_st.toNSec()/1e3;
+  cloud_out->header.seq = in_mask->header.seq;
   if (include_detections) pc_filtered_pub.publish (cloud_out);
   
 
