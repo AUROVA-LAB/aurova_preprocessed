@@ -12,7 +12,7 @@ This package contains a node that, as input, read the topic /imu/data of type se
 The code implemented in ROS projects a point cloud obtained by a Velodyne VLP16 3D-Lidar sensor on an image from an RGB camera. The example used the ROS package to calibrate a camera and a LiDAR from lidar_camera_calibration.
 
 **pc2image**
-This code converts a point cloud obtained by a Velodyne VLP16 3D-Lidar sensor into a depth image mono16.
+This code converts a point cloud obtained by a Velodyne VLP16 3D-Lidar sensor into a depth image mono16. This package is used for the preprocessing of Lidar odometry (LiLo).
 
 **pc_filter**
 This node filters the range image from the pc2image node and converts the range image into a point cloud. 
