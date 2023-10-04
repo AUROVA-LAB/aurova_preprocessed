@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <arg name="output"        default="screen"/>
+  <arg name="launch_prefix" default=""/>
+  <arg name="dr"            default="true"/>
+
+  <include file="$(find kitti_preprocess)/launch/node.launch">
+    <arg name="node_name"     value="kitti_preprocess"/>
+    <arg name="output"        value="$(arg output)"/>
+    <arg name="launch_prefix" value="$(arg launch_prefix)"/>
+  </include>
+
+  <node name="rqt_reconfigure_kitti_preprocess"
+        pkg ="rqt_reconfigure"
+        type="rqt_reconfigure"
+        if  ="$(arg dr)"
+        args="kitti_preprocess">
+  </node>
+
+</launch>

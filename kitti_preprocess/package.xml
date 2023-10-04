@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>aurova_preprocessed</name>
-  <version>1.0.0</version>
-  <description>The aurova_preprocessed package</description>
+  <name>kitti_preprocess</name>
+  <version>0.0.0</version>
+  <description>The kitti_preprocess package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="mice85@todo.todo">mice85</maintainer>
+  <maintainer email="mice85@iri.upc.edu">mice85</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/reactive_hokuyo</url> -->
+  <!-- <url type="website">http://wiki.ros.org/kitti_preprocess</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
@@ -48,23 +48,18 @@
   <!--   <test_depend>gtest</test_depend> -->
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
-  
-  <exec_depend>virtual_imu</exec_depend>
-  <exec_depend>pc2image</exec_depend>
-  <exec_depend>image2pcl</exec_depend>
-  <exec_depend>pc_filter</exec_depend>
-  <exec_depend>lidar_camera_fusion</exec_depend>
-  <exec_depend>merged_channels_ouster</exec_depend>
-  <exec_depend>lidar_obstacle_detection</exec_depend> 
-  <exec_depend>kitti_preprocess</exec_depend>  
-
-
   <buildtool_depend>catkin</buildtool_depend>
-  
+  <build_depend>iri_base_algorithm</build_depend>
+  <build_export_depend>iri_base_algorithm</build_export_depend>
+  <exec_depend>iri_base_algorithm</exec_depend>
+  <depend>nav_msgs</depend>
+  <depend>tf</depend>
+  <depend>sensor_msgs</depend>
+
+
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
-    <metapackage/>
-  </export>
 
+  </export>
 </package>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <arg name="node_name"     default="kitti_preprocess"/>
+  <arg name="output"        default="screen"/>
+  <arg name="launch_prefix" default=""/>
+  <arg name="config_file"   default="$(find kitti_preprocess)/config/params.yaml"/>
+  <!-- <arg name="topic_name"  default="new_topic_name"/> -->
+
+  <node name="$(arg node_name)"
+        pkg ="kitti_preprocess"
+        type="kitti_preprocess"
+        output="$(arg output)"
+        launch-prefix="$(arg launch_prefix)">
+    <rosparam file="$(arg config_file)" command="load"/>
+    <!--<remap from="~/topic" to="$(arg topic_name)"/>-->
+  </node>
+
+</launch>
