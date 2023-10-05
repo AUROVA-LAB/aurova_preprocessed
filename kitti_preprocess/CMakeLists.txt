@@ -3,6 +3,8 @@ project(kitti_preprocess)
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED)
+find_package(localization REQUIRED)
+FIND_PACKAGE(Eigen3 REQUIRED)
 # ******************************************************************** 
 #                 Add catkin additional components here
 # ******************************************************************** 
@@ -15,6 +17,8 @@ find_package(catkin REQUIRED COMPONENTS iri_base_algorithm nav_msgs tf sensor_ms
 #           Add system and labrobotica dependencies here
 # ******************************************************************** 
 # find_package(<dependency> REQUIRED)
+find_package(PCL REQUIRED)
+find_package(Ceres REQUIRED)
 
 # ******************************************************************** 
 #           Add topic, service and action definition here
@@ -76,10 +80,19 @@ catkin_package(
 # ******************************************************************** 
 include_directories(include)
 include_directories(${catkin_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${EIGEN_INCLUDE_DIR})
+include_directories(${PCL_INCLUDE_DIRS})
+include_directories(${CERES_INCLUDE_DIRS}) 
 # include_directories(${<dependency>_INCLUDE_DIRS})
 
 ## Declare a cpp library
 # add_library(${PROJECT_NAME} <list of source files>)
+link_directories(
+  include
+  ${PCL_LIBRARY_DIRS}
+  ${CERES_LIBRARY_DIRS}
+)
+
 
 ## Declare a cpp executable
 add_executable(${PROJECT_NAME} src/kitti_preprocess_alg.cpp src/kitti_preprocess_alg_node.cpp)
@@ -88,6 +101,9 @@ add_executable(${PROJECT_NAME} src/kitti_preprocess_alg.cpp src/kitti_preprocess
 #                   Add the libraries
 # ******************************************************************** 
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} localization)
+target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${CERES_LIBRARIES})
 # target_link_libraries(${PROJECT_NAME} ${<dependency>_LIBRARIES})
 
 # ******************************************************************** 

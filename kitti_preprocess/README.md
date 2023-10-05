@@ -4,9 +4,11 @@ The kitti_preprocess project description
 
 # ROS Interface
 ### Topic publishers
+  - ~**odometry_gps** (nav_msgs/Odometry.msg)
   - ~**odom** (nav_msgs/Odometry.msg)
   - /**tf** (tf/tfMessage)
 ### Topic subscribers
+  - ~**fix** (sensor_msgs/NavSatFix.msg)
   - /**tf** (tf/tfMessage)
   - ~**pointcloud** (sensor_msgs/PointCloud2.msg)
 

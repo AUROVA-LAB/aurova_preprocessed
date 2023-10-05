@@ -5,7 +5,8 @@
   <arg name="output"        default="screen"/>
   <arg name="launch_prefix" default=""/>
   <arg name="config_file"   default="$(find kitti_preprocess)/config/params.yaml"/>
-  <!-- <arg name="topic_name"  default="new_topic_name"/> -->
+  <arg name="topic_name"  default="/odom"/>
+  <arg name="topic_name2"  default="/odometry_gps"/>
 
   <node name="$(arg node_name)"
         pkg ="kitti_preprocess"
@@ -13,7 +14,8 @@
         output="$(arg output)"
         launch-prefix="$(arg launch_prefix)">
     <rosparam file="$(arg config_file)" command="load"/>
-    <!--<remap from="~/topic" to="$(arg topic_name)"/>-->
+    <remap from="/kitti_preprocess/odom" to="$(arg topic_name)"/>
+    <remap from="/kitti_preprocess/odometry_gps" to="$(arg topic_name2)"/>
   </node>
 
 </launch>

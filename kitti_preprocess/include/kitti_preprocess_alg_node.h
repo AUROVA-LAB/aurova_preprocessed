@@ -29,10 +29,14 @@
 #include "kitti_preprocess_alg.h"
 
 // [publisher subscriber headers]
+#include <sensor_msgs/NavSatFix.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <localization/data_processing.h>
+#include <localization/optimization_process.h>
+#include <localization/latlong_utm.h>
 
 // [service client headers]
 
@@ -45,7 +49,14 @@
 class KittiPreprocessAlgNode : public algorithm_base::IriBaseAlgorithm<KittiPreprocessAlgorithm>
 {
   private:
+
+    double lat_zero_;
+    double lon_zero_;
+
     // [publisher attributes]
+    ros::Publisher odometry_gps_publisher_;
+    nav_msgs::Odometry odometry_gps_Odometry_msg_;
+
     ros::Publisher odom_publisher_;
     nav_msgs::Odometry odom_Odometry_msg_;
 
@@ -54,6 +65,12 @@ class KittiPreprocessAlgNode : public algorithm_base::IriBaseAlgorithm<KittiPrep
 
 
     // [subscriber attributes]
+    ros::Subscriber fix_subscriber_;
+    void fix_callback(const sensor_msgs::NavSatFix::ConstPtr& msg);
+    pthread_mutex_t fix_mutex_;
+    void fix_mutex_enter(void);
+    void fix_mutex_exit(void);
+
     tf::TransformListener tf_listener_;
 
     ros::Subscriber pointcloud_subscriber_;
