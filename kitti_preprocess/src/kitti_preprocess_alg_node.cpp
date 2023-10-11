@@ -117,7 +117,17 @@ void KittiPreprocessAlgNode::fix_callback(const sensor_msgs::NavSatFix::ConstPtr
 
   utm.LLtoUTM(ref_ellipsoid, fix_msg->latitude, fix_msg->longitude, utm_y, utm_x, utm_zone);
   utm.LLtoUTM(ref_ellipsoid, this->lat_zero_, this->lon_zero_, zero_y, zero_x, utm_zone);
-  
+
+  ///////////////////////////////////////////////////////////////////////////////
+  //// FOR REPRESENTATION PURPO0SES
+  Eigen::Vector3d map_orientations_RPY = Eigen::Vector3d::Zero();
+  map_orientations_RPY(0) = 0.0;
+  map_orientations_RPY(1) = -1.57;
+  map_orientations_RPY(2) = 0.0;
+
+  // Converting to quarternion to fill the ROS message
+  tf::Quaternion quaternion = tf::createQuaternionFromRPY(map_orientations_RPY(0), map_orientations_RPY(1),
+                                                          map_orientations_RPY(2));
 
   static int seq = 0;
   this->odometry_gps_Odometry_msg_.header.stamp = ros::Time::now();
@@ -126,6 +136,10 @@ void KittiPreprocessAlgNode::fix_callback(const sensor_msgs::NavSatFix::ConstPtr
   this->odometry_gps_Odometry_msg_.pose.pose.position.x = utm_x - zero_x;
   this->odometry_gps_Odometry_msg_.pose.pose.position.y = utm_y - zero_y;
   this->odometry_gps_Odometry_msg_.pose.pose.position.z = 0.0;
+  this->odometry_gps_Odometry_msg_.pose.pose.orientation.x = quaternion[0];
+  this->odometry_gps_Odometry_msg_.pose.pose.orientation.y = quaternion[1];
+  this->odometry_gps_Odometry_msg_.pose.pose.orientation.z = quaternion[2];
+  this->odometry_gps_Odometry_msg_.pose.pose.orientation.w = quaternion[3];
   this->odometry_gps_Odometry_msg_.pose.covariance[0] = fix_msg->position_covariance[0];
   this->odometry_gps_Odometry_msg_.pose.covariance[7] = fix_msg->position_covariance[4];
   this->odometry_gps_Odometry_msg_.pose.covariance[14] = fix_msg->position_covariance[8];
