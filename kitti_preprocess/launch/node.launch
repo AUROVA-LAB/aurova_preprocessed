@@ -16,6 +16,7 @@
     <rosparam file="$(arg config_file)" command="load"/>
     <remap from="/kitti_preprocess/odom" to="$(arg topic_name)"/>
     <remap from="/kitti_preprocess/odometry_gps" to="$(arg topic_name2)"/>
+    <remap from="/kitti_preprocess/ouster/range_image" to="/ouster/range_image"/>
   </node>
 
 </launch>

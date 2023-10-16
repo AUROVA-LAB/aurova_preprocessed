@@ -49,9 +49,15 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
+
   <build_depend>iri_base_algorithm</build_depend>
+
   <build_export_depend>iri_base_algorithm</build_export_depend>
+
   <exec_depend>iri_base_algorithm</exec_depend>
+  <depend>cv_bridge</depend>
+  <depend>image_transport</depend>
+  <depend>camera_info_manager</depend>
   <depend>nav_msgs</depend>
   <depend>tf</depend>
   <depend>sensor_msgs</depend>

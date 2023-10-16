@@ -29,6 +29,7 @@
 #include "kitti_preprocess_alg.h"
 
 // [publisher subscriber headers]
+#include <sensor_msgs/Image.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_broadcaster.h>
@@ -37,6 +38,19 @@
 #include <localization/data_processing.h>
 #include <localization/optimization_process.h>
 #include <localization/latlong_utm.h>
+
+#include <pcl_ros/point_cloud.h>
+#include <pcl_conversions/pcl_conversions.h>
+
+#include <cv_bridge/cv_bridge.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/opencv.hpp>
+#include "opencv2/imgproc.hpp"
+#include "opencv2/imgcodecs.hpp"
 
 // [service client headers]
 
@@ -54,6 +68,8 @@ class KittiPreprocessAlgNode : public algorithm_base::IriBaseAlgorithm<KittiPrep
     double lon_zero_;
 
     // [publisher attributes]
+    ros::Publisher img_range_publisher_;
+
     ros::Publisher odometry_gps_publisher_;
     nav_msgs::Odometry odometry_gps_Odometry_msg_;
 

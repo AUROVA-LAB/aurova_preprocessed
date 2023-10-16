@@ -15,6 +15,7 @@ KittiPreprocessAlgNode::KittiPreprocessAlgNode(void) :
     this->setRate(this->config_.rate);
 
   // [init publishers]
+  this->img_range_publisher_ = this->private_node_handle_.advertise<sensor_msgs::Image>("ouster/range_image", 1);
   this->odometry_gps_publisher_ = this->private_node_handle_.advertise<nav_msgs::Odometry>("odometry_gps", 1);
   this->odom_publisher_ = this->private_node_handle_.advertise<nav_msgs::Odometry>("odom", 1);
   
@@ -101,7 +102,7 @@ void KittiPreprocessAlgNode::mainNodeThread(void)
 /*  [subscriber callbacks] */
 void KittiPreprocessAlgNode::fix_callback(const sensor_msgs::NavSatFix::ConstPtr& fix_msg)
 {
-  ROS_INFO("KittiPreprocessAlgNode::fix_callback: New Message Received");
+  //ROS_INFO("KittiPreprocessAlgNode::fix_callback: New Message Received");
 
   //use appropiate mutex to shared variables if necessary
   this->alg_.lock();
@@ -165,18 +166,40 @@ void KittiPreprocessAlgNode::fix_mutex_exit(void)
   pthread_mutex_unlock(&this->fix_mutex_);
 }
 
-void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& msg)
+void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& scan)
 {
-  ROS_INFO("KittiPreprocessAlgNode::pointcloud_callback: New Message Received");
+  //ROS_INFO("KittiPreprocessAlgNode::pointcloud_callback: New Message Received");
   
   //use appropiate mutex to shared variables if necessary
-  //this->alg_.lock();
-  //this->pointcloud_mutex_enter();
+  this->alg_.lock();
+  this->pointcloud_mutex_enter();
+
+  //// PARSE TO PCL FORMAT, INCLUDING INTENSITY
+  sensor_msgs::PointCloud2 scan_new;
+  scan_new = *scan;
+  scan_new.fields[3].name = "intensity";  
+  static pcl::PointCloud<pcl::PointXYZI> scan_pcl;
+  pcl::fromROSMsg(scan_new, scan_pcl);
+  scan_pcl.points.at(0).intensity;
+
+  //// CREATE OPEN CV MAT.
+  int rows = 300;
+  int cols = 600;
+  cv::Mat img_range = cv::Mat::zeros(rows, cols, cv_bridge::getCvType("mono16"));
+  img_range = img_range + cv::Scalar(35000);
+  img_range.at<uchar>(10, 10) = 0;
+  img_range.at<uchar>(20, 20) = 255;
+
+  //// PARSE TO MESSAGE FORMAT
+  sensor_msgs::ImagePtr img_range_msg;
+  img_range_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", img_range).toImageMsg();
+  img_range_msg->header.stamp = scan->header.stamp;
+  this->img_range_publisher_.publish(img_range_msg);
 
   //std::cout << msg->data << std::endl;
   //unlock previously blocked shared variables
-  //this->alg_.unlock();
-  //this->pointcloud_mutex_exit();
+  this->alg_.unlock();
+  this->pointcloud_mutex_exit();
 }
 
 void KittiPreprocessAlgNode::pointcloud_mutex_enter(void)

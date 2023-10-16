@@ -8,7 +8,7 @@ FIND_PACKAGE(Eigen3 REQUIRED)
 # ******************************************************************** 
 #                 Add catkin additional components here
 # ******************************************************************** 
-find_package(catkin REQUIRED COMPONENTS iri_base_algorithm nav_msgs tf sensor_msgs)
+find_package(catkin REQUIRED COMPONENTS iri_base_algorithm camera_info_manager nav_msgs tf sensor_msgs cv_bridge image_transport)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS iri_base_algorithm nav_msgs tf sensor_ms
 # find_package(<dependency> REQUIRED)
 find_package(PCL REQUIRED)
 find_package(Ceres REQUIRED)
+find_package(OpenCV REQUIRED)
 
 # ******************************************************************** 
 #           Add topic, service and action definition here
@@ -64,7 +65,7 @@ catkin_package(
 # ******************************************************************** 
 #            Add ROS and IRI ROS run time dependencies
 # ******************************************************************** 
- CATKIN_DEPENDS iri_base_algorithm nav_msgs tf sensor_msgs
+ CATKIN_DEPENDS iri_base_algorithm camera_info_manager nav_msgs tf sensor_msgs cv_bridge image_transport
 # ******************************************************************** 
 #      Add system and labrobotica run time dependencies here
 # ******************************************************************** 
@@ -83,6 +84,7 @@ include_directories(${catkin_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${EIGEN_INCLUDE_DIR})
 include_directories(${PCL_INCLUDE_DIRS})
 include_directories(${CERES_INCLUDE_DIRS}) 
+include_directories(${OpenCV_INCLUDE_DIRS})
 # include_directories(${<dependency>_INCLUDE_DIRS})
 
 ## Declare a cpp library
@@ -104,6 +106,7 @@ target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} localization)
 target_link_libraries(${PROJECT_NAME} ${PCL_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} ${CERES_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBRARIES})
 # target_link_libraries(${PROJECT_NAME} ${<dependency>_LIBRARIES})
 
 # ******************************************************************** 

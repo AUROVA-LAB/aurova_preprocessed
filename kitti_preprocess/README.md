@@ -4,6 +4,8 @@ The kitti_preprocess project description
 
 # ROS Interface
 ### Topic publishers
+  - ~**range_ouster** (sensor_msgs/Image.msg)
+  - ~**range_ouster** (sensor_msgs/Image.msg)
   - ~**odometry_gps** (nav_msgs/Odometry.msg)
   - ~**odom** (nav_msgs/Odometry.msg)
   - /**tf** (tf/tfMessage)
