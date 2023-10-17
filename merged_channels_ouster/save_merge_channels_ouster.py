@@ -50,7 +50,7 @@ if __name__ == '__main__':
     global flag, bridge, merge_img_pub, cont, i, path, j, offset, freq
 
     # ------------- CONFIGURATION PARAMETERS ---------------------#
-    path = "/home/mice85/aurova-lab/labrobotica/dataset/2023-03-06_loc_and_plann/2023-03-06-15-37-47/merged/"
+    path = "/home/mice85/aurova-lab/labrobotica/dataset/odometry-kitti/merged_10/"
     offset = 0
     freq = 10
     # -------------------------------------------------------------#

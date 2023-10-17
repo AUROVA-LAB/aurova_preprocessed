@@ -16,6 +16,9 @@ KittiPreprocessAlgNode::KittiPreprocessAlgNode(void) :
 
   // [init publishers]
   this->img_range_publisher_ = this->private_node_handle_.advertise<sensor_msgs::Image>("ouster/range_image", 1);
+  this->img_reflec_publisher_ = this->private_node_handle_.advertise<sensor_msgs::Image>("ouster/reflec_image", 1);
+  this->img_nearir_publisher_ = this->private_node_handle_.advertise<sensor_msgs::Image>("ouster/nearir_image", 1);
+  this->img_signal_publisher_ = this->private_node_handle_.advertise<sensor_msgs::Image>("ouster/signal_image", 1);
   this->odometry_gps_publisher_ = this->private_node_handle_.advertise<nav_msgs::Odometry>("odometry_gps", 1);
   this->odom_publisher_ = this->private_node_handle_.advertise<nav_msgs::Odometry>("odom", 1);
   
@@ -174,27 +177,87 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
   this->alg_.lock();
   this->pointcloud_mutex_enter();
 
+  //// CONFIGURATION VARIAVBLES
+  float max_elevation_angle = 103.4;
+  float min_elevation_angle = 76.6;
+  float max_azimuth_angle = 360.0;
+  float min_azimuth_angle = 0.0;
+  float grid_azimuth_angular_resolution = 0.23;
+  float grid_elevation_angular_resolution = 0.425;
+  int num_of_azimuth_cells = 1 + (max_azimuth_angle - min_azimuth_angle) / grid_azimuth_angular_resolution;
+  int num_of_elevation_cells = 1 + (max_elevation_angle - min_elevation_angle) / grid_elevation_angular_resolution;
+  float min_range = 3.0;
+  float max_range = 90.0;
+  //float M_PI = 3.1415;
+
   //// PARSE TO PCL FORMAT, INCLUDING INTENSITY
   sensor_msgs::PointCloud2 scan_new;
   scan_new = *scan;
   scan_new.fields[3].name = "intensity";  
   static pcl::PointCloud<pcl::PointXYZI> scan_pcl;
   pcl::fromROSMsg(scan_new, scan_pcl);
-  scan_pcl.points.at(0).intensity;
 
   //// CREATE OPEN CV MAT.
-  int rows = 300;
-  int cols = 600;
+  int rows = num_of_elevation_cells;
+  int cols = num_of_azimuth_cells;
   cv::Mat img_range = cv::Mat::zeros(rows, cols, cv_bridge::getCvType("mono16"));
-  img_range = img_range + cv::Scalar(35000);
-  img_range.at<uchar>(10, 10) = 0;
-  img_range.at<uchar>(20, 20) = 255;
+  cv::Mat img_reflec = cv::Mat::zeros(rows, cols, cv_bridge::getCvType("mono16"));
+
+  //// FILL SPHERICAL OPEN CV IMAGE
+  float range = 0.0;
+  float elevation = 0.0;
+  float azimuth = 0.0;
+  int row, col;
+  for (size_t i = 0; i < scan_pcl.points.size(); ++i)
+  {
+    pcl::PointXYZI point = scan_pcl.points.at(i);
+
+    range = sqrt((point.x * point.x) + (point.y * point.y) + (point.z * point.z));
+
+    azimuth = atan2(point.y, point.x) * 180.0 / M_PI;
+    elevation = atan2(sqrt((point.x * point.x) + (point.y * point.y)), point.z) * 180.0 / M_PI;
+
+    if (azimuth < 0)
+      azimuth += 360.0;
+    if (azimuth >= 360)
+      azimuth -= 360;
+
+    if (elevation < 0)
+      elevation += 360.0;
+    if (elevation >= 360)
+      elevation -= 360;
+
+    //Filtering points of our own vehicle and out of desired FOV
+    if (range >= min_range
+        //&& range <= max_range
+        && azimuth <= max_azimuth_angle
+        && azimuth >= min_azimuth_angle
+        && elevation <= max_elevation_angle
+        && elevation >= min_elevation_angle)
+    {
+      col = (int) round((azimuth - min_azimuth_angle) / grid_azimuth_angular_resolution);
+      row = (int) round((elevation - min_elevation_angle) / grid_elevation_angular_resolution);
+
+      if (col >= 0 && col < num_of_azimuth_cells && row >= 0 && row < num_of_elevation_cells)
+      {
+        if (range > max_range) range = max_range;
+        img_range.at<ushort>(row, col) = pow(2,16) * (range / max_range);
+        img_reflec.at<ushort>(row, col) = pow(2,16) * scan_pcl.points.at(i).intensity;
+      }
+    }
+  }
 
   //// PARSE TO MESSAGE FORMAT
   sensor_msgs::ImagePtr img_range_msg;
+  sensor_msgs::ImagePtr img_reflec_msg;
   img_range_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", img_range).toImageMsg();
+  img_reflec_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", img_reflec).toImageMsg();
   img_range_msg->header.stamp = scan->header.stamp;
+  img_reflec_msg->header.stamp = scan->header.stamp;
   this->img_range_publisher_.publish(img_range_msg);
+  this->img_reflec_publisher_.publish(img_reflec_msg);
+  this->img_nearir_publisher_.publish(img_reflec_msg);
+  this->img_signal_publisher_.publish(img_range_msg);
 
   //std::cout << msg->data << std::endl;
   //unlock previously blocked shared variables
