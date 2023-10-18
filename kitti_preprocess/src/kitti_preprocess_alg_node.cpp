@@ -178,12 +178,12 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
   this->pointcloud_mutex_enter();
 
   //// CONFIGURATION VARIAVBLES
-  float max_elevation_angle = 103.4;
-  float min_elevation_angle = 76.6;
+  float max_elevation_angle = 114.5;// -24.5 dg
+  float min_elevation_angle = 88;// +2 dg
   float max_azimuth_angle = 360.0;
   float min_azimuth_angle = 0.0;
-  float grid_azimuth_angular_resolution = 0.23;
-  float grid_elevation_angular_resolution = 0.425;
+  float grid_azimuth_angular_resolution = 0.3;
+  float grid_elevation_angular_resolution = 0.58;
   int num_of_azimuth_cells = 1 + (max_azimuth_angle - min_azimuth_angle) / grid_azimuth_angular_resolution;
   int num_of_elevation_cells = 1 + (max_elevation_angle - min_elevation_angle) / grid_elevation_angular_resolution;
   float min_range = 3.0;
@@ -243,6 +243,7 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
         if (range > max_range) range = max_range;
         img_range.at<ushort>(row, col) = pow(2,16) * (range / max_range);
         img_reflec.at<ushort>(row, col) = pow(2,16) * scan_pcl.points.at(i).intensity;
+        //// TODO: Save and publish image with coordenates.
       }
     }
   }
