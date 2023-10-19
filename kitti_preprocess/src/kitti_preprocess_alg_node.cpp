@@ -182,8 +182,8 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
   float min_elevation_angle = 88;// +2 dg
   float max_azimuth_angle = 360.0;
   float min_azimuth_angle = 0.0;
-  float grid_azimuth_angular_resolution = 0.3;
-  float grid_elevation_angular_resolution = 0.58;
+  float grid_azimuth_angular_resolution = 0.23;
+  float grid_elevation_angular_resolution = 0.42;
   int num_of_azimuth_cells = 1 + (max_azimuth_angle - min_azimuth_angle) / grid_azimuth_angular_resolution;
   int num_of_elevation_cells = 1 + (max_elevation_angle - min_elevation_angle) / grid_elevation_angular_resolution;
   float min_range = 3.0;
@@ -202,6 +202,8 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
   int cols = num_of_azimuth_cells;
   cv::Mat img_range = cv::Mat::zeros(rows, cols, cv_bridge::getCvType("mono16"));
   cv::Mat img_reflec = cv::Mat::zeros(rows, cols, cv_bridge::getCvType("mono16"));
+  cv::Mat img_range_bk;
+  cv::Mat img_reflec_bk;
 
   //// FILL SPHERICAL OPEN CV IMAGE
   float range = 0.0;
@@ -244,6 +246,48 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
         img_range.at<ushort>(row, col) = pow(2,16) * (range / max_range);
         img_reflec.at<ushort>(row, col) = pow(2,16) * scan_pcl.points.at(i).intensity;
         //// TODO: Save and publish image with coordenates.
+      }
+    }
+  }
+
+  //// Filter black holes.
+  img_reflec_bk = img_reflec.clone();
+  img_range_bk = img_range.clone();
+  for (int j = 3; j < rows-3; j++){
+    for (int i = 3; i < cols-3; i++){
+
+      if (img_reflec_bk.at<ushort>(j, i) == 0){
+        cv::Rect roi(i-3, j-3, 7, 7);
+        cv::Mat cropped = img_reflec_bk(roi);
+        double N = 0;
+        double val = 0;
+        for (int v = 0; v < 7; v++){
+          for (int u = 0; u < 7; u++){
+            if (cropped.at<ushort>(v, u) > 0){
+              N = N + 1.0; 
+              val = val + (double)(cropped.at<ushort>(v, u));
+            } 
+          } 
+        }
+        //std::cout << val / N << std::endl;
+        if (N > 1.0) img_reflec.at<ushort>(j, i) = (ushort)(val / (N - 1.0));
+      }
+
+      if (img_range_bk.at<ushort>(j, i) == 0){
+        cv::Rect roi(i-1, j-1, 3, 3);
+        cv::Mat cropped = img_range_bk(roi);
+        double N = 0;
+        double val = 0;
+        for (int v = 0; v < 3; v++){
+          for (int u = 0; u < 3; u++){
+            if (cropped.at<ushort>(v, u)  > 0){
+              N = N + 1.0; 
+              val = val + (double)(cropped.at<ushort>(v, u));
+            } 
+          } 
+        }
+        //std::cout << val / N << std::endl;
+        if (N > 0.0) img_range.at<ushort>(j, i) = (ushort)(val / N);
       }
     }
   }
