@@ -182,7 +182,7 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
   float min_elevation_angle = 88;// +2 dg
   float max_azimuth_angle = 360.0;
   float min_azimuth_angle = 0.0;
-  float grid_azimuth_angular_resolution = 0.23;
+  float grid_azimuth_angular_resolution = 0.2296;
   float grid_elevation_angular_resolution = 0.42;
   int num_of_azimuth_cells = 1 + (max_azimuth_angle - min_azimuth_angle) / grid_azimuth_angular_resolution;
   int num_of_elevation_cells = 1 + (max_elevation_angle - min_elevation_angle) / grid_elevation_angular_resolution;
