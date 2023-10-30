@@ -19,6 +19,9 @@ KittiPreprocessAlgNode::KittiPreprocessAlgNode(void) :
   this->img_reflec_publisher_ = this->private_node_handle_.advertise<sensor_msgs::Image>("ouster/reflec_image", 1);
   this->img_nearir_publisher_ = this->private_node_handle_.advertise<sensor_msgs::Image>("ouster/nearir_image", 1);
   this->img_signal_publisher_ = this->private_node_handle_.advertise<sensor_msgs::Image>("ouster/signal_image", 1);
+  this->img_x_publisher_ = this->private_node_handle_.advertise<sensor_msgs::Image>("ouster/x_image", 1);
+  this->img_y_publisher_ = this->private_node_handle_.advertise<sensor_msgs::Image>("ouster/y_image", 1);
+  this->img_z_publisher_ = this->private_node_handle_.advertise<sensor_msgs::Image>("ouster/z_image", 1);
   this->odometry_gps_publisher_ = this->private_node_handle_.advertise<nav_msgs::Odometry>("odometry_gps", 1);
   this->odom_publisher_ = this->private_node_handle_.advertise<nav_msgs::Odometry>("odom", 1);
   
@@ -187,7 +190,7 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
   int num_of_azimuth_cells = 1 + (max_azimuth_angle - min_azimuth_angle) / grid_azimuth_angular_resolution;
   int num_of_elevation_cells = 1 + (max_elevation_angle - min_elevation_angle) / grid_elevation_angular_resolution;
   float min_range = 3.0;
-  float max_range = 90.0;
+  float max_range = 100.0;
   //float M_PI = 3.1415;
 
   //// PARSE TO PCL FORMAT, INCLUDING INTENSITY
@@ -202,6 +205,9 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
   int cols = num_of_azimuth_cells;
   cv::Mat img_range = cv::Mat::zeros(rows, cols, cv_bridge::getCvType("mono16"));
   cv::Mat img_reflec = cv::Mat::zeros(rows, cols, cv_bridge::getCvType("mono16"));
+  cv::Mat img_x = cv::Mat::zeros(rows, cols, cv_bridge::getCvType("mono16"));
+  cv::Mat img_y = cv::Mat::zeros(rows, cols, cv_bridge::getCvType("mono16"));
+  cv::Mat img_z = cv::Mat::zeros(rows, cols, cv_bridge::getCvType("mono16"));
   cv::Mat img_range_bk;
   cv::Mat img_reflec_bk;
 
@@ -231,7 +237,7 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
 
     //Filtering points of our own vehicle and out of desired FOV
     if (range >= min_range
-        //&& range <= max_range
+        && range <= max_range
         && azimuth <= max_azimuth_angle
         && azimuth >= min_azimuth_angle
         && elevation <= max_elevation_angle
@@ -246,6 +252,9 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
         img_range.at<ushort>(row, col) = pow(2,16) * (range / max_range);
         img_reflec.at<ushort>(row, col) = pow(2,16) * scan_pcl.points.at(i).intensity;
         //// TODO: Save and publish image with coordenates.
+        img_x.at<ushort>(row, col) = pow(2,16) * ((scan_pcl.points.at(i).x + max_range) / (2 * max_range));
+        img_y.at<ushort>(row, col) = pow(2,16) * ((scan_pcl.points.at(i).y + max_range) / (2 * max_range));
+        img_z.at<ushort>(row, col) = pow(2,16) * ((scan_pcl.points.at(i).z + max_range) / (2 * max_range));
       }
     }
   }
@@ -295,14 +304,26 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
   //// PARSE TO MESSAGE FORMAT
   sensor_msgs::ImagePtr img_range_msg;
   sensor_msgs::ImagePtr img_reflec_msg;
+  sensor_msgs::ImagePtr img_x_msg;
+  sensor_msgs::ImagePtr img_y_msg;
+  sensor_msgs::ImagePtr img_z_msg;
   img_range_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", img_range).toImageMsg();
   img_reflec_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", img_reflec).toImageMsg();
+  img_x_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", img_x).toImageMsg();
+  img_y_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", img_y).toImageMsg();
+  img_z_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", img_z).toImageMsg();
   img_range_msg->header.stamp = scan->header.stamp;
   img_reflec_msg->header.stamp = scan->header.stamp;
+  img_x_msg->header.stamp = scan->header.stamp;
+  img_y_msg->header.stamp = scan->header.stamp;
+  img_z_msg->header.stamp = scan->header.stamp;
   this->img_range_publisher_.publish(img_range_msg);
   this->img_reflec_publisher_.publish(img_reflec_msg);
   this->img_nearir_publisher_.publish(img_reflec_msg);
   this->img_signal_publisher_.publish(img_range_msg);
+  this->img_x_publisher_.publish(img_x_msg);
+  this->img_y_publisher_.publish(img_y_msg);
+  this->img_z_publisher_.publish(img_z_msg);
 
   //std::cout << msg->data << std::endl;
   //unlock previously blocked shared variables

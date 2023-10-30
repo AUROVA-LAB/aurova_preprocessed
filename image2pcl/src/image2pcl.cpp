@@ -57,6 +57,9 @@ ros::Publisher pc_filtered_pub; // publisher de la imagen de puntos filtrada
 ros::Publisher pc_raw_pub; // publisher pc
 
 // input topics 
+std::string xTopic  = "/ouster/x_image";
+std::string yTopic  = "/ouster/y_image";
+std::string zTopic  = "/ouster/z_image";
 std::string rangeTopic  = "/ouster/range_image";
 std::string maskTopic = "/mask/topic";
 std::string outTopicPc = "/out/topic_pc";
@@ -207,6 +210,69 @@ void callback_pc(const ImageConstPtr& in_image)
 
 }
 
+//// From PCL backup to image
+void callback_dt(const ImageConstPtr& x_image, const ImageConstPtr& y_image, const ImageConstPtr& z_image, const ImageConstPtr& in_mask)
+{
+  cv_bridge::CvImagePtr cv_x, cv_y, cv_z, cv_mask;
+  try
+  {
+    cv_x = cv_bridge::toCvCopy(x_image, sensor_msgs::image_encodings::MONO16);
+    cv_y = cv_bridge::toCvCopy(y_image, sensor_msgs::image_encodings::MONO16);
+    cv_z = cv_bridge::toCvCopy(z_image, sensor_msgs::image_encodings::MONO16);
+    cv_mask = cv_bridge::toCvCopy(in_mask, sensor_msgs::image_encodings::MONO8);
+  }
+  catch (cv_bridge::Exception& e)
+  {
+    ROS_ERROR("cv_bridge exception: %s", e.what());
+    return;
+  }
+
+  cv::Mat img_x  = cv_x->image; // get image matrix of cv_x
+  cv::Mat img_y  = cv_y->image;
+  cv::Mat img_z  = cv_z->image;
+  cv::Mat img_mask  = cv_mask->image;
+
+  PointCloud::Ptr point_cloud (new PointCloud);
+  PointCloud::Ptr cloud_out (new PointCloud);
+
+  point_cloud->width = img_x.cols; 
+  point_cloud->height = img_x.rows;
+  point_cloud->is_dense = false;
+  point_cloud->points.resize (point_cloud->width * point_cloud->height);
+  float max_range = 100.0;
+  uint num_pix = 0;
+
+  for (int i = 0; i < img_x.rows; i++){
+      for (int j = 0; j < img_x.cols; j++){
+
+        if (img_mask.at<ushort>(i, j) == 0)
+          continue;
+
+        if (img_x.at<ushort>(i, j) > 0){
+          double x = ((double)(img_x.at<ushort>(i, j)) / pow(2,16)) * 2 * max_range - max_range;
+          double y = ((double)(img_y.at<ushort>(i, j)) / pow(2,16)) * 2 * max_range - max_range;
+          double z = ((double)(img_z.at<ushort>(i, j)) / pow(2,16)) * 2 * max_range - max_range;
+
+          point_cloud->points[num_pix].x = x;
+          point_cloud->points[num_pix].y = y;
+          point_cloud->points[num_pix].z = z;
+          cloud_out->push_back(point_cloud->points[num_pix]); 
+          num_pix++; 
+        }
+      }
+  } 
+  
+  cloud_out->is_dense = false;
+  cloud_out->width = (int) cloud_out->points.size();
+  cloud_out->height = 1;
+  cloud_out->header.frame_id = "velo_link";
+  ros::Time time_st = cv_mask->header.stamp; // Para PCL se debe modificar el stamp y no se puede usar directamente el del topic de entrada
+  cloud_out->header.stamp = time_st.toNSec()/1e3;
+  cloud_out->header.seq = in_mask->header.seq;
+  pc_filtered_pub.publish (cloud_out);
+
+}
+
 int main(int argc, char** argv)
 {
 
@@ -223,6 +289,9 @@ int main(int argc, char** argv)
   nh.getParam("/include_detections", include_detections);
   nh.getParam("/include_pc", include_pc);
 
+  message_filters::Subscriber<Image> x_sub(nh, xTopic , 10);
+  message_filters::Subscriber<Image> y_sub(nh, yTopic , 10);
+  message_filters::Subscriber<Image> z_sub(nh, zTopic , 10);
   message_filters::Subscriber<Image> range_sub (nh, rangeTopic,  10);
   message_filters::Subscriber<Image> mask_sub(nh, maskTopic , 10);
   ros::Subscriber range_aux_sub = nh.subscribe<Image>(rangeTopic, 10, callback_pc);
@@ -230,6 +299,10 @@ int main(int argc, char** argv)
   typedef sync_policies::ApproximateTime<Image, Image> MySyncPolicy;
   Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), range_sub, mask_sub);
   sync.registerCallback(boost::bind(&callback_dt, _1, _2));
+
+  typedef sync_policies::ApproximateTime<Image, Image, Image,Image> MySyncPolicy_bk;
+  Synchronizer<MySyncPolicy_bk> sync_bk(MySyncPolicy_bk(10), x_sub, y_sub, z_sub, mask_sub);
+  sync_bk.registerCallback(boost::bind(&callback_dt, _1, _2, _3, _4));
 
   pc_filtered_pub = nh.advertise<PointCloud> (outTopicDt, 1);  
   pc_raw_pub = nh.advertise<PointCloud> (outTopicPc, 1);

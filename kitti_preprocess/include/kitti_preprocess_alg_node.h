@@ -72,6 +72,9 @@ class KittiPreprocessAlgNode : public algorithm_base::IriBaseAlgorithm<KittiPrep
     ros::Publisher img_reflec_publisher_;
     ros::Publisher img_nearir_publisher_;
     ros::Publisher img_signal_publisher_;
+    ros::Publisher img_x_publisher_;
+    ros::Publisher img_y_publisher_;
+    ros::Publisher img_z_publisher_;
 
     ros::Publisher odometry_gps_publisher_;
     nav_msgs::Odometry odometry_gps_Odometry_msg_;
