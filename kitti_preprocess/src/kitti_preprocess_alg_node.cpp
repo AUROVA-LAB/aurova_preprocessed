@@ -29,8 +29,14 @@ KittiPreprocessAlgNode::KittiPreprocessAlgNode(void) :
   this->fix_subscriber_ = this->private_node_handle_.subscribe("/kitti/oxts/gps/fix", 1, &KittiPreprocessAlgNode::fix_callback, this);
   pthread_mutex_init(&this->fix_mutex_,NULL);
 
-  this->pointcloud_subscriber_ = this->private_node_handle_.subscribe("/kitti/velo/pointcloud", 1, &KittiPreprocessAlgNode::pointcloud_callback, this);
-  pthread_mutex_init(&this->pointcloud_mutex_,NULL);
+  //this->pointcloud_subscriber_ = this->private_node_handle_.subscribe("/kitti/velo/pointcloud", 1, &KittiPreprocessAlgNode::pointcloud_callback, this);
+  //pthread_mutex_init(&this->pointcloud_mutex_,NULL);
+  this->pc_sync_subscriber_.subscribe(this->private_node_handle_,"/kitti/velo/pointcloud",1);
+  this->info_sync_subscriber_.subscribe(this->private_node_handle_,"/kitti/camera_gray_left/camera_info",1);
+  this->img_sync_subscriber_.subscribe(this->private_node_handle_,"/kitti/camera_gray_left/image_raw",1);
+  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::Image, sensor_msgs::CameraInfo> MySyncPolicy;
+  static message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), pc_sync_subscriber_, img_sync_subscriber_, info_sync_subscriber_);
+  sync.registerCallback(boost::bind(&KittiPreprocessAlgNode::pointcloud_callback,this, _1, _2, _3));
 
   
   // [init services]
@@ -172,7 +178,9 @@ void KittiPreprocessAlgNode::fix_mutex_exit(void)
   pthread_mutex_unlock(&this->fix_mutex_);
 }
 
-void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& scan)
+void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& scan, 
+                                                 const sensor_msgs::Image::ConstPtr& img_msg, 
+                                                 const sensor_msgs::CameraInfo::ConstPtr& info_msg)
 {
   //ROS_INFO("KittiPreprocessAlgNode::pointcloud_callback: New Message Received");
   
@@ -183,23 +191,62 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
   //// CONFIGURATION VARIAVBLES
   float max_elevation_angle = 114.5;// -24.5 dg
   float min_elevation_angle = 88;// +2 dg
-  float max_azimuth_angle = 360.0;
-  float min_azimuth_angle = 0.0;
-  float grid_azimuth_angular_resolution = 0.2296;
-  float grid_elevation_angular_resolution = 0.42;
-  int num_of_azimuth_cells = 1 + (max_azimuth_angle - min_azimuth_angle) / grid_azimuth_angular_resolution;
-  int num_of_elevation_cells = 1 + (max_elevation_angle - min_elevation_angle) / grid_elevation_angular_resolution;
-  float min_range = 3.0;
+  float max_azimuth_angle = 213;
+  float min_azimuth_angle = 147;
+  float grid_azimuth_angular_resolution = 0.23;//0.2296;
+  float grid_elevation_angular_resolution = 0.21; //0.42;
+  int num_of_azimuth_cells = 2 + (max_azimuth_angle - min_azimuth_angle) / grid_azimuth_angular_resolution; // +2 instead of +1, to be divisible with 32.
+  int num_of_elevation_cells = 2 + (max_elevation_angle - min_elevation_angle) / grid_elevation_angular_resolution;
+  float min_range = 2.0;
   float max_range = 100.0;
   //float M_PI = 3.1415;
 
+  //////////////////////////////////////////////////////////////////////////////
+  //// PARSE TO OPEN CV AND CAMERA MOEL FORMAT FROM MSG
+  cv_bridge::CvImagePtr cv_gray;
+  try
+  {
+    cv_gray = cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::MONO16);
+  }
+  catch (cv_bridge::Exception& e)
+  {
+    ROS_ERROR("cv_bridge exception: %s", e.what());
+    return;
+  }
+  cv::Mat img_gray  = cv_gray->image;
+  this->cam_model_.fromCameraInfo(info_msg);
+  //std::cout << "FRAME: " << this->cam_model_.tfFrame() << std::endl;
+
+  //////////////////////////////////////////////////////////////////////////////
+  //// TRANSFORM PC TO CAMERA FRAME
+  sensor_msgs::PointCloud2 scan_transformed;
+  try
+  {
+    ros::Duration duration(5.0);
+    this->tf_listener_.waitForTransform(this->cam_model_.tfFrame(), "velo_link", ros::Time::now(), duration);
+    pcl_ros::transformPointCloud(this->cam_model_.tfFrame(), *scan, scan_transformed, this->tf_listener_);
+
+  }
+  catch (tf::TransformException& ex)
+  {
+    ROS_WARN("[draw_frames] TF exception:\n%s", ex.what());
+    return;
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
   //// PARSE TO PCL FORMAT, INCLUDING INTENSITY
   sensor_msgs::PointCloud2 scan_new;
+  sensor_msgs::PointCloud2 scan_new2;
   scan_new = *scan;
+  scan_new2 = scan_transformed;
   scan_new.fields[3].name = "intensity";  
+  scan_new2.fields[3].name = "intensity";
   static pcl::PointCloud<pcl::PointXYZI> scan_pcl;
+  static pcl::PointCloud<pcl::PointXYZI> scan_transformed_pcl;
   pcl::fromROSMsg(scan_new, scan_pcl);
+  pcl::fromROSMsg(scan_new2, scan_transformed_pcl);
 
+  //////////////////////////////////////////////////////////////////////////////
   //// CREATE OPEN CV MAT.
   int rows = num_of_elevation_cells;
   int cols = num_of_azimuth_cells;
@@ -211,6 +258,7 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
   cv::Mat img_range_bk;
   cv::Mat img_reflec_bk;
 
+  //////////////////////////////////////////////////////////////////////////////
   //// FILL SPHERICAL OPEN CV IMAGE
   float range = 0.0;
   float elevation = 0.0;
@@ -225,6 +273,7 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
     azimuth = atan2(point.y, point.x) * 180.0 / M_PI;
     elevation = atan2(sqrt((point.x * point.x) + (point.y * point.y)), point.z) * 180.0 / M_PI;
 
+    azimuth = azimuth - 180.0; // To correct projection
     if (azimuth < 0)
       azimuth += 360.0;
     if (azimuth >= 360)
@@ -250,57 +299,62 @@ void KittiPreprocessAlgNode::pointcloud_callback(const sensor_msgs::PointCloud2:
       {
         if (range > max_range) range = max_range;
         img_range.at<ushort>(row, col) = pow(2,16) * (range / max_range);
-        img_reflec.at<ushort>(row, col) = pow(2,16) * scan_pcl.points.at(i).intensity;
-        //// TODO: Save and publish image with coordenates.
+
+        //img_reflec.at<ushort>(row, col) = pow(2,16) * scan_pcl.points.at(i).intensity;
+
         img_x.at<ushort>(row, col) = pow(2,16) * ((scan_pcl.points.at(i).x + max_range) / (2 * max_range));
         img_y.at<ushort>(row, col) = pow(2,16) * ((scan_pcl.points.at(i).y + max_range) / (2 * max_range));
         img_z.at<ushort>(row, col) = pow(2,16) * ((scan_pcl.points.at(i).z + max_range) / (2 * max_range));
+
+        cv::Point2d uv;
+        cv::Point3d pt_cv(scan_transformed_pcl.points[i].x, scan_transformed_pcl.points[i].y,
+                          scan_transformed_pcl.points[i].z);
+        uv = this->cam_model_.project3dToPixel(pt_cv);
+        if (uv.x >= 0 && uv.y >= 0 && uv.x < img_gray.cols && uv.y < img_gray.rows)
+        {
+          img_reflec.at<ushort>(row, col) = img_gray.at<ushort>(uv.y, uv.x);
+        }
       }
     }
   }
 
+  //////////////////////////////////////////////////////////////////////////////
   //// Filter black holes.
-  img_reflec_bk = img_reflec.clone();
-  img_range_bk = img_range.clone();
-  for (int j = 3; j < rows-3; j++){
-    for (int i = 3; i < cols-3; i++){
-
-      if (img_reflec_bk.at<ushort>(j, i) == 0){
-        cv::Rect roi(i-3, j-3, 7, 7);
-        cv::Mat cropped = img_reflec_bk(roi);
-        double N = 0;
-        double val = 0;
-        for (int v = 0; v < 7; v++){
-          for (int u = 0; u < 7; u++){
-            if (cropped.at<ushort>(v, u) > 0){
-              N = N + 1.0; 
-              val = val + (double)(cropped.at<ushort>(v, u));
+  int S = 3;
+  for (int r = 0; r < 2; r++){
+    img_range_bk = img_range.clone();
+    img_reflec_bk = img_reflec.clone();
+    for (int j = S; j < rows-S; j++){
+      for (int i = S; i < cols-S; i++){
+        if (img_range_bk.at<ushort>(j, i) == 0){
+          cv::Rect roi(i-1, j-1, S, S);
+          cv::Mat cropped_ra = img_range_bk(roi);
+          cv::Mat cropped_re = img_reflec_bk(roi);
+          double N_ra = 0;
+          double N_re = 0;
+          double val_ra = 0;
+          double val_re = 0;
+          for (int v = 0; v < S; v++){
+            for (int u = 0; u < S; u++){
+              if (cropped_ra.at<ushort>(v, u) > 0){
+                N_ra = N_ra + 1.0; 
+                val_ra = val_ra + (double)(cropped_ra.at<ushort>(v, u));
+              } 
+              if (cropped_re.at<ushort>(v, u) > 0){
+                N_re = N_re + 1.0; 
+                val_re = val_re + (double)(cropped_re.at<ushort>(v, u));
+              } 
             } 
-          } 
+          }
+          //std::cout << val / N << std::endl;
+          if (N_ra > 0.0) img_range.at<ushort>(j, i) = (ushort)(val_ra / N_ra);
+          if (N_re > 0.0) img_reflec.at<ushort>(j, i) = (ushort)(val_re / N_re);
         }
-        //std::cout << val / N << std::endl;
-        if (N > 1.0) img_reflec.at<ushort>(j, i) = (ushort)(val / (N - 1.0));
-      }
-
-      if (img_range_bk.at<ushort>(j, i) == 0){
-        cv::Rect roi(i-1, j-1, 3, 3);
-        cv::Mat cropped = img_range_bk(roi);
-        double N = 0;
-        double val = 0;
-        for (int v = 0; v < 3; v++){
-          for (int u = 0; u < 3; u++){
-            if (cropped.at<ushort>(v, u)  > 0){
-              N = N + 1.0; 
-              val = val + (double)(cropped.at<ushort>(v, u));
-            } 
-          } 
-        }
-        //std::cout << val / N << std::endl;
-        if (N > 0.0) img_range.at<ushort>(j, i) = (ushort)(val / N);
       }
     }
   }
 
+  //////////////////////////////////////////////////////////////////////////////
   //// PARSE TO MESSAGE FORMAT
   sensor_msgs::ImagePtr img_range_msg;
   sensor_msgs::ImagePtr img_reflec_msg;

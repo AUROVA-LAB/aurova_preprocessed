@@ -8,7 +8,9 @@ FIND_PACKAGE(Eigen3 REQUIRED)
 # ******************************************************************** 
 #                 Add catkin additional components here
 # ******************************************************************** 
-find_package(catkin REQUIRED COMPONENTS iri_base_algorithm camera_info_manager nav_msgs tf sensor_msgs cv_bridge image_transport)
+find_package(catkin REQUIRED COMPONENTS iri_base_algorithm camera_info_manager nav_msgs tf sensor_msgs cv_bridge image_transport image_geometry 
+pcl_ros
+pcl_conversions)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)

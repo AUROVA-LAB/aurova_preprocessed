@@ -30,7 +30,9 @@
 
 // [publisher subscriber headers]
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/NavSatFix.h>
+#include <image_geometry/pinhole_camera_model.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
@@ -41,6 +43,7 @@
 
 #include <pcl_ros/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/transforms.h>
 
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/core/core.hpp>
@@ -51,6 +54,11 @@
 #include <opencv2/opencv.hpp>
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
+
+#include <message_filters/subscriber.h>
+#include <message_filters/time_synchronizer.h>
+#include <message_filters/synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
 
 // [service client headers]
 
@@ -66,6 +74,8 @@ class KittiPreprocessAlgNode : public algorithm_base::IriBaseAlgorithm<KittiPrep
 
     double lat_zero_;
     double lon_zero_;
+
+    image_geometry::PinholeCameraModel cam_model_;
 
     // [publisher attributes]
     ros::Publisher img_range_publisher_;
@@ -96,7 +106,13 @@ class KittiPreprocessAlgNode : public algorithm_base::IriBaseAlgorithm<KittiPrep
     tf::TransformListener tf_listener_;
 
     ros::Subscriber pointcloud_subscriber_;
-    void pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& msg);
+    //void pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& msg);
+    message_filters::Subscriber<sensor_msgs::Image> img_sync_subscriber_;
+    message_filters::Subscriber<sensor_msgs::CameraInfo> info_sync_subscriber_;
+    message_filters::Subscriber<sensor_msgs::PointCloud2> pc_sync_subscriber_; 
+    void pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& scan, 
+                             const sensor_msgs::Image::ConstPtr& img_msg, 
+                             const sensor_msgs::CameraInfo::ConstPtr& info_msg);
     pthread_mutex_t pointcloud_mutex_;
     void pointcloud_mutex_enter(void);
     void pointcloud_mutex_exit(void);
