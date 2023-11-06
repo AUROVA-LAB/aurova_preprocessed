@@ -232,6 +232,9 @@ void callback_dt(const ImageConstPtr& x_image, const ImageConstPtr& y_image, con
   cv::Mat img_z  = cv_z->image;
   cv::Mat img_mask  = cv_mask->image;
 
+  Eigen::Matrix<float,Dynamic,Dynamic> data_mask;// matrix with image values and matrix qith image values into real range data
+  cv2eigen(img_mask,data_mask); 
+
   PointCloud::Ptr point_cloud (new PointCloud);
   PointCloud::Ptr cloud_out (new PointCloud);
 
@@ -245,7 +248,7 @@ void callback_dt(const ImageConstPtr& x_image, const ImageConstPtr& y_image, con
   for (int i = 0; i < img_x.rows; i++){
       for (int j = 0; j < img_x.cols; j++){
 
-        if (img_mask.at<ushort>(i, j) == 0)
+        if (data_mask(i, j) == 0)
           continue;
 
         if (img_x.at<ushort>(i, j) > 0){
@@ -289,19 +292,19 @@ int main(int argc, char** argv)
   nh.getParam("/include_detections", include_detections);
   nh.getParam("/include_pc", include_pc);
 
-  message_filters::Subscriber<Image> x_sub(nh, xTopic , 10);
-  message_filters::Subscriber<Image> y_sub(nh, yTopic , 10);
-  message_filters::Subscriber<Image> z_sub(nh, zTopic , 10);
-  message_filters::Subscriber<Image> range_sub (nh, rangeTopic,  10);
-  message_filters::Subscriber<Image> mask_sub(nh, maskTopic , 10);
-  ros::Subscriber range_aux_sub = nh.subscribe<Image>(rangeTopic, 10, callback_pc);
+  message_filters::Subscriber<Image> x_sub(nh, xTopic , 1);
+  message_filters::Subscriber<Image> y_sub(nh, yTopic , 1);
+  message_filters::Subscriber<Image> z_sub(nh, zTopic , 1);
+  message_filters::Subscriber<Image> range_sub (nh, rangeTopic,  1);
+  message_filters::Subscriber<Image> mask_sub(nh, maskTopic , 1);
+  ros::Subscriber range_aux_sub = nh.subscribe<Image>(rangeTopic, 1, callback_pc);
 
   typedef sync_policies::ApproximateTime<Image, Image> MySyncPolicy;
-  Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), range_sub, mask_sub);
+  Synchronizer<MySyncPolicy> sync(MySyncPolicy(1), range_sub, mask_sub);
   sync.registerCallback(boost::bind(&callback_dt, _1, _2));
 
   typedef sync_policies::ApproximateTime<Image, Image, Image,Image> MySyncPolicy_bk;
-  Synchronizer<MySyncPolicy_bk> sync_bk(MySyncPolicy_bk(10), x_sub, y_sub, z_sub, mask_sub);
+  Synchronizer<MySyncPolicy_bk> sync_bk(MySyncPolicy_bk(1), x_sub, y_sub, z_sub, mask_sub);
   sync_bk.registerCallback(boost::bind(&callback_dt, _1, _2, _3, _4));
 
   pc_filtered_pub = nh.advertise<PointCloud> (outTopicDt, 1);  
