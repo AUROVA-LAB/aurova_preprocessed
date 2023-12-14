@@ -233,7 +233,7 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
   pcl_obstacle->width = pcl_obstacle->width;
   pcl_obstacle->height = pcl_obstacle->height;
   pcl_obstacle->points.resize (pcl_obstacle->width * pcl_obstacle->height);
-  pcl_obstacle->header.frame_id = "os_sensor";
+  pcl_obstacle->header.frame_id = msg_pointCloud->header.frame_id;
   pcl_obstacle->header.stamp = msg_pointCloud->header.stamp;
   pc_filtered_pub.publish (pcl_obstacle);
 
@@ -242,7 +242,7 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
   pcl_obstXY_out->width = pcl_obstXY_out->width;
   pcl_obstXY_out->height = pcl_obstXY_out->height;
   pcl_obstXY_out->points.resize (pcl_obstXY_out->width * pcl_obstXY_out->height);
-  pcl_obstXY_out->header.frame_id = "os_sensor";
+  pcl_obstXY_out->header.frame_id = msg_pointCloud->header.frame_id;
   pcl_obstXY_out->header.stamp = msg_pointCloud->header.stamp;
   pc_obstXY_pub.publish (pcl_obstXY_out);
 
@@ -251,7 +251,7 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
   limits_cloud_out->width = limits_cloud_out->width;
   limits_cloud_out->height = limits_cloud_out->height;
   limits_cloud_out->points.resize (limits_cloud_out->width * limits_cloud_out->height);
-  limits_cloud_out->header.frame_id = "os_sensor";
+  limits_cloud_out->header.frame_id = msg_pointCloud->header.frame_id;
   limits_cloud_out->header.stamp = msg_pointCloud->header.stamp;
   pc_limits_pub.publish (limits_cloud_out);
 
