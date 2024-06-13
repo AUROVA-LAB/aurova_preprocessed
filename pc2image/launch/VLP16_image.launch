@@ -11,7 +11,7 @@
     <param name="voxel"                type="bool"    value="false" />
     <param name="groundSurf_fusion"    type="bool"    value="true" />
     
-    <node pkg="pc2image" type="pc2image_node" name="pc2image_node" output="screen"/> 
+    <node pkg="pc2image" type="pc2image_node" name="pc2image_node" output="log"/> 
 
     <arg name="rviz" default="false" />
     <group if="$(arg rviz)">

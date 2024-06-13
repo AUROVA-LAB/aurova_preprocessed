@@ -167,26 +167,28 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
   pcl_obstXY->points.resize (doncloud->width * doncloud->height);
 
   limits_cloud->is_dense = false;
-  limits_cloud->width = doncloud->width;
-  limits_cloud->height = doncloud->height;
-  limits_cloud->points.resize (doncloud->width * doncloud->height);
-
+  // limits_cloud->width = doncloud->width;
+  // limits_cloud->height = doncloud->height;
+  // limits_cloud->points.resize (doncloud->width * doncloud->height);
   for (int i = 0; i < (int) pcl_obstacle->points.size(); i++)
   {
     pcl_obstXY->points[i].x= pcl_obstacle->points[i].x;     
     pcl_obstXY->points[i].y= pcl_obstacle->points[i].y; 
     pcl_obstXY->points[i].z= 0.0;   
-    
-    // ring generator
-    float ang =   M_PI-(i*2.0*M_PI)/pcl_obstacle->points.size();
-    limits_cloud->points[i].x = maxlen*cos(ang);
-    limits_cloud->points[i].y = maxlen*sin(ang);
-    limits_cloud->points[i].z = 0.0;
   }
 
+  for (int i = 0; i < 180; i++)
+  {
+    float ang =   M_PI-(i*2.0*M_PI)/180.0;
+    pcl::PointXYZ point;
+    point.x = maxlen*cos(ang);
+    point.y = maxlen*sin(ang);
+    limits_cloud->push_back(point);
+  }
+
+
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_combined (new pcl::PointCloud<pcl::PointXYZ>);
-  *cloud_combined = *pcl_obstXY + *limits_cloud;  
- 
+  *cloud_combined = *pcl_obstXY + *limits_cloud; 
   // pointcloud pcl_obstacle projection XY and free_obstacle  
   rngSpheric->pcl::RangeImage::createFromPointCloud(*cloud_combined, pcl::deg2rad(0.5), pcl::deg2rad(0.5),
                                        pcl::deg2rad(360.0), pcl::deg2rad(180.0),
@@ -213,8 +215,10 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
         xx = rngSpheric->getPoint(i, j).x;
         yy = rngSpheric->getPoint(i, j).y; 
         r =  rngSpheric->getPoint(i, j).range;
-        if (r == -INFINITY || r>=maxlen*scaleRadio)
-          continue;          
+        if (r == -INFINITY || r>=maxlen*scaleRadio){
+          obstacle=false;
+          continue;
+        }          
         if (r < minRange ) {
           minRange = r; 
           obstacle = true;          

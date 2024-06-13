@@ -4,11 +4,11 @@
     <param name="maxlen"               type="double" value="50.0" />    
     <param name="minlen"               type="double" value="0.01" />    
     <param name="angular_resolution_x" type="double" value="0.5" />
-    <param name="angular_resolution_y" type="double" value="2.0"/> 
+    <param name="angular_resolution_y" type="double" value="1.0"/> 
     <param name="max_angle_width"      type="double" value="360" />
     <param name="max_angle_height"     type="double" value="180" />
     <param name="pcTopic"              type="str"    value="/carla/base_link/lidar" />
-    <param name="voxel"                type="bool"    value="false" />
+    <param name="voxel"                type="bool"    value="true" />
     <param name="groundSurf_fusion"    type="bool"    value="true" />
     
     <node pkg="pc2image" type="pc2image_node" name="pc2image_node"/> 
