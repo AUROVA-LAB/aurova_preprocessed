@@ -1,15 +1,16 @@
 <?xml version="1.0"?>
 <launch>
  
-    <param name="pcTopic"                       type="str"    value="/ouster/points" />
-    <param name="range_img"                     type="str"    value="/ouster/range_image" />
-    <param name="detection_BoundingBoxes"       type="str"    value="/yolov5/detections" />    
-    <param name="filtering_method"              type="str"    value="median" />
-    <param name="bounding_box_percet_reduction" type="double" value="0.6" />      
-    <param name="filtering_desviation"          type="double" value="0.1" />  
-  
 
-    <node pkg="image2pcl"   type="ouster_filtering_yolo_node" name="ouster_filtering_node" output="screen"/>
+    <node pkg="image2pcl"   type="ouster_filtered_yolo_node" name="ouster_filtering" output="screen">
+        <param name="pcTopic"                       type="str"    value="/ouster/points" />
+        <param name="range_img"                     type="str"    value="/ouster/range_image" />
+        <param name="detection_BoundingBoxes"       type="str"    value="/yolov5/detections" />    
+        <param name="filtering_method"              type="str"    value="median" />
+        <param name="bounding_box_percet_reduction" type="double" value="0.6" />      
+        <param name="filtering_desviation"          type="double" value="0.1" />  
+    </node>
+
 
 <node type="rviz" name="rviz" pkg="rviz" args="-d $(find image2pcl)/rviz/ouster_filtering.rviz" />
  

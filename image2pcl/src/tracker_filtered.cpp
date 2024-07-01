@@ -265,13 +265,13 @@ int main(int argc, char** argv)
   
   /// Load Parameters
 
-  nh.getParam("/pcTopic", pcTopic);
-  nh.getParam("/range_img", rangeTopic);
-  nh.getParam("/detection_BoundingBoxes", objYoloTopic);
-  nh.getParam("/filtering_method", filt_method);
-  nh.getParam("/bounding_box_percet_reduction", bb_per);
-  nh.getParam("/filtering_desviation", desv);
-  nh.getParam("/bounding_box_percet_augmentation", bb_aug);
+  nh.getParam("pcTopic", pcTopic);
+  nh.getParam("range_img", rangeTopic);
+  nh.getParam("detection_BoundingBoxes", objYoloTopic);
+  nh.getParam("filtering_method", filt_method);
+  nh.getParam("bounding_box_percet_reduction", bb_per);
+  nh.getParam("filtering_desviation", desv);
+  nh.getParam("bounding_box_percet_augmentation", bb_aug);
 
   //Get the node rate.
   double r;

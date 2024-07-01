@@ -270,17 +270,17 @@ int main(int argc, char** argv)
 {
 
   ros::init(argc, argv, "pontCloudOntImage");
-  ros::NodeHandle nh;  
+  ros::NodeHandle nh("~");  
   std::cout<<"Nodo inicializado: "<<std::endl;
   
   /// Load Parameters
 
-  nh.getParam("/pcTopic", pcTopic);
-  nh.getParam("/range_img", rangeTopic);
-  nh.getParam("/detection_BoundingBoxes", objYoloTopic);
-  nh.getParam("/filtering_method", filt_method);
-  nh.getParam("/bounding_box_percet_reduction", bb_per);
-  nh.getParam("/filtering_desviation", desv);
+  nh.getParam("pcTopic", pcTopic);
+  nh.getParam("range_img", rangeTopic);
+  nh.getParam("detection_BoundingBoxes", objYoloTopic);
+  nh.getParam("filtering_method", filt_method);
+  nh.getParam("bounding_box_percet_reduction", bb_per);
+  nh.getParam("filtering_desviation", desv);
 
   message_filters::Subscriber<Image>range_sub (nh, rangeTopic,  10);
   message_filters::Subscriber<detection_msgs::BoundingBoxes> yoloBB_sub(nh, objYoloTopic , 10);

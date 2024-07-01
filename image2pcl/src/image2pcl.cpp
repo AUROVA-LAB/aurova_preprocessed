@@ -280,17 +280,17 @@ int main(int argc, char** argv)
 {
 
   ros::init(argc, argv, "image2pcl");
-  ros::NodeHandle nh;  
+  ros::NodeHandle nh("~");  
   std::cout<<"Nodo image2pcl inicializado: "<<std::endl;
   
   /// Load Parameters
 
-  nh.getParam("/range_img", rangeTopic);
-  nh.getParam("/mask_img", maskTopic);
-  nh.getParam("/out_pc", outTopicPc);
-  nh.getParam("/out_detections", outTopicDt);
-  nh.getParam("/include_detections", include_detections);
-  nh.getParam("/include_pc", include_pc);
+  nh.getParam("range_img", rangeTopic);
+  nh.getParam("mask_img", maskTopic);
+  nh.getParam("out_pc", outTopicPc);
+  nh.getParam("out_detections", outTopicDt);
+  nh.getParam("include_detections", include_detections);
+  nh.getParam("include_pc", include_pc);
 
   message_filters::Subscriber<Image> x_sub(nh, xTopic , 1);
   message_filters::Subscriber<Image> y_sub(nh, yTopic , 1);
