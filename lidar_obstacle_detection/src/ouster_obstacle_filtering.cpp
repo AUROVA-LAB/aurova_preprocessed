@@ -158,7 +158,8 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
   // pointcloud pcl_obstacle , projection XY and free_obstacle  
   pcl::PointCloud<pcl::PointNormal>::Ptr pcl_obstacle (new pcl::PointCloud<pcl::PointNormal>);
   pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_obstXY (new pcl::PointCloud<pcl::PointXYZ>);
-  pcl::PointCloud<pcl::PointXYZ>::Ptr limits_cloud (new pcl::PointCloud<pcl::PointXYZ>);
+  vector<bool> is_free(180,true);
+
   pcl_obstacle =doncloud;
 
   pcl_obstXY->is_dense = false;
@@ -166,10 +167,6 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
   pcl_obstXY->height = doncloud->height;
   pcl_obstXY->points.resize (doncloud->width * doncloud->height);
 
-  limits_cloud->is_dense = false;
-  // limits_cloud->width = doncloud->width;
-  // limits_cloud->height = doncloud->height;
-  // limits_cloud->points.resize (doncloud->width * doncloud->height);
   for (int i = 0; i < (int) pcl_obstacle->points.size(); i++)
   {
     pcl_obstXY->points[i].x= pcl_obstacle->points[i].x;     
@@ -177,18 +174,12 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
     pcl_obstXY->points[i].z= 0.0;   
   }
 
-  for (int i = 0; i < 180; i++)
-  {
-    float ang =   M_PI-(i*2.0*M_PI)/180.0;
-    pcl::PointXYZ point;
-    point.x = maxlen*cos(ang);
-    point.y = maxlen*sin(ang);
-    limits_cloud->push_back(point);
-  }
+  
+ 
 
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_combined (new pcl::PointCloud<pcl::PointXYZ>);
-  *cloud_combined = *pcl_obstXY + *limits_cloud; 
+  *cloud_combined = *pcl_obstXY; 
   // pointcloud pcl_obstacle projection XY and free_obstacle  
   rngSpheric->pcl::RangeImage::createFromPointCloud(*cloud_combined, pcl::deg2rad(0.5), pcl::deg2rad(0.5),
                                        pcl::deg2rad(360.0), pcl::deg2rad(180.0),
@@ -227,9 +218,23 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
     point_var->points[0].x = xx;
     point_var->points[0].y = yy;
     point_var->points[0].z = -1.1;
-    if (obstacle) pcl_obstXY_out->push_back(point_var->points[0]);
-    else        limits_cloud_out->push_back(point_var->points[0]);
+    if (obstacle) {
+      pcl_obstXY_out->push_back(point_var->points[0]);
+      float angle=atan2(yy,xx);
+      if(angle<0) angle+=2.0*M_PI;
+      is_free[floor(angle/(2.0*M_PI/180.0))]=false;
+    }
+  }
 
+  for (int i = 0; i < 180; i++)
+  {
+    if(is_free[i]){
+      float ang =   (i*2.0*M_PI)/180.0;
+      pcl::PointXYZ point;
+      point.x = maxlen*cos(ang);
+      point.y = maxlen*sin(ang);
+      limits_cloud_out->push_back(point);
+    }
   }
  
   // obstacles point cloud
