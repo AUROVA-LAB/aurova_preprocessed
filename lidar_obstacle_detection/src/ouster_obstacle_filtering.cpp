@@ -138,7 +138,7 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
                              );
 
   // Build the filter
-  pcl::ConditionalRemoval<pcl::PointNormal> condrem;
+  pcl::ConditionalRemoval<pcl::PointNormal> condrem; 
   condrem.setCondition (range_cond);
   condrem.setInputCloud (doncloud);
 
@@ -157,11 +157,35 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
 
   // pointcloud pcl_obstacle , projection XY and free_obstacle  
   pcl::PointCloud<pcl::PointNormal>::Ptr pcl_obstacle (new pcl::PointCloud<pcl::PointNormal>);
+    pcl_obstacle->is_dense = false;
+    pcl_obstacle->width = cloud->width;
+    pcl_obstacle->height = cloud->height;
+    pcl_obstacle->points.resize (cloud->width * cloud->height);
   pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_obstXY (new pcl::PointCloud<pcl::PointXYZ>);
   vector<bool> is_free(180,true);
 
   pcl_obstacle =doncloud;
 
+  pcl::PointCloud<pcl::PointNormal>::Ptr pc_height (new pcl::PointCloud<pcl::PointNormal>);
+  pc_height->is_dense = false;
+  pc_height->width = cloud->width;
+  pc_height->height = cloud->height;
+  pc_height->points.resize (cloud->width * cloud->height);
+
+  for (int i = 0; i < (int) cloud->points.size(); i++)
+  {
+      
+      double height_pc = cloud->points[i].z;
+      if(height_pc > - 0.5)
+      {
+        pc_height->points[i].x= cloud->points[i].x;     
+        pc_height->points[i].y= cloud->points[i].y; 
+        pc_height->points[i].z= cloud->points[i].z; 
+        pcl_obstacle->push_back(pc_height->points[i]);        
+      } 
+  }  
+
+ 
   pcl_obstXY->is_dense = false;
   pcl_obstXY->width = doncloud->width;
   pcl_obstXY->height = doncloud->height;
@@ -174,7 +198,7 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
     pcl_obstXY->points[i].z= 0.0;   
   }
 
-  
+
  
 
 
