@@ -32,7 +32,7 @@ To get the code, clone this repository into your catkin workspace:
 
 ```bash
 cd ~/catkin_ws/src
-git clone https://github.com/EPVelasco/pc_features.git
+git clone https://github.com/AUROVA-LAB/aurova_preprocessed.git
 ```
 
 ### 2. Build the package
