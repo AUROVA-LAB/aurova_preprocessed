@@ -50,7 +50,12 @@
   <!--   <doc_depend>doxygen</doc_depend> -->
   
   <exec_depend>virtual_imu</exec_depend>
-  <exec_depend>pc2image</exec_depend>
+
+  <!-- old version -->
+  <!-- <exec_depend>pc2image</exec_depend>  -->
+   <!-- pc_feature_extraction remplace the pc2image node -->
+  <exec_depend>pc_feature_extraction</exec_depend>
+
   <exec_depend>image2pcl</exec_depend>
   <exec_depend>pc_filter</exec_depend>
   <exec_depend>lidar_camera_fusion</exec_depend>

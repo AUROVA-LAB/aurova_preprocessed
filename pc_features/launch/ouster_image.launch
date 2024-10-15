@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<launch>
+
+    <param name="maxlen"               type="double" value="30.0" />    
+    <param name="minlen"               type="double" value="5.0" />   
+
+    <param name="angular_resolution_x" type="double" value="0.6" />
+    <param name="angular_resolution_y" type="double" value="0.5"/> 
+    <param name="max_angle_width"      type="double" value="360" />
+    <param name="max_angle_height"     type="double" value="180" />
+    <param name="pcTopic"              type="str"    value="/ouster/points" />
+    <param name="voxel"                type="bool"    value="false" />
+    <param name="groundSurf_fusion"    type="bool"    value="true" />
+    <param name="filter_resolution" type="double" value="0.2" />
+    <param name="edgeX_bool"        type="bool" value="false" />
+    <param name="edgeY_bool"        type="bool" value="true" />
+    <param name="random_pc"         type="bool"   value="false" />
+
+    
+    <node pkg="pc_feature_extraction" type="pc_feature_node" name="pc_feature_node"/> 
+
+    <arg name="rviz" default="false" />
+    <group if="$(arg rviz)">
+        <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find pc_feature_extraction)/rviz/pc2image_rviz.rviz" />
+    </group>
+  
+</launch>
+
