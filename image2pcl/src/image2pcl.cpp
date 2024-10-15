@@ -1,3 +1,4 @@
+#define PCL_NO_PRECOMPILE
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
 #include <Eigen/Dense>
@@ -21,6 +22,7 @@
 #include <pcl/sample_consensus/method_types.h>
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/pcl_macros.h>
 
 #include <iostream>
 #include <math.h>
@@ -49,7 +51,22 @@ using namespace sensor_msgs;
 using namespace message_filters;
 using namespace std;
 
-typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
+// The camera calibration needed the ring channel, but it was prepared for PointXYZIR, so intensity channel was also added (but not filled)
+struct PointXYZIR
+{
+  PCL_ADD_POINT4D;
+  float intensity;
+  uint8_t ring;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+} EIGEN_ALIGN16;
+POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZIR,           // here we assume a XYZ + ring (as fields)
+                                   (float, x, x)
+                                   (float, y, y)
+                                   (float, z, z)
+                                   (float, intensity, intensity)
+                                   (uint16_t, ring, ring))
+
+typedef pcl::PointCloud<PointXYZIR> PointCloud;
 visualization_msgs::Marker marker;
 
 //Publisher
@@ -127,7 +144,7 @@ void callback_dt(const ImageConstPtr& in_image, const ImageConstPtr& in_mask)
       }
   } 
 
-  pcl::VoxelGrid<pcl::PointXYZ> vg;
+  pcl::VoxelGrid<PointXYZIR> vg;
   vg.setInputCloud(cloud_out);
   vg.setLeafSize(0.5f, 0.5f, 100.0f);
   vg.filter(*cloud_out);
@@ -192,6 +209,7 @@ void callback_pc(const ImageConstPtr& in_image)
         point_cloud->points[num_pix].x = x;
         point_cloud->points[num_pix].y = y;
         point_cloud->points[num_pix].z = z;
+        point_cloud->points[num_pix].ring = img_range.rows-i-1;
         cloud_out->push_back(point_cloud->points[num_pix]); 
         num_pix++; 
 
