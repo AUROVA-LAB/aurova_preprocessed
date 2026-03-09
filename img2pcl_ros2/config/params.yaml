@@ -1,0 +1,4 @@
+/**:
+  ros__parameters:
+    topic_in: "/ouster/range_image"
+    topic_out: "/os_cloud_node/points"
