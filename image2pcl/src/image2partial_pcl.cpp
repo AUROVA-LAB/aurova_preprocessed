@@ -1,16 +1,14 @@
 #define PCL_NO_PRECOMPILE
-#include <ros/ros.h>
-#include <sensor_msgs/Image.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
 #include <Eigen/Dense>
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/opencv.hpp>
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
-#include <cv_bridge/cv_bridge.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <image_transport/image_transport.h>
+#include <cv_bridge/cv_bridge.hpp>
+#include <image_transport/image_transport.hpp>
 #include <pcl/point_types.h>
 #include <pcl/range_image/range_image.h>
 #include <pcl/range_image/range_image_spherical.h>
@@ -23,23 +21,24 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/pcl_macros.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 #include <iostream>
 #include <math.h>
 
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
-#include <detection_msgs/BoundingBox.h>
-#include <detection_msgs/BoundingBoxes.h>
+#include <detection_msgs/msg/bounding_box.hpp>
+#include <detection_msgs/msg/bounding_boxes.hpp>
 
 #include <pcl/filters/statistical_outlier_removal.h>
-#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/msg/marker.hpp>
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -67,11 +66,12 @@ POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZIR,           // here we assume a XYZ
                                    (uint16_t, ring, ring))
 
 typedef pcl::PointCloud<PointXYZIR> PointCloud;
-visualization_msgs::Marker marker;
+visualization_msgs::msg::Marker marker;
 
 //Publisher
-ros::Publisher pc_filtered_pub; // publisher de la imagen de puntos filtrada
-ros::Publisher pc_raw_pub; // publisher pc
+rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pc_filtered_pub; // publisher de la imagen de puntos filtrada
+rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pc_raw_pub; // publisher pc
+rclcpp::Node::SharedPtr nh;
 
 // input topics 
 std::string xTopic  = "/ouster/x_image";
@@ -89,17 +89,17 @@ bool include_pc = true;
 ///////////////////////////////////////callback
 
 
-void callback_dt(const ImageConstPtr& in_image, const ImageConstPtr& in_mask)
+void callback_dt_2(const sensor_msgs::msg::Image::ConstSharedPtr&  in_image, const sensor_msgs::msg::Image::ConstSharedPtr&  in_mask)
 {
   cv_bridge::CvImagePtr cv_range, cv_mask;
   try
   {
-    cv_range = cv_bridge::toCvCopy(in_image, sensor_msgs::image_encodings::MONO16);
-    cv_mask = cv_bridge::toCvCopy(in_mask, sensor_msgs::image_encodings::MONO8);
+    cv_range = cv_bridge::toCvCopy(in_image, image_encodings::MONO16);
+    cv_mask = cv_bridge::toCvCopy(in_mask, image_encodings::MONO8);
   }
   catch (cv_bridge::Exception& e)
   {
-    ROS_ERROR("cv_bridge exception: %s", e.what());
+    RCLCPP_ERROR(nh->get_logger(),"cv_bridge exception: %s", e.what());
     return;
   }
 
@@ -155,24 +155,25 @@ void callback_dt(const ImageConstPtr& in_image, const ImageConstPtr& in_mask)
   cloud_out->width = (int) cloud_out->points.size();
   cloud_out->height = 1;
   cloud_out->header.frame_id = "os_sensor";
-  ros::Time time_st = cv_mask->header.stamp; // Para PCL se debe modificar el stamp y no se puede usar directamente el del topic de entrada
-  cloud_out->header.stamp = time_st.toNSec()/1e3;
-  cloud_out->header.seq = in_mask->header.seq;
-  if (include_detections) pc_filtered_pub.publish (cloud_out);
+  rclcpp::Time time_st = cv_mask->header.stamp; // Para PCL se debe modificar el stamp y no se puede usar directamente el del topic de entrada
+  cloud_out->header.stamp = time_st.nanoseconds()/1e3;
+  sensor_msgs::msg::PointCloud2 cloud_msg;
+  pcl::toROSMsg(*cloud_out, cloud_msg);
+  if (include_detections) pc_filtered_pub->publish (cloud_msg);
   
 
 }
 
-void callback_pc(const ImageConstPtr& in_image)
+void callback_pc(const sensor_msgs::msg::Image::SharedPtr  in_image)
 {
   cv_bridge::CvImagePtr cv_range;
   try
   {
-    cv_range = cv_bridge::toCvCopy(in_image, sensor_msgs::image_encodings::MONO16);
+    cv_range = cv_bridge::toCvCopy(in_image, image_encodings::MONO16);
   }
   catch (cv_bridge::Exception& e)
   {
-    ROS_ERROR("cv_bridge exception: %s", e.what());
+    RCLCPP_ERROR(nh->get_logger(),"cv_bridge exception: %s", e.what());
     return;
   }
 
@@ -222,28 +223,29 @@ void callback_pc(const ImageConstPtr& in_image)
   cloud_out->width = (int) cloud_out->points.size();
   cloud_out->height = 1;
   cloud_out->header.frame_id = "os_sensor";
-  ros::Time time_st = cv_range->header.stamp; // Para PCL se debe modificar el stamp y no se puede usar directamente el del topic de entrada
-  cloud_out->header.stamp = time_st.toNSec()/1e3;
-  
-  if (include_pc) pc_raw_pub.publish (cloud_out);
+  rclcpp::Time time_st = cv_range->header.stamp; // Para PCL se debe modificar el stamp y no se puede usar directamente el del topic de entrada
+  cloud_out->header.stamp = time_st.nanoseconds()/1e3;
+  sensor_msgs::msg::PointCloud2 cloud_msg;
+  pcl::toROSMsg(*cloud_out, cloud_msg);
+  if (include_pc) pc_raw_pub->publish (cloud_msg);
   
 
 }
 
 //// From PCL backup to image
-void callback_dt(const ImageConstPtr& x_image, const ImageConstPtr& y_image, const ImageConstPtr& z_image, const ImageConstPtr& in_mask)
+void callback_dt_4(const sensor_msgs::msg::Image::ConstSharedPtr&  x_image, const sensor_msgs::msg::Image::ConstSharedPtr&  y_image, const sensor_msgs::msg::Image::ConstSharedPtr&  z_image, const sensor_msgs::msg::Image::ConstSharedPtr&  in_mask)
 {
   cv_bridge::CvImagePtr cv_x, cv_y, cv_z, cv_mask;
   try
   {
-    cv_x = cv_bridge::toCvCopy(x_image, sensor_msgs::image_encodings::MONO16);
-    cv_y = cv_bridge::toCvCopy(y_image, sensor_msgs::image_encodings::MONO16);
-    cv_z = cv_bridge::toCvCopy(z_image, sensor_msgs::image_encodings::MONO16);
-    cv_mask = cv_bridge::toCvCopy(in_mask, sensor_msgs::image_encodings::MONO8);
+    cv_x = cv_bridge::toCvCopy(x_image, image_encodings::MONO16);
+    cv_y = cv_bridge::toCvCopy(y_image, image_encodings::MONO16);
+    cv_z = cv_bridge::toCvCopy(z_image, image_encodings::MONO16);
+    cv_mask = cv_bridge::toCvCopy(in_mask, image_encodings::MONO8);
   }
   catch (cv_bridge::Exception& e)
   {
-    ROS_ERROR("cv_bridge exception: %s", e.what());
+    RCLCPP_ERROR(nh->get_logger(),"cv_bridge exception: %s", e.what());
     return;
   }
 
@@ -288,48 +290,63 @@ void callback_dt(const ImageConstPtr& x_image, const ImageConstPtr& y_image, con
   cloud_out->width = (int) cloud_out->points.size();
   cloud_out->height = 1;
   cloud_out->header.frame_id = "velo_link";
-  ros::Time time_st = cv_mask->header.stamp; // Para PCL se debe modificar el stamp y no se puede usar directamente el del topic de entrada
-  cloud_out->header.stamp = time_st.toNSec()/1e3;
-  cloud_out->header.seq = in_mask->header.seq;
-  pc_filtered_pub.publish (cloud_out);
-
+  rclcpp::Time time_st = cv_mask->header.stamp; // Para PCL se debe modificar el stamp y no se puede usar directamente el del topic de entrada
+  cloud_out->header.stamp = time_st.nanoseconds()/1e3;
+  sensor_msgs::msg::PointCloud2 cloud_msg;
+  pcl::toROSMsg(*cloud_out, cloud_msg);
+  pc_filtered_pub->publish (cloud_msg);
 }
 
 int main(int argc, char** argv)
 {
 
-  ros::init(argc, argv, "image2pcl");
-  ros::NodeHandle nh("~");  
+  rclcpp::init(argc, argv);
+  nh = std::make_shared<rclcpp::Node>("image2pcl");
+
   std::cout<<"Nodo image2pcl inicializado: "<<std::endl;
   
   /// Load Parameters
 
-  nh.getParam("range_img", rangeTopic);
-  nh.getParam("mask_img", maskTopic);
-  nh.getParam("out_pc", outTopicPc);
-  nh.getParam("out_detections", outTopicDt);
-  nh.getParam("include_detections", include_detections);
-  nh.getParam("include_pc", include_pc);
-  nh.getParam("start_col", start_col);
-  nh.getParam("end_col", end_col);
+  nh->declare_parameter("range_img",rangeTopic);
+  nh->get_parameter("range_img", rangeTopic);
+  nh->declare_parameter("mask_img", maskTopic);
+  nh->get_parameter("mask_img", maskTopic);
+  nh->declare_parameter("out_pc", outTopicPc);
+  nh->get_parameter("out_pc", outTopicPc);
+  nh->declare_parameter("out_detections", outTopicDt);
+  nh->get_parameter("out_detections", outTopicDt);
+  nh->declare_parameter("include_detections", include_detections);
+  nh->get_parameter("include_detections", include_detections);
+  nh->declare_parameter("include_pc", include_pc);
+  nh->get_parameter("include_pc", include_pc);
+  nh->declare_parameter("start_col", start_col);
+  nh->get_parameter("start_col", start_col);
+  nh->declare_parameter("end_col", end_col);
+  nh->get_parameter("end_col", end_col);
 
-  message_filters::Subscriber<Image> x_sub(nh, xTopic , 1);
-  message_filters::Subscriber<Image> y_sub(nh, yTopic , 1);
-  message_filters::Subscriber<Image> z_sub(nh, zTopic , 1);
-  message_filters::Subscriber<Image> range_sub (nh, rangeTopic,  1);
-  message_filters::Subscriber<Image> mask_sub(nh, maskTopic , 1);
-  ros::Subscriber range_aux_sub = nh.subscribe<Image>(rangeTopic, 1, callback_pc);
 
-  typedef sync_policies::ApproximateTime<Image, Image> MySyncPolicy;
-  Synchronizer<MySyncPolicy> sync(MySyncPolicy(1), range_sub, mask_sub);
-  sync.registerCallback(boost::bind(&callback_dt, _1, _2));
+  message_filters::Subscriber<sensor_msgs::msg::Image> x_sub;
+  x_sub.subscribe(nh, xTopic);
+  message_filters::Subscriber<sensor_msgs::msg::Image>  y_sub;
+  y_sub.subscribe(nh, yTopic);
+  message_filters::Subscriber<sensor_msgs::msg::Image> z_sub;
+  z_sub.subscribe(nh, zTopic);
+  message_filters::Subscriber<sensor_msgs::msg::Image> range_sub;
+  range_sub.subscribe(nh, rangeTopic);
+  message_filters::Subscriber<sensor_msgs::msg::Image> mask_sub;
+  mask_sub.subscribe(nh, maskTopic);
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr range_aux_sub = nh->create_subscription<sensor_msgs::msg::Image>(rangeTopic, 1, std::bind(&callback_pc, std::placeholders::_1));
 
-  typedef sync_policies::ApproximateTime<Image, Image, Image,Image> MySyncPolicy_bk;
-  Synchronizer<MySyncPolicy_bk> sync_bk(MySyncPolicy_bk(1), x_sub, y_sub, z_sub, mask_sub);
-  sync_bk.registerCallback(boost::bind(&callback_dt, _1, _2, _3, _4));
+  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Image, sensor_msgs::msg::Image> MySyncPolicy;
+  auto sync = std::make_shared<message_filters::Synchronizer<MySyncPolicy>>(MySyncPolicy(1), range_sub, mask_sub);
+  sync->registerCallback(std::bind(&callback_dt_2, std::placeholders::_1, std::placeholders::_2));
 
-  pc_filtered_pub = nh.advertise<PointCloud> (outTopicDt, 1);  
-  pc_raw_pub = nh.advertise<PointCloud> (outTopicPc, 1);
+  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Image, sensor_msgs::msg::Image, sensor_msgs::msg::Image, sensor_msgs::msg::Image> MySyncPolicy_bk;
+  auto sync_bk = std::make_shared<message_filters::Synchronizer<MySyncPolicy_bk>>(MySyncPolicy_bk(1), x_sub, y_sub, z_sub, mask_sub);
+  sync_bk->registerCallback(std::bind(&callback_dt_4, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
 
-  ros::spin();
+  pc_filtered_pub = nh->create_publisher<sensor_msgs::msg::PointCloud2> (outTopicDt, 1);  
+  pc_raw_pub = nh->create_publisher<sensor_msgs::msg::PointCloud2> (outTopicPc, 1);
+
+  rclcpp::spin(nh);
 }

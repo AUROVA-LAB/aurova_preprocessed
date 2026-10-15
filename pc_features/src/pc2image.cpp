@@ -1,9 +1,8 @@
-#include <ros/ros.h>
-#include <sensor_msgs/Image.h>
-#include <cv_bridge/cv_bridge.h>
-#include <pcl_ros/point_cloud.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <cv_bridge/cv_bridge.hpp>
 #include <pcl_conversions/pcl_conversions.h>
-#include <image_transport/image_transport.h>
+#include <image_transport/image_transport.hpp>
 #include <pcl/point_types.h>
 #include <pcl/range_image/range_image_spherical.h>
 #include <pcl/filters/filter.h>
@@ -12,7 +11,7 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/filters/extract_indices.h>
 
-#include <std_msgs/Float64.h>
+#include <std_msgs/msg/float64.hpp>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -37,17 +36,13 @@ using namespace std;
 
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
-ros::Publisher edgeXImg_pub, edgeYImg_pub, rangImg_pub, grndImg_pub, surfImg_pub;
-ros::Publisher edgePCL_pub;
-ros::Publisher surfPCL_pub;
-ros::Publisher grndPCL_pub;
-ros::Publisher fltrPCL_pub;
-ros::Publisher time_average;
+rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr edgeXImg_pub, edgeYImg_pub, rangImg_pub, grndImg_pub, surfImg_pub;
+rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr edgePCL_pub, surfPCL_pub, grndPCL_pub,fltrPCL_pub,edgefilter_pub;
+rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr time_average;
 
-ros::Publisher edgefilter_pub;
+rclcpp::Node::SharedPtr nh;
 
-
-boost::shared_ptr<pcl::RangeImageSpherical> rngSpheric;
+std::shared_ptr<pcl::RangeImageSpherical> rngSpheric;
 pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::LASER_FRAME;
 
 // initial parameters
@@ -88,16 +83,29 @@ typedef std::chrono::high_resolution_clock Clock;
 
 std::string pcTopic = "/velodyne_points";
 
-void callback(const PointCloud::ConstPtr& msg_pointCloud)
+void publishPointCloud(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher, PointCloud::Ptr point_cloud, std::string frame)
+{
+    sensor_msgs::msg::PointCloud2::SharedPtr pc2_cloud(new sensor_msgs::msg::PointCloud2);
+
+    pcl::toROSMsg(*point_cloud, *pc2_cloud);
+    pc2_cloud->header.frame_id = frame;
+    pc2_cloud->header.stamp    = nh->get_clock()->now();
+    publisher->publish(*pc2_cloud);
+}
+
+
+void callback(const sensor_msgs::msg::PointCloud2::SharedPtr  msg_pointCloud)
 {
   
   if (msg_pointCloud == NULL) return;
 
   PointCloud::Ptr cloud_in (new PointCloud);
+  PointCloud::Ptr aux (new PointCloud);
   PointCloud::Ptr cloud_out (new PointCloud);
 
   std::vector<int> indices;
-  pcl::removeNaNFromPointCloud(*msg_pointCloud, *cloud_in, indices);
+  pcl::fromROSMsg(*msg_pointCloud, *cloud_in);
+  pcl::removeNaNFromPointCloud(*cloud_in, *aux, indices);
 
 
   for (int i = 0; i < (int) cloud_in->points.size(); i++)
@@ -124,8 +132,6 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
                                        pcl::deg2rad(max_angle_width), pcl::deg2rad(max_angle_height),
                                        aff, coordinate_frame, 0.0f, 0.0f, 0);
   auto t1 = Clock::now(); // lectura de tiempo para estimar el retardo del proceso                              
-  rngSpheric->header.frame_id = msg_pointCloud->header.frame_id;
-  rngSpheric->header.stamp    = msg_pointCloud->header.stamp;
   
   int cols = rngSpheric->width;
   int rows = rngSpheric->height;
@@ -458,7 +464,7 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
             
   //       }        
   // }
-  // edgefilter_pub.publish (edge_cloud_filtered); 
+  // edgefilter_pub->publish (edge_cloud_filtered); 
   // edge_cloud_filtered->clear();
 
    ///////////////////////////////////////////////////////////////
@@ -477,53 +483,43 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  edge_cloud->header   =   msg_pointCloud->header;
-  ground_cloud->header = msg_pointCloud->header;
-  surf_cloud->header   =   msg_pointCloud->header;
-  lidar_filter->header   =   msg_pointCloud->header;
-  
- // edge_cloud->header.frame_id = "base_link";
-  //edge_cloud->child_frame_id = "os_sensor";
-  
- // ground_cloud->header.frame_id = "base_link";
-  //ground_cloud->child_frame_id = "os_sensor";
-  
- // surf_cloud->header.frame_id = "base_link";
-  //surf_cloud->child_frame_id = "os_sensor";
-
-  edgePCL_pub.publish (edge_cloud);
-  surfPCL_pub.publish (surf_cloud);
-  grndPCL_pub.publish (ground_cloud);
-  fltrPCL_pub.publish (lidar_filter);
+  publishPointCloud(edgePCL_pub, edge_cloud, msg_pointCloud->header.frame_id);
+  publishPointCloud(surfPCL_pub, surf_cloud, msg_pointCloud->header.frame_id);
+  publishPointCloud(grndPCL_pub, ground_cloud, msg_pointCloud->header.frame_id);
+  publishPointCloud(fltrPCL_pub, lidar_filter, msg_pointCloud->header.frame_id);
 
   
 
-  sensor_msgs::ImagePtr edgeXImg_msg, edgeYImg_msg, rangImg_msg, grndImg_msg, surfImg_msg;
-  edgeXImg_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", curr_edgeX).toImageMsg();  
-  edgeYImg_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", curr_edgeY).toImageMsg();
-  surfImg_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", curr_surf).toImageMsg();
-  grndImg_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", curr_ground).toImageMsg();
-  rangImg_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", dImage).toImageMsg();
+  sensor_msgs::msg::Image::SharedPtr  edgeXImg_msg, edgeYImg_msg, rangImg_msg, grndImg_msg, surfImg_msg;
+  edgeXImg_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "mono16", curr_edgeX).toImageMsg();  
+  edgeYImg_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "mono16", curr_edgeY).toImageMsg();
+  surfImg_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "mono16", curr_surf).toImageMsg();
+  grndImg_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "mono16", curr_ground).toImageMsg();
+  rangImg_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "mono16", dImage).toImageMsg();
 
-  edgeXImg_msg->header = pcl_conversions::fromPCL(msg_pointCloud->header);
-  edgeYImg_msg->header = pcl_conversions::fromPCL(msg_pointCloud->header);
-  rangImg_msg->header = pcl_conversions::fromPCL(msg_pointCloud->header);
-  grndImg_msg->header = pcl_conversions::fromPCL(msg_pointCloud->header);
-  surfImg_msg->header = pcl_conversions::fromPCL(msg_pointCloud->header);
+  edgeXImg_msg->header.frame_id = msg_pointCloud->header.frame_id;
+  edgeYImg_msg->header.frame_id = msg_pointCloud->header.frame_id;
+  surfImg_msg->header.frame_id = msg_pointCloud->header.frame_id;
+  grndImg_msg->header.frame_id = msg_pointCloud->header.frame_id;
+  rangImg_msg->header.frame_id = msg_pointCloud->header.frame_id;
+  edgeXImg_msg->header.stamp = nh->get_clock()->now();
+  edgeYImg_msg->header.stamp = nh->get_clock()->now();
+  surfImg_msg->header.stamp = nh->get_clock()->now();
+  grndImg_msg->header.stamp = nh->get_clock()->now();
+  rangImg_msg->header.stamp = nh->get_clock()->now();
 
-  edgeXImg_pub.publish(edgeXImg_msg);
-  edgeYImg_pub.publish(edgeYImg_msg);
-  rangImg_pub.publish(rangImg_msg);
-  grndImg_pub.publish(grndImg_msg);
-  surfImg_pub.publish(surfImg_msg);
+  edgeXImg_pub->publish(*edgeXImg_msg);
+  edgeYImg_pub->publish(*edgeYImg_msg);
+  rangImg_pub->publish(*rangImg_msg);
+  grndImg_pub->publish(*grndImg_msg);
+  surfImg_pub->publish(*surfImg_msg);
 
   auto t4= Clock::now();
   float time_t = std::chrono::duration_cast<std::chrono::nanoseconds>(t4-t1).count()/1000000000.0;
   std::cout<<"Time_per_frame: "<<time_t<<std::endl;
-  std_msgs::Float64 time_msg;
+  std_msgs::msg::Float64 time_msg;
   time_msg.data = time_t*1000.0;
-  time_average.publish(time_msg);
+  time_average->publish(time_msg);
 
 
 }
@@ -531,42 +527,56 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
 int main(int argc, char** argv)
 {
 
-  ros::init(argc, argv, "pontCloud2dephtImage");
-  ros::NodeHandle nh;  
+  rclcpp::init(argc, argv);
+  nh = std::make_shared<rclcpp::Node>("pontCloud2dephtImage");
 
-  nh.getParam("/maxlen", maxlen);
-  nh.getParam("/minlen", minlen);
-  nh.getParam("/angular_resolution_x", angular_resolution_x);
-  nh.getParam("/angular_resolution_y", angular_resolution_y);
-  nh.getParam("/max_angle_width", max_angle_width);
-  nh.getParam("/max_angle_height", max_angle_height);
-  nh.getParam("/pcTopic", pcTopic);
-  nh.getParam("/voxel",voxel);
-  nh.getParam("/random_pc",random_pc);
-  nh.getParam("/groundSurf_fusion",grndSurf);
-  nh.getParam("/filter_resolution",filter_resolution);
-  nh.getParam("/edgeX_bool",edgeX_bool);
-  nh.getParam("/edgeY_bool",edgeY_bool);
+
+  nh->declare_parameter("maxlen",maxlen);
+  nh->get_parameter("maxlen", maxlen);
+  nh->declare_parameter("minlen",minlen);
+  nh->get_parameter("minlen", minlen);
+  nh->declare_parameter("angular_resolution_x",angular_resolution_x);
+  nh->get_parameter("angular_resolution_x", angular_resolution_x);
+  nh->declare_parameter("angular_resolution_y",angular_resolution_y);
+  nh->get_parameter("angular_resolution_y", angular_resolution_y);
+  nh->declare_parameter("max_angle_width",max_angle_width);
+  nh->get_parameter("max_angle_width", max_angle_width);
+  nh->declare_parameter("max_angle_height",max_angle_height);
+  nh->get_parameter("max_angle_height", max_angle_height);
+  nh->declare_parameter("pcTopic",pcTopic);
+  nh->get_parameter("pcTopic", pcTopic);
+  nh->declare_parameter("voxel",voxel);
+  nh->get_parameter("voxel",voxel);
+  nh->declare_parameter("random_pc",random_pc);
+  nh->get_parameter("random_pc",random_pc);
+  nh->declare_parameter("groundSurf_fusion",grndSurf);
+  nh->get_parameter("groundSurf_fusion",grndSurf);
+  nh->declare_parameter("filter_resolution",filter_resolution);
+  nh->get_parameter("filter_resolution",filter_resolution);
+  nh->declare_parameter("edgeX_bool",edgeX_bool);
+  nh->get_parameter("edgeX_bool",edgeX_bool);
+  nh->declare_parameter("edgeY_bool",edgeY_bool);
+  nh->get_parameter("edgeY_bool",edgeY_bool);
   
   
 
   
-  ros::Subscriber sub = nh.subscribe<PointCloud>(pcTopic, 10, callback);
-  rngSpheric = boost::shared_ptr<pcl::RangeImageSpherical>(new pcl::RangeImageSpherical);
-  edgeXImg_pub = nh.advertise<sensor_msgs::Image>("/pclImage/edgeX"  , 10);  
-  edgeYImg_pub = nh.advertise<sensor_msgs::Image>("/pclImage/edgeY"  , 10);
-  surfImg_pub = nh.advertise<sensor_msgs::Image>("/pclImage/surf"  , 10);
-  grndImg_pub = nh.advertise<sensor_msgs::Image>("/pclImage/ground", 10);
-  rangImg_pub = nh.advertise<sensor_msgs::Image>("/pclImage/range" , 10);
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub = nh->create_subscription<sensor_msgs::msg::PointCloud2>(pcTopic, 10,std::bind(& callback, std::placeholders::_1));
+  rngSpheric = std::shared_ptr<pcl::RangeImageSpherical>(new pcl::RangeImageSpherical);
+  edgeXImg_pub = nh->create_publisher<sensor_msgs::msg::Image>("/pclImage/edgeX"  , 10);  
+  edgeYImg_pub = nh->create_publisher<sensor_msgs::msg::Image>("/pclImage/edgeY"  , 10);
+  surfImg_pub = nh->create_publisher<sensor_msgs::msg::Image>("/pclImage/surf"  , 10);
+  grndImg_pub = nh->create_publisher<sensor_msgs::msg::Image>("/pclImage/ground", 10);
+  rangImg_pub = nh->create_publisher<sensor_msgs::msg::Image>("/pclImage/range" , 10);
 
-  edgePCL_pub= nh.advertise<PointCloud>  ("/pcl_edge"  ,10);
-  edgefilter_pub= nh.advertise<PointCloud>  ("/pcl_edge_filtered"  ,10);
+  edgePCL_pub= nh->create_publisher<sensor_msgs::msg::PointCloud2>  ("/pcl_edge"  ,10);
+  edgefilter_pub= nh->create_publisher<sensor_msgs::msg::PointCloud2>  ("/pcl_edge_filtered"  ,10);
 
-  surfPCL_pub = nh.advertise<PointCloud> ("/pcl_surf"  ,10);  
-  grndPCL_pub = nh.advertise<PointCloud> ("/pcl_ground",10);
-  fltrPCL_pub = nh.advertise<PointCloud> ("/lidar_filtered",10);
-  time_average = nh.advertise<std_msgs::Float64>("/time_feature_average", 1);
+  surfPCL_pub = nh->create_publisher<sensor_msgs::msg::PointCloud2> ("/pcl_surf"  ,10);  
+  grndPCL_pub = nh->create_publisher<sensor_msgs::msg::PointCloud2> ("/pcl_ground",10);
+  fltrPCL_pub = nh->create_publisher<sensor_msgs::msg::PointCloud2> ("/lidar_filtered",10);
+  time_average = nh->create_publisher<std_msgs::msg::Float64>("/time_feature_average", 1);
 
-  ros::spin();
+  rclcpp::spin(nh);
   return 0;
 }

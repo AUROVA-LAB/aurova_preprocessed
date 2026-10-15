@@ -1,9 +1,8 @@
-#include <ros/ros.h>
-#include <sensor_msgs/Image.h>
-#include <cv_bridge/cv_bridge.h>
-#include <pcl_ros/point_cloud.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <cv_bridge/cv_bridge.hpp>
 #include <pcl_conversions/pcl_conversions.h>
-#include <image_transport/image_transport.h>
+#include <image_transport/image_transport.hpp>
 #include <pcl/point_types.h>
 #include <pcl/range_image/range_image_spherical.h>
 #include <pcl/filters/filter.h>
@@ -14,9 +13,11 @@
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
 
-ros::Publisher imgD_pub;
-boost::shared_ptr<pcl::RangeImageSpherical> rngSpheric;
+rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr imgD_pub;
+std::shared_ptr<pcl::RangeImageSpherical> rngSpheric;
 pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::LASER_FRAME;
+
+rclcpp::Node::SharedPtr nh;
 
 float maxlen =100;
 float minlen = 0.1;
@@ -31,32 +32,31 @@ float z_min = 100.0f;
 std::string pcTopic = "/velodyne_points";
 
 
-void callback(const PointCloud::ConstPtr& msg_pointCloud)
+void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg_pointCloud)
 {
   if (msg_pointCloud == NULL) return;
 
   PointCloud::Ptr cloud_in (new PointCloud);
+  PointCloud::Ptr aux (new PointCloud);
   PointCloud::Ptr cloud_out (new PointCloud);
 
   std::vector<int> indices;
-  pcl::removeNaNFromPointCloud(*msg_pointCloud, *cloud_in, indices);
+  pcl::fromROSMsg(*msg_pointCloud, *cloud_in);
+  pcl::removeNaNFromPointCloud(*cloud_in, *aux, indices);
 
-  for (int i = 0; i < (int) cloud_in->points.size(); i++)
+
+  for (int i = 0; i < (int) aux->points.size(); i++)
   {
-      double distance = sqrt(cloud_in->points[i].x * cloud_in->points[i].x + cloud_in->points[i].y * cloud_in->points[i].y);
+      double distance = sqrt(pow(aux->points[i].x,2)+pow(aux->points[i].y,2)+pow(aux->points[i].z,2));
       if(distance<minlen || distance>maxlen)
           continue;
-     cloud_out->push_back(cloud_in->points[i]);
-
-     
+     cloud_out->push_back(aux->points[i]);          
   }
 
   rngSpheric->pcl::RangeImage::createFromPointCloud(*cloud_out, pcl::deg2rad(angular_resolution_x), pcl::deg2rad(angular_resolution_y),
                                        pcl::deg2rad(max_angle_width), pcl::deg2rad(max_angle_height),
                                        Eigen::Affine3f::Identity(), coordinate_frame, 0.0f, 0.0f, 0);
                                 
-  rngSpheric->header.frame_id = msg_pointCloud->header.frame_id;
-  rngSpheric->header.stamp    = msg_pointCloud->header.stamp;
 
   
   int cols = (rngSpheric->width) * 2;
@@ -90,33 +90,42 @@ void callback(const PointCloud::ConstPtr& msg_pointCloud)
     }
   }
 
-  sensor_msgs::ImagePtr image_msg;
-  image_msg = cv_bridge::CvImage(std_msgs::Header(), "mono16", dephtImage).toImageMsg();
+  sensor_msgs::msg::Image::SharedPtr image_msg;
+  image_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "mono16", dephtImage).toImageMsg();
 
-  image_msg->header = pcl_conversions::fromPCL(msg_pointCloud->header);
-  imgD_pub.publish(image_msg);
+  image_msg->header.frame_id = msg_pointCloud->header.frame_id;
+  image_msg->header.stamp = nh->get_clock()->now();
+  imgD_pub->publish(*image_msg);
 
 }
 
 int main(int argc, char** argv)
 {
 
-  ros::init(argc, argv, "pontCloud2dephtImage");
-  ros::NodeHandle nh;  
-
-  nh.getParam("/maxlen", maxlen);
-  nh.getParam("/minlen", minlen);
-  nh.getParam("/angular_resolution_x", angular_resolution_x);
-  nh.getParam("/angular_resolution_y", angular_resolution_y);
-  nh.getParam("/max_angle_width", max_angle_width);
-  nh.getParam("/max_angle_height", max_angle_height);
-  nh.getParam("/pcTopic", pcTopic);
+  rclcpp::init(argc, argv);
+  nh = std::make_shared<rclcpp::Node>("pontCloud2dephtImage");
 
 
-  ros::Subscriber sub = nh.subscribe<PointCloud>(pcTopic, 10, callback);
-  rngSpheric = boost::shared_ptr<pcl::RangeImageSpherical>(new pcl::RangeImageSpherical);
-  imgD_pub = nh.advertise<sensor_msgs::Image>("/depth_z_image", 10);
+  nh->declare_parameter("maxlen",maxlen);
+  nh->get_parameter("maxlen", maxlen);
+  nh->declare_parameter("minlen",minlen);
+  nh->get_parameter("minlen", minlen);
+  nh->declare_parameter("angular_resolution_x",angular_resolution_x);
+  nh->get_parameter("angular_resolution_x", angular_resolution_x);
+  nh->declare_parameter("angular_resolution_y",angular_resolution_y);
+  nh->get_parameter("angular_resolution_y", angular_resolution_y);
+  nh->declare_parameter("max_angle_width",max_angle_width);
+  nh->get_parameter("max_angle_width", max_angle_width);
+  nh->declare_parameter("max_angle_height",max_angle_height);
+  nh->get_parameter("max_angle_height", max_angle_height);
+  nh->declare_parameter("pcTopic",pcTopic);
+  nh->get_parameter("pcTopic", pcTopic);
 
-  ros::spin();
+
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub = nh->create_subscription<sensor_msgs::msg::PointCloud2>(pcTopic, 10, std::bind(&callback, std::placeholders::_1));
+  rngSpheric = std::shared_ptr<pcl::RangeImageSpherical>(new pcl::RangeImageSpherical);
+  imgD_pub = nh->create_publisher<sensor_msgs::msg::Image>("/depth_z_image"  , 10);  
+
+  rclcpp::spin(nh);
   return 0;
 }

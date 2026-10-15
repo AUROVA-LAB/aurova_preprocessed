@@ -6,7 +6,7 @@
 #include <opencv2/opencv.hpp>
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
-#include <cv_bridge/cv_bridge.h>
+#include <cv_bridge/cv_bridge.hpp>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <image_transport/image_transport.h>
@@ -75,7 +75,7 @@ int remap(int x, int limit){
 }
 
 void callback(const ImageConstPtr& in_image, 
-              const boost::shared_ptr<const detection_msgs::BoundingBoxes> &bb_data)
+              const std::shared_ptr<const detection_msgs::BoundingBoxes> &bb_data)
 {
 
   pub_pointCloud->clear(); // clear data pointcloud

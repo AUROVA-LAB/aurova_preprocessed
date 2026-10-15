@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>merge_channels_ouster</name>
+  <version>1.0.0</version>
+  <description>merge_channels_ouster</description> 
+  <maintainer email="epvelasco1912@gmail.com">EPVS</maintainer>
+
+  <license>BSD</license>
+  <author email="epvelasco1912@gmail.com">EPVelasco</author>
+
+  <depend>rclpy</depend>
+
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

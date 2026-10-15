@@ -1,0 +1,21 @@
+<launch>
+    <node pkg="pc2image" exec="pc2image" name="pc2image_node">
+        <param name="maxlen"                value="50.0" />    
+        <param name="minlen"                value="0.01" />    
+        <param name="angular_resolution_x"  value="0.5" />
+        <param name="angular_resolution_y"  value="2.0"/> 
+        <param name="max_angle_width"       value="360.0" />
+        <param name="max_angle_height"      value="180.0" />
+        <param name="pcTopic"               value="/ouster/points" />
+        <param name="voxel"                 value="false" />
+        <param name="groundSurf_fusion"     value="true" />
+    </node>
+
+    <arg name="rviz" default="false" />
+    <group if="$(var rviz)">
+        <node launch-prefix="nice" pkg="rviz" exec="rviz" name="rviz" args="-d $(find-pkg-share pc2image)/rviz/pc2image_rviz.rviz" >
+        </node>
+    </group>
+  
+</launch>
+
