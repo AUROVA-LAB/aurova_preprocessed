@@ -61,9 +61,9 @@
   <exec_depend>pc2image</exec_depend>
   <exec_depend>merge_channels_ouster</exec_depend>
   <exec_depend>pc_features</exec_depend>
-  <!-- <exec_depend>lidar_camera_fusion</exec_depend>
+  <!-- <exec_depend>lidar_camera_fusion</exec_depend> -->
   <exec_depend>lidar_obstacle_detection</exec_depend> 
-  <exec_depend>kitti_preprocess</exec_depend>  -->
+  <!-- <exec_depend>kitti_preprocess</exec_depend>  -->
 
 
   <buildtool_depend>ament_cmake</buildtool_depend>

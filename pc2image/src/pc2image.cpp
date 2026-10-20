@@ -67,7 +67,7 @@ void publishPointCloud(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedP
 
     pcl::toROSMsg(*point_cloud, *pc2_cloud);
     pc2_cloud->header.frame_id = frame;
-    pc2_cloud->header.stamp    = nh->get_clock()->now();
+    pc2_cloud->header.stamp = nh->get_clock()->now();
     publisher->publish(*pc2_cloud);
 }
 
