@@ -136,7 +136,7 @@ void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg_pointCloud)
   image_msg = cv_bridge::CvImage(std_msgs::msg::Header(),"mono16", interdephtImage).toImageMsg();
 
   image_msg->header.frame_id = msg_pointCloud->header.frame_id;
-  image_msg->header.stamp = nh->get_clock()->now();
+  image_msg->header.stamp = msg_pointCloud->header.stamp;
   imgD_pub->publish(*image_msg);
 
 

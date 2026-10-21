@@ -63,13 +63,13 @@ pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::LASER_FRAME
 typedef std::chrono::high_resolution_clock Clock;
 
 
-void publishPointCloud(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher, PointCloud::Ptr point_cloud, std::string frame)
+void publishPointCloud(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher, PointCloud::Ptr point_cloud, std::string frame, rclcpp::Time now)
 {
     sensor_msgs::msg::PointCloud2::SharedPtr pc2_cloud(new sensor_msgs::msg::PointCloud2);
 
     pcl::toROSMsg(*point_cloud, *pc2_cloud);
     pc2_cloud->header.frame_id = frame;
-    pc2_cloud->header.stamp    = nh->get_clock()->now();
+    pc2_cloud->header.stamp    = now;
     publisher->publish(*pc2_cloud);
 }
 
@@ -277,21 +277,21 @@ void callback(const sensor_msgs::msg::PointCloud2::SharedPtr  msg_pointCloud)
   pcl::copyPointCloud(*pcl_obstacle, *pcl_obstacle_out);
   pcl_obstacle_out->is_dense = false;
   pcl_obstacle_out->points.resize (pcl_obstacle->width * pcl_obstacle->height);
-  publishPointCloud(pc_filtered_pub, pcl_obstacle_out, msg_pointCloud->header.frame_id);
+  publishPointCloud(pc_filtered_pub, pcl_obstacle_out, msg_pointCloud->header.frame_id, msg_pointCloud->header.stamp);
 
   // obstacles point cloud projection in XY plane  
   pcl_obstXY_out->is_dense = false;
   pcl_obstXY_out->width = pcl_obstXY_out->width;
   pcl_obstXY_out->height = pcl_obstXY_out->height;
   pcl_obstXY_out->points.resize (pcl_obstXY_out->width * pcl_obstXY_out->height);
-  publishPointCloud(pc_obstXY_pub, pcl_obstXY_out, msg_pointCloud->header.frame_id);
+  publishPointCloud(pc_obstXY_pub, pcl_obstXY_out, msg_pointCloud->header.frame_id, msg_pointCloud->header.stamp);
 
   // limits cloud
   limits_cloud_out->is_dense = false;
   limits_cloud_out->width = limits_cloud_out->width;
   limits_cloud_out->height = limits_cloud_out->height;
   limits_cloud_out->points.resize (limits_cloud_out->width * limits_cloud_out->height);
-  publishPointCloud(pc_limits_pub, limits_cloud_out, msg_pointCloud->header.frame_id);
+  publishPointCloud(pc_limits_pub, limits_cloud_out, msg_pointCloud->header.frame_id, msg_pointCloud->header.stamp);
 
 }
 

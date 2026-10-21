@@ -61,13 +61,13 @@ typedef std::chrono::high_resolution_clock Clock;
 
 std::string pcTopic = "/velodyne_points";
 
-void publishPointCloud(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher, PointCloud::Ptr point_cloud, std::string frame)
+void publishPointCloud(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher, PointCloud::Ptr point_cloud, std::string frame, rclcpp::Time now)
 {
     sensor_msgs::msg::PointCloud2::SharedPtr pc2_cloud(new sensor_msgs::msg::PointCloud2);
 
     pcl::toROSMsg(*point_cloud, *pc2_cloud);
     pc2_cloud->header.frame_id = frame;
-    pc2_cloud->header.stamp = nh->get_clock()->now();
+    pc2_cloud->header.stamp = now;
     publisher->publish(*pc2_cloud);
 }
 
@@ -301,9 +301,9 @@ void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg_pointCloud)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-  publishPointCloud(edgePCL_pub, edge_cloud, msg_pointCloud->header.frame_id);
-  publishPointCloud(surfPCL_pub, surf_cloud, msg_pointCloud->header.frame_id);
-  publishPointCloud(grndPCL_pub, ground_cloud, msg_pointCloud->header.frame_id);
+  publishPointCloud(edgePCL_pub, edge_cloud, msg_pointCloud->header.frame_id, msg_pointCloud->header.stamp);
+  publishPointCloud(surfPCL_pub, surf_cloud, msg_pointCloud->header.frame_id, msg_pointCloud->header.stamp);
+  publishPointCloud(grndPCL_pub, ground_cloud, msg_pointCloud->header.frame_id, msg_pointCloud->header.stamp);
 
   sensor_msgs::msg::Image::SharedPtr edgeImg_msg, rangImg_msg, grndImg_msg, surfImg_msg;
   edgeImg_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "mono16", curr_edge).toImageMsg();  
@@ -311,14 +311,10 @@ void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg_pointCloud)
   grndImg_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "mono16", curr_ground).toImageMsg();
   rangImg_msg = cv_bridge::CvImage(std_msgs::msg::Header(), "mono16", dImage).toImageMsg();
 
-  edgeImg_msg->header.frame_id = msg_pointCloud->header.frame_id;
-  surfImg_msg->header.frame_id = msg_pointCloud->header.frame_id;
-  grndImg_msg->header.frame_id = msg_pointCloud->header.frame_id;
-  rangImg_msg->header.frame_id = msg_pointCloud->header.frame_id;
-  edgeImg_msg->header.stamp = nh->get_clock()->now();
-  surfImg_msg->header.stamp = nh->get_clock()->now();
-  grndImg_msg->header.stamp = nh->get_clock()->now();
-  rangImg_msg->header.stamp = nh->get_clock()->now();
+  edgeImg_msg->header = msg_pointCloud->header;
+  surfImg_msg->header = msg_pointCloud->header;
+  grndImg_msg->header = msg_pointCloud->header;
+  rangImg_msg->header = msg_pointCloud->header;
 
   edgeImg_pub->publish(*edgeImg_msg);
   rangImg_pub->publish(*rangImg_msg);
